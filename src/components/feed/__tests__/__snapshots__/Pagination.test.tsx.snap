@@ -1,0 +1,34 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Pagination > renders the current page summary and disables previous on first page 1`] = `
+<div
+  class="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 px-4 py-3 text-sm text-slate-300"
+>
+  <span>
+    페이지 
+    1
+     / 
+    10
+     · 총 
+    120
+    개
+  </span>
+  <div
+    class="flex gap-2"
+  >
+    <button
+      class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm transition enabled:hover:border-brand-400 enabled:hover:bg-brand-400/20 enabled:hover:text-white disabled:opacity-40"
+      disabled=""
+      type="button"
+    >
+      이전
+    </button>
+    <button
+      class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm transition enabled:hover:border-brand-400 enabled:hover:bg-brand-400/20 enabled:hover:text-white disabled:opacity-40"
+      type="button"
+    >
+      다음
+    </button>
+  </div>
+</div>
+`;
