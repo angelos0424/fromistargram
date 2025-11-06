@@ -1,5 +1,10 @@
 import { useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams
+} from 'react-router-dom';
 import AccountStrip from '../components/account/AccountStrip';
 import FiltersPanel from '../components/filter/FiltersPanel';
 import AppShell from '../components/layout/AppShell';
@@ -8,7 +13,7 @@ import PostGrid from '../components/feed/PostGrid';
 import PostModal from '../components/feed/PostModal';
 import { useAccounts } from '../hooks/useAccounts';
 import { useFeed } from '../hooks/useFeed';
-import { usePostById } from '../hooks/usePostById';
+import { usePostDetail } from '../hooks/usePostDetail';
 import { useFeedUiStore, type DateRange } from '../state/uiStore';
 import {
   mergeFeedSearchParams,
@@ -17,6 +22,9 @@ import {
 
 const FeedPage = () => {
   const { accounts, isLoading: accountsLoading } = useAccounts();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { postId: routePostId } = useParams<{ postId?: string }>();
   const [
     selectedAccountId,
     setSelectedAccountId,
@@ -40,7 +48,7 @@ const FeedPage = () => {
   ]);
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const activePostId = searchParams.get('post');
+  const activePostId = routePostId ?? null;
 
   const parsedParams = useMemo(
     () => parseFeedSearchParams(searchParams),
@@ -102,9 +110,17 @@ const FeedPage = () => {
     enabled: true
   });
 
-  const { data: modalPost, isLoading: modalLoading } = usePostById({
-    id: activePostId
+  const { data: modalPost, isLoading: modalLoading } = usePostDetail({
+    postId: activePostId
   });
+
+  const modalAccount = useMemo(
+    () =>
+      modalPost
+        ? accounts.find((account) => account.id === modalPost.accountId) ?? null
+        : null,
+    [accounts, modalPost]
+  );
 
   const feedPosts = feedResponse?.posts ?? [];
   const totalPosts = feedResponse?.total ?? 0;
@@ -120,19 +136,53 @@ const FeedPage = () => {
   };
 
   const handleOpenPost = (postId: string) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set('post', postId);
-      return next;
-    });
+    const search = searchParams.toString();
+
+    navigate(
+      {
+        pathname: `/post/${postId}`,
+        search: search ? `?${search}` : undefined
+      },
+      {
+        state: {
+          returnTo: {
+            pathname: location.pathname,
+            search: location.search
+          }
+        }
+      }
+    );
   };
 
   const handleCloseModal = () => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.delete('post');
-      return next;
-    });
+    const state =
+      (location.state as
+        | {
+            returnTo?: {
+              pathname: string;
+              search: string;
+            };
+          }
+        | undefined) ?? undefined;
+
+    if (state?.returnTo) {
+      navigate(
+        {
+          pathname: state.returnTo.pathname,
+          search: state.returnTo.search
+        },
+        { replace: true }
+      );
+      return;
+    }
+
+    navigate(
+      {
+        pathname: '/',
+        search: location.search
+      },
+      { replace: true }
+    );
   };
 
   const activeAccount =
@@ -181,6 +231,7 @@ const FeedPage = () => {
       </div>
       <PostModal
         post={modalPost}
+        account={modalAccount}
         isOpen={Boolean(activePostId)}
         isLoading={modalLoading}
         onClose={handleCloseModal}

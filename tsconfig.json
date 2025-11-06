@@ -12,9 +12,11 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "types": ["vitest/globals", "vite/client"]
   },
-  "include": ["src"],
+  "include": ["src", "vitest.setup.ts", "**/*.test.ts", "**/*.test.tsx"],
+  "exclude": ["node_modules", "dist", "api"],
   "references": [
     {
       "path": "./tsconfig.node.json"
