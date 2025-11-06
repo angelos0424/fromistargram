@@ -10,6 +10,7 @@ datasource db {
 model Account {
   id                  String       @id
   latestProfilePicUrl String?
+  lastIndexedAt       DateTime?
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
   posts               Post[]
@@ -78,4 +79,60 @@ model PostText {
   post     Post    @relation(fields: [postId], references: [id])
   content  String
   updatedAt DateTime @updatedAt
+}
+
+model CrawlTarget {
+  id            String       @id @default(cuid())
+  handle        String       @unique
+  displayName   String
+  isActive      Boolean      @default(true)
+  isFeatured    Boolean      @default(false)
+  priority      Int          @default(0)
+  lastSyncedAt  DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  runs          CrawlRun[]
+}
+
+enum CrawlAccountStatus {
+  ready
+  error
+  disabled
+}
+
+model CrawlAccount {
+  id            String             @id @default(cuid())
+  username      String             @unique
+  status        CrawlAccountStatus @default(ready)
+  note          String?
+  lastSessionAt DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  runs          CrawlRun[]
+}
+
+enum CrawlRunStatus {
+  queued
+  running
+  success
+  failure
+}
+
+model CrawlRun {
+  id               String         @id @default(cuid())
+  targetId         String
+  target           CrawlTarget    @relation(fields: [targetId], references: [id])
+  sessionAccountId String?
+  sessionAccount   CrawlAccount?  @relation(fields: [sessionAccountId], references: [id])
+  triggeredBy      String
+  sessionId        String
+  status           CrawlRunStatus
+  startedAt        DateTime       @default(now())
+  finishedAt       DateTime?
+  message          String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([targetId, startedAt])
+  @@index([sessionAccountId, startedAt])
 }

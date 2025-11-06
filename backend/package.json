@@ -8,12 +8,16 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc --project tsconfig.json",
     "start": "node dist/server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",
+    "@fastify/swagger": "^8.15.0",
+    "@fastify/swagger-ui": "^1.10.2",
     "@prisma/client": "^5.21.1",
     "fastify": "^4.28.1",
+    "ioredis": "^5.4.1",
     "mime-types": "^2.1.35",
     "pino": "^9.5.0",
     "pino-pretty": "^11.2.1",
@@ -21,8 +25,11 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "@types/mime-types": "^2.1.4",
+    "@vitest/coverage-v8": "^2.1.6",
     "prisma": "^5.21.1",
     "tsx": "^4.19.1",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "vitest": "^2.1.6"
   }
 }

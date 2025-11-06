@@ -6,14 +6,17 @@ export type RangeResponseOptions = {
   filePath: string;
   rangeHeader?: string;
   mimeType?: string | false;
+  cacheControl?: string;
 };
 
 export async function sendFileWithRange(reply: FastifyReply, options: RangeResponseOptions) {
-  const { filePath, rangeHeader, mimeType } = options;
+  const { filePath, rangeHeader, mimeType, cacheControl } = options;
   const stats = await stat(filePath);
   const fileSize = stats.size;
 
   reply.header('Accept-Ranges', 'bytes');
+  reply.header('Last-Modified', stats.mtime.toUTCString());
+  reply.header('Cache-Control', cacheControl ?? 'public, max-age=86400, stale-while-revalidate=604800');
   if (mimeType) {
     reply.type(mimeType);
   }
