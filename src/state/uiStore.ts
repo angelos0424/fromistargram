@@ -14,6 +14,11 @@ interface FeedUIState {
   setDateRange: (range: DateRange) => void;
   setPage: (page: number) => void;
   resetFilters: () => void;
+  hydrateFromQuery: (state: {
+    selectedAccountId: string | null;
+    dateRange: DateRange;
+    page: number;
+  }) => void;
 }
 
 const DEFAULT_PAGE_SIZE = 12;
@@ -45,5 +50,26 @@ export const useFeedUiStore = create<FeedUIState>((set) => ({
       selectedAccountId: null,
       dateRange: { from: null, to: null },
       page: 1
-    }))
+    })),
+  hydrateFromQuery: ({ selectedAccountId, dateRange, page }) =>
+    set((state) => {
+      const updates: Partial<FeedUIState> = {};
+
+      if (state.selectedAccountId !== selectedAccountId) {
+        updates.selectedAccountId = selectedAccountId;
+      }
+
+      if (
+        state.dateRange.from !== dateRange.from ||
+        state.dateRange.to !== dateRange.to
+      ) {
+        updates.dateRange = { ...dateRange };
+      }
+
+      if (state.page !== page) {
+        updates.page = page;
+      }
+
+      return Object.keys(updates).length > 0 ? updates : {};
+    })
 }));

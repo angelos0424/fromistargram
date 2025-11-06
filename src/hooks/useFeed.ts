@@ -26,11 +26,11 @@ export const useFeed = ({
   const client = useApiClient();
   const serializedKey = useMemo(() => serializeQuery(query), [query]);
 
-  const result = useQuery({
+  const result = useQuery<FeedResponse, Error>({
     queryKey: ['feed', serializedKey],
     queryFn: () => client.fetchPosts(query),
     enabled,
-    keepPreviousData: true,
+    placeholderData: (previous) => previous,
     staleTime: 1000 * 15
   });
 
