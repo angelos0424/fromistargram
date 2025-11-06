@@ -1,0 +1,28 @@
+{
+  "name": "fromistargram-api",
+  "version": "0.1.0",
+  "description": "Fastify API server for Fromistargram backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/server.js",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "@prisma/client": "^5.21.1",
+    "fastify": "^4.28.1",
+    "mime-types": "^2.1.35",
+    "pino": "^9.5.0",
+    "pino-pretty": "^11.2.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "prisma": "^5.21.1",
+    "tsx": "^4.19.1",
+    "typescript": "^5.5.3"
+  }
+}
