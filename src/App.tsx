@@ -6,6 +6,7 @@ const App = () => (
   <ApiClientProvider>
     <Routes>
       <Route path="/" element={<FeedPage />} />
+      <Route path="/post/:postId" element={<FeedPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   </ApiClientProvider>
