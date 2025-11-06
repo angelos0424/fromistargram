@@ -1,5 +1,6 @@
 import path from 'path';
 import { prisma } from '../db/client.js';
+import { clearCache } from '../utils/cache.js';
 import { scanDataRoot } from './fileSystemScanner.js';
 import { IndexerSnapshot } from './types.js';
 
@@ -13,17 +14,20 @@ export async function buildSnapshot(options: IndexerOptions = {}): Promise<Index
 }
 
 export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise<void> {
-  await prisma.$transaction(async (tx) => {
+  const now = new Date();
+  await prisma.$transaction(async (tx: any) => {
     for (const account of snapshot.accounts) {
       await tx.account.upsert({
         where: { id: account.id },
         create: {
           id: account.id,
-          latestProfilePicUrl: account.profilePictures.at(-1)?.filename ?? null
+          latestProfilePicUrl: account.profilePictures.at(-1)?.filename ?? null,
+          lastIndexedAt: now
         },
         update: {
           latestProfilePicUrl: account.profilePictures.at(-1)?.filename ?? null,
-          updatedAt: new Date()
+          updatedAt: now,
+          lastIndexedAt: now
         }
       });
 
@@ -100,6 +104,8 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
       }
     }
   });
+
+  await clearCache();
 }
 
 export async function indexFileSystem(options: IndexerOptions = {}): Promise<void> {
