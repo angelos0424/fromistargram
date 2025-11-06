@@ -10,6 +10,10 @@ import { useAccounts } from '../hooks/useAccounts';
 import { useFeed } from '../hooks/useFeed';
 import { usePostById } from '../hooks/usePostById';
 import { useFeedUiStore, type DateRange } from '../state/uiStore';
+import {
+  mergeFeedSearchParams,
+  parseFeedSearchParams
+} from '../lib/url/feedSearchParams';
 
 const FeedPage = () => {
   const { accounts, isLoading: accountsLoading } = useAccounts();
@@ -21,7 +25,8 @@ const FeedPage = () => {
     page,
     pageSize,
     setPage,
-    resetFilters
+    resetFilters,
+    hydrateFromQuery
   ] = useFeedUiStore((state) => [
     state.selectedAccountId,
     state.setSelectedAccountId,
@@ -30,11 +35,43 @@ const FeedPage = () => {
     state.page,
     state.pageSize,
     state.setPage,
-    state.resetFilters
+    state.resetFilters,
+    state.hydrateFromQuery
   ]);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activePostId = searchParams.get('post');
+
+  const parsedParams = useMemo(
+    () => parseFeedSearchParams(searchParams),
+    [searchParams]
+  );
+
+  useEffect(() => {
+    hydrateFromQuery({
+      selectedAccountId: parsedParams.accountId,
+      dateRange: parsedParams.dateRange,
+      page: parsedParams.page
+    });
+  }, [parsedParams, hydrateFromQuery]);
+
+  useEffect(() => {
+    setSearchParams(
+      (prev) => {
+        const next = mergeFeedSearchParams(prev, {
+          accountId: selectedAccountId,
+          dateRange,
+          page
+        });
+
+        const prevString = prev.toString();
+        const nextString = next.toString();
+
+        return nextString === prevString ? prev : next;
+      },
+      { replace: true }
+    );
+  }, [selectedAccountId, dateRange, page, setSearchParams]);
 
   useEffect(() => {
     if (!accounts.length) {
@@ -60,13 +97,14 @@ const FeedPage = () => {
     [selectedAccountId, dateRange, page, pageSize]
   );
 
-  const { data: feedResponse, isLoading: feedLoading } = useFeed({
+  const { data: feedResponse, isLoading: feedLoading, error: feedError } = useFeed({
     query,
     enabled: true
   });
 
-  const { post: modalPost, isLoading: modalLoading } =
-    usePostById(activePostId);
+  const { data: modalPost, isLoading: modalLoading } = usePostById({
+    id: activePostId
+  });
 
   const feedPosts = feedResponse?.posts ?? [];
   const totalPosts = feedResponse?.total ?? 0;
@@ -123,11 +161,17 @@ const FeedPage = () => {
       }
     >
       <div className="flex flex-col gap-6">
-        <PostGrid
-          posts={feedPosts}
-          isLoading={feedLoading && !feedPosts.length}
-          onOpenPost={handleOpenPost}
-        />
+        {feedError ? (
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-sm text-red-200">
+            피드를 불러오는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.
+          </div>
+        ) : (
+          <PostGrid
+            posts={feedPosts}
+            isLoading={feedLoading && !feedPosts.length}
+            onOpenPost={handleOpenPost}
+          />
+        )}
         <Pagination
           page={page}
           pageSize={pageSize}
