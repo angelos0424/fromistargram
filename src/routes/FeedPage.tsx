@@ -1,0 +1,148 @@
+import { useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import AccountStrip from '../components/account/AccountStrip';
+import FiltersPanel from '../components/filter/FiltersPanel';
+import AppShell from '../components/layout/AppShell';
+import Pagination from '../components/feed/Pagination';
+import PostGrid from '../components/feed/PostGrid';
+import PostModal from '../components/feed/PostModal';
+import { useAccounts } from '../hooks/useAccounts';
+import { useFeed } from '../hooks/useFeed';
+import { usePostById } from '../hooks/usePostById';
+import { useFeedUiStore, type DateRange } from '../state/uiStore';
+
+const FeedPage = () => {
+  const { accounts, isLoading: accountsLoading } = useAccounts();
+  const [
+    selectedAccountId,
+    setSelectedAccountId,
+    dateRange,
+    setDateRange,
+    page,
+    pageSize,
+    setPage,
+    resetFilters
+  ] = useFeedUiStore((state) => [
+    state.selectedAccountId,
+    state.setSelectedAccountId,
+    state.dateRange,
+    state.setDateRange,
+    state.page,
+    state.pageSize,
+    state.setPage,
+    state.resetFilters
+  ]);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activePostId = searchParams.get('post');
+
+  useEffect(() => {
+    if (!accounts.length) {
+      return;
+    }
+
+    if (
+      selectedAccountId &&
+      !accounts.some((account) => account.id === selectedAccountId)
+    ) {
+      setSelectedAccountId(accounts[0]?.id ?? null);
+    }
+  }, [accounts, selectedAccountId, setSelectedAccountId]);
+
+  const query = useMemo(
+    () => ({
+      accountId: selectedAccountId ?? undefined,
+      from: dateRange.from ?? undefined,
+      to: dateRange.to ?? undefined,
+      page,
+      pageSize
+    }),
+    [selectedAccountId, dateRange, page, pageSize]
+  );
+
+  const { data: feedResponse, isLoading: feedLoading } = useFeed({
+    query,
+    enabled: true
+  });
+
+  const { post: modalPost, isLoading: modalLoading } =
+    usePostById(activePostId);
+
+  const feedPosts = feedResponse?.posts ?? [];
+  const totalPosts = feedResponse?.total ?? 0;
+
+  const handleAccountSelect = (accountId: string | null) => {
+    setSelectedAccountId(accountId);
+    setPage(1);
+  };
+
+  const handleDateRangeChange = (range: DateRange) => {
+    setDateRange(range);
+    setPage(1);
+  };
+
+  const handleOpenPost = (postId: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('post', postId);
+      return next;
+    });
+  };
+
+  const handleCloseModal = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('post');
+      return next;
+    });
+  };
+
+  const activeAccount =
+    accounts.find((account) => account.id === selectedAccountId) ?? null;
+
+  return (
+    <AppShell
+      accountStrip={
+        <AccountStrip
+          accounts={accounts}
+          selectedAccountId={selectedAccountId}
+          onSelect={handleAccountSelect}
+          isLoading={accountsLoading}
+        />
+      }
+      filters={
+        <FiltersPanel
+          dateRange={dateRange}
+          onDateRangeChange={handleDateRangeChange}
+          onReset={() => {
+            resetFilters();
+            setPage(1);
+          }}
+          activeAccount={activeAccount}
+        />
+      }
+    >
+      <div className="flex flex-col gap-6">
+        <PostGrid
+          posts={feedPosts}
+          isLoading={feedLoading && !feedPosts.length}
+          onOpenPost={handleOpenPost}
+        />
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={totalPosts}
+          onChange={setPage}
+        />
+      </div>
+      <PostModal
+        post={modalPost}
+        isOpen={Boolean(activePostId)}
+        isLoading={modalLoading}
+        onClose={handleCloseModal}
+      />
+    </AppShell>
+  );
+};
+
+export default FeedPage;

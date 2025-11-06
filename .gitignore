@@ -15,6 +15,3 @@ yarn-error.log*
 
 # mac
 .DS_Store
-
-# md
-*.md

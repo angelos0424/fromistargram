@@ -1,0 +1,50 @@
+import type { Post } from '../../lib/api/types';
+import PostCard from './PostCard';
+
+interface PostGridProps {
+  posts: Post[];
+  isLoading: boolean;
+  onOpenPost: (postId: string) => void;
+}
+
+const PostGrid = ({
+  posts,
+  isLoading,
+  onOpenPost
+}: PostGridProps) => {
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div
+            key={`post-skeleton-${index}`}
+            className="aspect-square animate-pulse rounded-2xl bg-white/5"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (posts.length === 0) {
+    return (
+      <div className="flex min-h-[320px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/10 bg-white/5 p-10 text-center">
+        <h3 className="text-lg font-semibold text-white">
+          표시할 게시물이 없습니다.
+        </h3>
+        <p className="text-sm text-slate-400">
+          다른 계정이나 날짜 범위로 다시 시도해 보세요.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {posts.map((post) => (
+        <PostCard key={post.id} post={post} onOpen={onOpenPost} />
+      ))}
+    </div>
+  );
+};
+
+export default PostGrid;
