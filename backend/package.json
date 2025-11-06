@@ -1,5 +1,5 @@
 {
-  "name": "fromistargram-api",
+  "name": "@fromistargram/backend",
   "version": "0.1.0",
   "description": "Fastify API server for Fromistargram backend",
   "private": true,

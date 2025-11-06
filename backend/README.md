@@ -1,15 +1,15 @@
-# Fromistargram API
+# Fromistargram Backend
 
 Fastify 기반 백엔드 서버로 파일 시스템에 저장된 Instagram 크롤링 데이터를 DB에 동기화하고 REST API를 제공합니다.
 
 ## 개발 명령어
 
 ```bash
-npm install
-npm run dev      # Fastify 개발 서버 실행 (기본 포트 4000)
-npm run build    # TypeScript 빌드
-npm run start    # 빌드 후 서버 실행
-npm run lint     # 타입 검사
+pnpm install                # 루트에서 워크스페이스 의존성 설치
+pnpm --filter @fromistargram/backend dev    # Fastify 개발 서버 실행 (기본 포트 4000)
+pnpm --filter @fromistargram/backend build  # TypeScript 빌드
+pnpm --filter @fromistargram/backend start  # 빌드 후 서버 실행
+pnpm --filter @fromistargram/backend lint   # 타입 검사
 ```
 
 ## 주요 디렉터리
@@ -22,11 +22,11 @@ npm run lint     # 타입 검사
 
 ## Prisma
 
-`api/prisma/schema.prisma` 는 PostgreSQL 스키마를 정의합니다. 마이그레이션은 추후 `npx prisma migrate dev` 명령으로 생성할 수 있습니다.
+`backend/prisma/schema.prisma` 는 PostgreSQL 스키마를 정의합니다. 마이그레이션은 추후 `pnpm --filter @fromistargram/backend prisma migrate dev` 명령으로 생성할 수 있습니다.
 
 ## 인덱싱 파이프라인
 
-`npm run dev` 또는 별도의 크론 작업에서 `node dist/indexer/cli.js` 를 실행하면 파일 시스템의 최신 상태를 DB에 반영합니다. (TypeScript 개발 환경에서는 `tsx src/indexer/cli.ts` 로 실행할 수 있습니다.)
+`pnpm --filter @fromistargram/backend dev` 또는 별도의 크론 작업에서 `node dist/indexer/cli.js` 를 실행하면 파일 시스템의 최신 상태를 DB에 반영합니다. (TypeScript 개발 환경에서는 `tsx src/indexer/cli.ts` 로 실행할 수 있습니다.)
 
 ## 썸네일 서버 연동
 
