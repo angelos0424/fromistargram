@@ -2,7 +2,7 @@ Plan 2 — 백엔드 API 및 인덱싱 설계
 =================================
 
 ## 작업 목표
-- `api/` 디렉터리에서 Fastify 서버 골격 작성 ✅
+- `backend/` 디렉터리에서 Fastify 서버 골격 작성 ✅
 - `/api/accounts`, `/api/posts`, `/api/posts/:id` 엔드포인트 설계 ✅
 - DB 인덱싱 파이프라인(파일 스캔 → Postgres 업서트) 정의 ✅
 - 썸네일 서버 연동 방안 수립 ✅
