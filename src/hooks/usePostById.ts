@@ -1,56 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { Post } from '../lib/api/types';
 import { useApiClient } from '../lib/api/context';
 
+interface UsePostByIdOptions {
+  id: string | null;
+}
+
 interface UsePostByIdResult {
-  post: Post | null;
+  data: Post | null;
   isLoading: boolean;
   error: Error | null;
 }
 
-export const usePostById = (postId: string | null): UsePostByIdResult => {
+export const usePostById = ({ id }: UsePostByIdOptions): UsePostByIdResult => {
   const client = useApiClient();
-  const [post, setPost] = useState<Post | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    if (!postId) {
-      setPost(null);
-      setIsLoading(false);
-      setError(null);
-      return;
-    }
+  const result = useQuery({
+    queryKey: ['post', id],
+    queryFn: () => client.fetchPostById(id as string),
+    enabled: Boolean(id)
+  });
 
-    let cancelled = false;
-    setIsLoading(true);
-
-    client
-      .fetchPostById(postId)
-      .then((result) => {
-        if (cancelled) {
-          return;
-        }
-
-        setPost(result ?? null);
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) {
-          return;
-        }
-        setError(err instanceof Error ? err : new Error('Unknown error'));
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [client, postId]);
-
-  return { post, isLoading, error };
+  return {
+    data: result.data ?? null,
+    isLoading: result.isPending,
+    error: result.error instanceof Error ? result.error : result.error ? new Error('Unknown error') : null
+  };
 };

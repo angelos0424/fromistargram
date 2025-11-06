@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                  String       @id
+  latestProfilePicUrl String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  posts               Post[]
+  profilePics         ProfilePic[]
+}
+
+model Post {
+  id        String    @id
+  accountId String
+  account   Account   @relation(fields: [accountId], references: [id])
+  postedAt  DateTime
+  caption   String?
+  hasText   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  media     Media[]
+  postText  PostText?
+  tags      PostTag[]
+
+  @@index([accountId, postedAt])
+}
+
+model Media {
+  id         String   @id @default(cuid())
+  postId     String
+  post       Post     @relation(fields: [postId], references: [id])
+  orderIndex Int
+  filename   String
+  mime       String
+  width      Int?
+  height     Int?
+  duration   Int?
+  createdAt  DateTime @default(now())
+
+  @@index([postId, orderIndex])
+}
+
+model ProfilePic {
+  id        String   @id
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id])
+  takenAt   DateTime
+  filename  String
+  createdAt DateTime @default(now())
+
+  @@index([accountId, takenAt])
+}
+
+model Tag {
+  id    Int       @id @default(autoincrement())
+  name  String    @unique
+  posts PostTag[]
+}
+
+model PostTag {
+  postId String
+  tagId  Int
+  post   Post @relation(fields: [postId], references: [id])
+  tag    Tag  @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId])
+}
+
+model PostText {
+  postId   String  @id
+  post     Post    @relation(fields: [postId], references: [id])
+  content  String
+  updatedAt DateTime @updatedAt
+}

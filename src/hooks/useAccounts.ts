@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { Account } from '../lib/api/types';
 import { useApiClient } from '../lib/api/context';
 
@@ -10,39 +10,15 @@ interface UseAccountsResult {
 
 export const useAccounts = (): UseAccountsResult => {
   const client = useApiClient();
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const query = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => client.fetchAccounts(),
+    staleTime: 1000 * 60 * 5
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    setIsLoading(true);
-
-    client
-      .fetchAccounts()
-      .then((data) => {
-        if (cancelled) {
-          return;
-        }
-        setAccounts(data);
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) {
-          return;
-        }
-        setError(err instanceof Error ? err : new Error('Unknown error'));
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [client]);
-
-  return { accounts, isLoading, error };
+  return {
+    accounts: query.data ?? [],
+    isLoading: query.isPending,
+    error: query.error instanceof Error ? query.error : query.error ? new Error('Unknown error') : null
+  };
 };

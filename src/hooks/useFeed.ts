@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { FeedQuery, FeedResponse } from '../lib/api/types';
 import { useApiClient } from '../lib/api/context';
 
@@ -23,48 +24,19 @@ export const useFeed = ({
   enabled = true
 }: UseFeedOptions): UseFeedResult => {
   const client = useApiClient();
-  const [data, setData] = useState<FeedResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const serializedKey = useMemo(() => serializeQuery(query), [query]);
 
-  const key = useMemo(() => serializeQuery(query), [query]);
+  const result = useQuery({
+    queryKey: ['feed', serializedKey],
+    queryFn: () => client.fetchPosts(query),
+    enabled,
+    keepPreviousData: true,
+    staleTime: 1000 * 15
+  });
 
-  useEffect(() => {
-    if (!enabled) {
-      setData(null);
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoading(true);
-
-    client
-      .fetchPosts(query)
-      .then((response) => {
-        if (cancelled) {
-          return;
-        }
-
-        setData(response);
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) {
-          return;
-        }
-
-        setError(err instanceof Error ? err : new Error('Unknown error'));
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [client, key, query, enabled]);
-
-  return { data, isLoading, error };
+  return {
+    data: result.data ?? null,
+    isLoading: result.isPending,
+    error: result.error instanceof Error ? result.error : result.error ? new Error('Unknown error') : null
+  };
 };
