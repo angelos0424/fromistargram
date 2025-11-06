@@ -23,25 +23,33 @@
 
 # ✅ 2. 전체 시스템 구성도
 ```text
-+------------------------+
-|      Frontend (SPA)    |
-|   React / Tailwind     |
-|------------------------|
-| Profile Strip / Filter |
-| Feed (pagination)      |
-| Post Modal             |
-+------------+-----------+
-             |
-             v
-+------------------------+    +----------------------+
-|        API Server      |    |     Thumbnail        |
-|  Node.js (Fastify)     |    |   Server (imgproxy)  |
-|------------------------|    |----------------------|
-|  - Accounts API        |    | - Resize / WebP/AVIF |
-|  - Posts API           |    | - Cache-Control      |
-|  - Profile gallery     |    |                      |
-|  - Media file serving  |    +----------------------+
++------------------------+      +-----------------------+
+|      Frontend (SPA)    |      |    Admin Panel (SPA)  |
+|   React / Tailwind     |      |   React / Tailwind    |
+|------------------------|      |-----------------------|
+| Profile Strip / Filter |      | Crawl Target Manager  |
+| Feed (pagination)      |      | Crawl Account Manager |
+| Post Modal             |      | Manual Session Input  |
+|                        |      | Feed Exposure Toggle  |
++------------+-----------+      +-----------+-----------+
+             |                               |
+             |                               v
+             |                    +-----------------------+
+             |                    |   Authentik (OIDC)    |
+             |                    |  Admin Auth Provider  |
+             |                    +-----------+-----------+
+             |                                |
+             v                                v
++------------------------+      +----------------------+
+|        API Server      |      |     Thumbnail        |
+|  Node.js (Fastify)     |      |   Server (imgproxy)  |
+|------------------------|      |----------------------|
+|  - Accounts API        |      | - Resize / WebP/AVIF |
+|  - Posts API           |      | - Cache-Control      |
+|  - Profile gallery     |      |                      |
+|  - Media file serving  |      +----------------------+
 |  - DB sync/indexing    |
+|  - Admin REST endpoints|
 +------------+-----------+
              |
              v
@@ -53,6 +61,9 @@
 | media                  |
 | profile_pics           |
 | tags / post_tags       |
+| crawl_targets          |
+| crawl_accounts         |
+| crawl_runs             |
 +------------+-----------+
              |
              v
@@ -65,6 +76,26 @@
 | post media + txt        |
 +-------------------------+
 ```
+---
+
+# ✅ 2.1 관리 페이지 개요
+
+운영자는 별도 어드민 경로(`/admin` 권장)를 통해 관리 페이지에 접근한다. 해당 영역은 **Authentik** 기반 OIDC 인증을 필수로 거치며, 프론트엔드(SPA)에서 토큰을 수신한 뒤 API 서버의 어드민 전용 엔드포인트를 호출한다.
+
+## 주요 메뉴
+
+- **크롤링 관리**
+  - 크롤링 대상 Instagram ID 등록/수정/삭제 (DB로 관리)
+  - 크롤링 시 사용할 로그인 계정 ID 목록 관리 (DB로 관리)
+  - 수동 실행: `sessionId` 입력 후 "크롤링 실행" 버튼으로 API에 크롤링 트리거 요청
+  - 최근 실행 이력 및 상태 모니터링(성공/실패, 실행 계정, 타임스탬프)
+- **피드 관리**
+  - 화면 노출 대상 ID 지정: 크롤링 대상 테이블에 `is_featured` flag 컬럼을 토글
+  - 노출 순서/우선순위 관리(선택)
+  - 피드 통계(선택): 게시물 수, 최근 업데이트 시간 등 요약 정보 제공
+
+모든 어드민 API는 Authentik 발급 토큰 검증 및 역할 확인(예: `admin` role claim)을 거쳐야 한다.
+
 ---
 
 # ✅ 3. 데이터 구조
@@ -117,8 +148,36 @@
 - taken_at
 - filename
 
+## crawl_targets
+- id PK
+- instagram_id (unique)
+- display_name (nullable)
+- is_active (bool)
+- is_featured (bool) — 메인 피드 노출 여부
+- created_at
+- updated_at
+
+## crawl_accounts
+- id PK
+- login_id (unique)
+- description (nullable)
+- last_session_id (nullable)
+- in_use (bool)
+- created_at
+- updated_at
+
+## crawl_runs
+- id PK
+- trigger_type (`manual`|`scheduled`)
+- crawl_account_id FK
+- session_id (nullable)
+- started_at / finished_at
+- status (`pending`|`running`|`success`|`failed`)
+- error_message (nullable)
+- initiated_by (Authentik user id)
+
 ## tags / post_tags
-- 단방향 Many-to-Many  
+- 단방향 Many-to-Many
 - caption에서 해시태그 파싱
 
 ---
@@ -490,11 +549,20 @@ pg_data:     # postgres
 - [ ] 상세 모달 + 라우팅 정상
 - [ ] 프로필 히스토리 정상 동작
 
+## 관리 페이지 기준
+- [ ] Authentik OIDC 연동 및 어드민 전용 경로 보호
+- [ ] 크롤링 대상 ID CRUD + is_active/is_featured 토글
+- [ ] 크롤링 로그인 계정 CRUD + 세션 입력
+- [ ] sessionId 입력 기반 수동 크롤링 실행 및 상태 표시
+- [ ] 피드 노출 대상/순서 관리 UI 제공
+
 ## 백엔드 기준
 - [ ] 파일 → DB 인덱싱 100%
 - [ ] posts/media/txt 매핑 정확
 - [ ] 동영상 Range 지원
 - [ ] 썸네일 서버 연동
+- [ ] 어드민 API 인증/인가(Authentik 토큰 검증)
+- [ ] crawl_targets / crawl_accounts / crawl_runs 테이블 스키마 반영 및 마이그레이션
 
 ## 크롤러 기준
 - [ ] 프로필 이미지 누적 저장
