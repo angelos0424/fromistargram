@@ -9,3 +9,12 @@ yarn-error.log*
 .pnp.js
 
 .vscode/*
+
+# jetbrain
+.idea
+
+# mac
+.DS_Store
+
+# md
+*.md
