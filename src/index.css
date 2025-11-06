@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-family: theme('fontFamily.sans');
+  background: radial-gradient(circle at top left, #1f2937 0%, #020617 50%);
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
