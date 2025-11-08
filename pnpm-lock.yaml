@@ -17,11 +17,11 @@ importers:
         specifier: ^8.15.0
         version: 8.15.0
       '@fastify/swagger-ui':
-        specifier: ^1.10.2
-        version: 1.10.2
+        specifier: 2.1.0
+        version: 2.1.0
       '@prisma/client':
-        specifier: ^5.21.1
-        version: 5.22.0(prisma@5.22.0)
+        specifier: ^6.19.0
+        version: 6.19.0(prisma@5.22.0)(typescript@5.9.3)
       fastify:
         specifier: ^4.28.1
         version: 4.29.1
@@ -587,8 +587,8 @@ packages:
   '@fastify/static@6.12.0':
     resolution: {integrity: sha512-KK1B84E6QD/FcQWxDI2aiUCwHxMJBI1KeCUzm1BwYpPY1b742+jeKruGHP2uOluuM6OkBPI8CIANrXcCRtC2oQ==}
 
-  '@fastify/swagger-ui@1.10.2':
-    resolution: {integrity: sha512-f2mRqtblm6eRAFQ3e8zSngxVNEtiYY7rISKQVjPA++ZsWc5WYlPVTb6Bx0G/zy0BIoucNqDr/Q2Vb/kTYkOq1A==}
+  '@fastify/swagger-ui@2.1.0':
+    resolution: {integrity: sha512-mu0C28kMEQDa3miE8f3LmI/OQSmqaKS3dYhZVFO5y4JdgBIPbzZj6COCoRU/P/9nu7UogzzcCJtg89wwLwKtWg==}
 
   '@fastify/swagger@8.15.0':
     resolution: {integrity: sha512-zy+HEEKFqPMS2sFUsQU5X0MHplhKJvWeohBwTCkBAJA/GDYGLGUWQaETEhptiqxK7Hs0fQB9B4MDb3pbwIiCwA==}
@@ -643,13 +643,16 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
-  '@prisma/client@5.22.0':
-    resolution: {integrity: sha512-M0SVXfyHnQREBKxCgyo7sffrKttwE6R8PMq330MIUF0pTwjUhLbW84pFDlf06B27XyCR++VtjugEnIHdr07SVA==}
-    engines: {node: '>=16.13'}
+  '@prisma/client@6.19.0':
+    resolution: {integrity: sha512-QXFT+N/bva/QI2qoXmjBzL7D6aliPffIwP+81AdTGq0FXDoLxLkWivGMawG8iM5B9BKfxLIXxfWWAF6wbuJU6g==}
+    engines: {node: '>=18.18'}
     peerDependencies:
       prisma: '*'
+      typescript: '>=5.1.0'
     peerDependenciesMeta:
       prisma:
+        optional: true
+      typescript:
         optional: true
 
   '@prisma/debug@5.22.0':
@@ -2659,7 +2662,7 @@ snapshots:
       glob: 8.1.0
       p-limit: 3.1.0
 
-  '@fastify/swagger-ui@1.10.2':
+  '@fastify/swagger-ui@2.1.0':
     dependencies:
       '@fastify/static': 6.12.0
       fastify-plugin: 4.5.1
@@ -2728,9 +2731,10 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-  '@prisma/client@5.22.0(prisma@5.22.0)':
+  '@prisma/client@6.19.0(prisma@5.22.0)(typescript@5.9.3)':
     optionalDependencies:
       prisma: 5.22.0
+      typescript: 5.9.3
 
   '@prisma/debug@5.22.0': {}
 
