@@ -9,6 +9,7 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY backend ./backend
 
 RUN pnpm install --filter @fromistargram/backend... --frozen-lockfile
+RUN pnpm --filter @fromistargram/backend run generate
 RUN pnpm --filter @fromistargram/backend build
 
 WORKDIR /workspace/backend
