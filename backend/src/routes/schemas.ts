@@ -67,6 +67,10 @@ export const ListPostsResponseSchema = {
       type: 'array',
       items: PostSummarySchema
     },
+    total: {
+      type: 'integer',
+      minimum: 0
+    },
     pageInfo: {
       type: 'object',
       properties: {
@@ -77,6 +81,6 @@ export const ListPostsResponseSchema = {
       additionalProperties: false
     }
   },
-  required: ['data', 'pageInfo'],
+  required: ['data', 'total', 'pageInfo'],
   additionalProperties: false
 } as const;

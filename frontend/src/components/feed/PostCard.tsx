@@ -19,7 +19,7 @@ const PostCard = ({ post, onOpen }: PostCardProps) => {
           {firstMedia ? (
             <img
               src={firstMedia.thumbnailUrl}
-              alt={post.caption.slice(0, 40)}
+              alt={(post.caption ?? '게시물 이미지').slice(0, 40)}
               className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
               loading="lazy"
             />
@@ -44,9 +44,9 @@ const PostCard = ({ post, onOpen }: PostCardProps) => {
           <p className="line-clamp-2 text-sm text-slate-200">
             {post.caption || '설명 없음'}
           </p>
-          {post.hashtags?.length ? (
+          {post.tags?.length ? (
             <div className="flex flex-wrap gap-1">
-              {post.hashtags.map((tag) => (
+              {post.tags.map((tag) => (
                 <span
                   key={`${post.id}-${tag}`}
                   className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-brand-200"

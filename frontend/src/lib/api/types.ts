@@ -9,14 +9,13 @@ export type MediaType = 'image' | 'video';
 
 export interface MediaItem {
   id: string;
-  postId: string;
-  order: number;
+  orderIndex: number;
   type: MediaType;
   filename: string;
   mime: string;
-  width?: number;
-  height?: number;
-  duration?: number;
+  width: number | null;
+  height: number | null;
+  duration: number | null;
   thumbnailUrl: string;
   mediaUrl: string;
 }
@@ -25,16 +24,22 @@ export interface Post {
   id: string;
   accountId: string;
   postedAt: string;
-  caption: string;
-  hashtags: string[];
+  caption: string | null;
+  hasText: boolean;
+  textContent: string | null;
   media: MediaItem[];
+  tags: string[];
 }
 
 export interface Account {
   id: string;
   username: string;
   displayName: string;
-  latestProfilePicUrl: string;
+  latestProfilePicUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lastIndexedAt: string | null;
+  postCount: number;
   profilePictures: ProfilePicture[];
 }
 
@@ -46,7 +51,13 @@ export interface FeedQuery {
   pageSize: number;
 }
 
+export interface PageInfo {
+  hasNextPage: boolean;
+  nextCursor: string | null;
+}
+
 export interface FeedResponse {
   posts: Post[];
   total: number;
+  pageInfo: PageInfo;
 }

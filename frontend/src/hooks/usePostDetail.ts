@@ -19,7 +19,7 @@ export const usePostDetail = ({
 }: UsePostDetailOptions): UsePostDetailResult => {
   const client = useApiClient();
 
-  const queryResult = useQuery({
+  const queryResult = useQuery<Post | null>({
     queryKey: ['post-detail', postId],
     queryFn: () => client.fetchPostById(postId as string),
     enabled: Boolean(postId) && enabled,

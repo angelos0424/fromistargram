@@ -25,13 +25,19 @@ const AccountChip = ({
         : 'border-white/10 bg-white/5 text-slate-200 hover:border-white/20 hover:bg-white/10'
     }`}
   >
-    <span className="relative inline-flex h-10 w-10 shrink-0 rounded-full border border-white/10 shadow-md shadow-black/40">
-      <img
-        src={account.latestProfilePicUrl}
-        alt={account.displayName}
-        className="h-full w-full rounded-full object-cover"
-        loading="lazy"
-      />
+    <span className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-md shadow-black/40">
+      {account.latestProfilePicUrl ? (
+        <img
+          src={account.latestProfilePicUrl}
+          alt={account.displayName}
+          className="h-full w-full rounded-full object-cover"
+          loading="lazy"
+        />
+      ) : (
+        <span className="text-sm font-semibold text-white">
+          {account.displayName?.[0]?.toUpperCase() ?? account.username?.[0]?.toUpperCase() ?? '계'}
+        </span>
+      )}
       <span className="absolute inset-0 rounded-full border border-white/10" />
     </span>
     <span className="flex flex-col">

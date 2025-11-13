@@ -152,7 +152,7 @@ const PostModal = ({
     const result = await sharePost({
       url: shareUrl,
       title: `${account?.displayName ?? post.accountId}의 게시물`,
-      text: post.caption
+      text: post.caption ?? undefined
     });
 
     if (result === 'shared') {
@@ -279,9 +279,9 @@ const PostModal = ({
                               </a>
                             );
                           })
-                        : postDetail.caption || '본문이 없습니다.'}
+                        : postDetail.caption ?? '본문이 없습니다.'}
                     </div>
-                    {postDetail.caption.length > 160 ? (
+                    {(postDetail.caption?.length ?? 0) > 160 ? (
                       <button
                         type="button"
                         className="text-xs text-brand-200 underline underline-offset-4 hover:text-brand-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"

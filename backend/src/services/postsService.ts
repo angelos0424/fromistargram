@@ -9,6 +9,7 @@ export type ListPostsInput = {
   limit?: number;
   postedAtFrom?: string;
   postedAtTo?: string;
+  page?: number;
 };
 
 export type MediaItem = {
@@ -37,6 +38,7 @@ export type PostSummary = {
 
 export type ListPostsResponse = {
   data: PostSummary[];
+  total: number;
   pageInfo: {
     hasNextPage: boolean;
     nextCursor: string | null;
@@ -64,6 +66,7 @@ export async function listPosts(input: ListPostsInput): Promise<ListPostsRespons
     'posts',
     input.accountId ?? 'all',
     input.cursor ?? 'start',
+    input.page ?? 'null',
     limit,
     input.postedAtFrom ?? 'null',
     input.postedAtTo ?? 'null'
@@ -86,7 +89,6 @@ export async function listPosts(input: ListPostsInput): Promise<ListPostsRespons
     const queryArgs: Parameters<typeof prisma.post.findMany>[0] = {
       where,
       orderBy: { postedAt: 'desc' },
-      take: limit + 1,
       include: {
         media: { orderBy: { orderIndex: 'asc' } },
         tags: { select: { tag: true } },
@@ -95,13 +97,23 @@ export async function listPosts(input: ListPostsInput): Promise<ListPostsRespons
     };
 
     if (input.cursor) {
+      queryArgs.take = limit + 1;
       queryArgs.cursor = { id: input.cursor };
       queryArgs.skip = 1;
+    } else {
+      queryArgs.take = limit + 1;
+      if (input.page && input.page > 1) {
+        queryArgs.skip = (input.page - 1) * limit;
+      }
     }
 
-    const posts = await prisma.post.findMany(queryArgs) as PrismaPostWithRelations[];
+    const [posts, total] = await Promise.all([
+      prisma.post.findMany(queryArgs) as Promise<PrismaPostWithRelations[]>,
+      prisma.post.count({ where })
+    ]);
     const hasNextPage = posts.length > limit;
     const trimmedPosts = hasNextPage ? posts.slice(0, limit) : posts;
+    const nextCursor = hasNextPage ? trimmedPosts[trimmedPosts.length - 1]?.id ?? null : null;
 
     const data = trimmedPosts.map((post: PrismaPostWithRelations) => ({
       id: post.id,
@@ -116,9 +128,10 @@ export async function listPosts(input: ListPostsInput): Promise<ListPostsRespons
 
     return {
       data,
+      total,
       pageInfo: {
         hasNextPage,
-        nextCursor: hasNextPage ? trimmedPosts[trimmedPosts.length - 1]?.id ?? null : null
+        nextCursor
       }
     } satisfies ListPostsResponse;
   }, cacheTtlSeconds());

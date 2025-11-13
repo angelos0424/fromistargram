@@ -53,6 +53,7 @@ describe('Post routes contract', () => {
   beforeAll(async () => {
     (listPosts as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: [samplePost],
+      total: 1,
       pageInfo: { hasNextPage: false, nextCursor: null }
     });
 
@@ -76,6 +77,7 @@ describe('Post routes contract', () => {
 
     const body = response.json() as {
       data: (typeof samplePost)[];
+      total: number;
       pageInfo: { hasNextPage: boolean; nextCursor: string | null };
     };
 
@@ -87,6 +89,7 @@ describe('Post routes contract', () => {
       postedAt: expect.any(String)
     });
     expect(body.pageInfo).toEqual({ hasNextPage: false, nextCursor: null });
+    expect(body.total).toBe(1);
   });
 
   it('returns a single post when found', async () => {

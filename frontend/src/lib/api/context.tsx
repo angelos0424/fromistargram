@@ -4,12 +4,12 @@ import {
   useMemo,
   type ReactNode
 } from 'react';
-import { createMockApiClient, type ApiClient } from './client';
+import { createApiClient, type ApiClient } from './client';
 
 const ApiClientContext = createContext<ApiClient | null>(null);
 
 export const ApiClientProvider = ({ children }: { children: ReactNode }) => {
-  const client = useMemo(() => createMockApiClient(), []);
+  const client = useMemo(() => createApiClient(), []);
 
   return (
     <ApiClientContext.Provider value={client}>

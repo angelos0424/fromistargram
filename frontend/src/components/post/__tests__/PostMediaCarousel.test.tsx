@@ -7,21 +7,24 @@ import PostMediaCarousel from '../PostMediaCarousel';
 const sampleMedia: MediaItem[] = [
   {
     id: 'media-1',
-    postId: 'post-1',
-    order: 0,
+    orderIndex: 0,
     type: 'image',
     filename: 'media-1.jpg',
     mime: 'image/jpeg',
+    width: 1080,
+    height: 1350,
+    duration: null,
     thumbnailUrl: 'https://example.com/media-1-thumb.jpg',
     mediaUrl: 'https://example.com/media-1.jpg'
   },
   {
     id: 'media-2',
-    postId: 'post-1',
-    order: 1,
+    orderIndex: 1,
     type: 'video',
     filename: 'media-2.mp4',
     mime: 'video/mp4',
+    width: 1080,
+    height: 1080,
     duration: 10,
     thumbnailUrl: 'https://example.com/media-2-thumb.jpg',
     mediaUrl: 'https://example.com/media-2.mp4'

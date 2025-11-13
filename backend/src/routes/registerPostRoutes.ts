@@ -8,7 +8,8 @@ const listQuerySchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().min(1).max(60).optional(),
   from: z.string().optional(),
-  to: z.string().optional()
+  to: z.string().optional(),
+  page: z.coerce.number().min(1).optional()
 });
 
 export async function registerPostRoutes(app: FastifyInstance): Promise<void> {
@@ -25,7 +26,8 @@ export async function registerPostRoutes(app: FastifyInstance): Promise<void> {
             cursor: { type: 'string' },
             limit: { type: 'integer', minimum: 1, maximum: 60 },
             from: { type: 'string', format: 'date-time' },
-            to: { type: 'string', format: 'date-time' }
+            to: { type: 'string', format: 'date-time' },
+            page: { type: 'integer', minimum: 1 }
           },
           additionalProperties: false
         },
@@ -35,14 +37,15 @@ export async function registerPostRoutes(app: FastifyInstance): Promise<void> {
       }
     },
     async (request) => {
-      const { accountId, cursor, limit, from, to } = listQuerySchema.parse(request.query);
+      const { accountId, cursor, limit, from, to, page } = listQuerySchema.parse(request.query);
 
       const response = await listPosts({
         accountId,
         cursor,
         limit: limit ?? 20,
         postedAtFrom: from,
-        postedAtTo: to
+        postedAtTo: to,
+        page
       });
 
       return response;
