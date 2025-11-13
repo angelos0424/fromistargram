@@ -1,1 +1,1 @@
-instaloader>=4.13
+instaloader>=4.14.2

@@ -19,3 +19,21 @@ yarn-error.log*
 
 # mac
 .DS_Store
+
+# env
+*/**/.env
+
+# gemini
+.gemini
+
+# codex
+.codex
+
+# google spec
+.specify
+
+# sessions
+sessions
+
+# logs
+log
