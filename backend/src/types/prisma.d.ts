@@ -9,6 +9,7 @@ declare module '@prisma/client' {
       findMany(...args: any[]): Promise<any[]>;
       findUnique(...args: any[]): Promise<any | null>;
       upsert(...args: any[]): Promise<any>;
+      count(...args: any[]): Promise<number>;
     };
     media: {
       deleteMany(...args: any[]): Promise<any>;
