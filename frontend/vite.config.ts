@@ -16,11 +16,4 @@ export default defineConfig({
     port: getPort(process.env.PREVIEW_PORT ?? process.env.PORT, 4173),
     strictPort: true
   },
-  test: {
-    environment: 'jsdom',
-    setupFiles: ['./vitest.setup.ts'],
-    globals: true,
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['node_modules', 'dist', '../backend/**']
-  }
 });

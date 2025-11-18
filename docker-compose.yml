@@ -35,23 +35,6 @@ services:
       - '${API_PORT:-4000}:4000'
     command: ['node', 'dist/server.js']
 
-  crawler:
-    build:
-      context: .
-      dockerfile: crawler/Dockerfile
-    container_name: fromistargram_crawler
-    env_file:
-      - .env
-    environment:
-      DATA_ROOT: /data
-      SESSION_DIR: /sessions
-    volumes:
-      - data_root:/data
-      - sessions:/sessions
-    depends_on:
-      db:
-        condition: service_healthy
-
   thumb:
     image: darthsim/imgproxy:v3.21
     container_name: fromistargram_thumb
