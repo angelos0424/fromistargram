@@ -11,17 +11,20 @@ import AppShell from '../components/layout/AppShell';
 import Pagination from '../components/feed/Pagination';
 import PostGrid from '../components/feed/PostGrid';
 import PostModal from '../components/feed/PostModal';
-import { useAccounts } from '../hooks/useAccounts';
-import { useFeed } from '../hooks/useFeed';
-import { usePostDetail } from '../hooks/usePostDetail';
 import { useFeedUiStore, type DateRange } from '../state/uiStore';
 import {
   mergeFeedSearchParams,
   parseFeedSearchParams
 } from '../lib/url/feedSearchParams';
+import { useQuery } from '@tanstack/react-query';
+import {CLIENT_KEY, detailPost, getFeed, listAccount, listPost} from '../lib/api/client';
 
 const FeedPage = () => {
-  const { accounts, isLoading: accountsLoading } = useAccounts();
+
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+    queryFn: () => listAccount().then(res => res.data),
+    queryKey: [CLIENT_KEY, 'accounts']
+  });
   const location = useLocation();
   const navigate = useNavigate();
   const { postId: routePostId } = useParams<{ postId?: string }>();
@@ -105,13 +108,17 @@ const FeedPage = () => {
     [selectedAccountId, dateRange, page, pageSize]
   );
 
-  const { data: feedResponse, isLoading: feedLoading, error: feedError } = useFeed({
-    query,
-    enabled: true
+  const { data: feedResponse, isLoading: feedLoading, error: feedError } = useQuery({
+    queryFn: () => listPost(query).then(res=>res.data),
+    queryKey: [CLIENT_KEY, 'feed']
   });
 
-  const { data: modalPost, isLoading: modalLoading } = usePostDetail({
-    postId: activePostId
+
+
+  const { data: modalPost, isLoading: modalLoading } = useQuery({
+    queryFn: () => detailPost(activePostId!).then(res => res.data),
+    queryKey: [CLIENT_KEY, 'detailPost'],
+    enabled: !!activePostId
   });
 
   const modalAccount = useMemo(

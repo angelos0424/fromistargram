@@ -31,11 +31,4 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: getAllowedHosts(process.env.PREVIEW_ALLOWED_HOSTS ?? process.env.ALLOWED_HOSTS)
   },
-  test: {
-    environment: 'jsdom',
-    setupFiles: ['./vitest.setup.ts'],
-    globals: true,
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['node_modules', 'dist', '../backend/**']
-  }
 });

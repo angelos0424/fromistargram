@@ -2,11 +2,13 @@ import { FormEvent, useMemo, useState } from 'react';
 import AdminSectionCard from '../../components/admin/AdminSectionCard';
 import {
   useCreateAccount,
-  useCrawlAccounts,
   useDeleteAccount,
   useRegisterSession,
-  useUpdateAccount
+  useUpdateAccount,
 } from '../../hooks/admin/useCrawlAccounts';
+import { useQuery } from '@tanstack/react-query';
+import { ADMIN_KEY } from '../../lib/api/admin/types';
+import { listAccount } from '../../lib/api/admin/accounts';
 
 interface AccountFormState {
   username: string;
@@ -19,7 +21,7 @@ const initialAccountForm: AccountFormState = {
 };
 
 const AdminAccountsPage = () => {
-  const { accounts, isPending } = useCrawlAccounts();
+
   const createAccount = useCreateAccount();
   const updateAccount = useUpdateAccount();
   const deleteAccount = useDeleteAccount();
@@ -28,10 +30,16 @@ const AdminAccountsPage = () => {
   const [sessionInput, setSessionInput] = useState<Record<string, string>>({});
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
-  const sortedAccounts = useMemo(
-    () => [...accounts].sort((a, b) => a.username.localeCompare(b.username)),
-    [accounts]
-  );
+  const { data: accounts, isPending } = useQuery({
+    queryFn: () => listAccount().then(res => res.data),
+    queryKey: [ADMIN_KEY]
+  })
+
+
+  const sortedAccounts = useMemo(() => {
+    const source = accounts ?? [];
+    return [...source].sort((a, b) => a.username.localeCompare(b.username));
+  }, [accounts]);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();

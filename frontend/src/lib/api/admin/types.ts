@@ -1,3 +1,26 @@
+export const ADMIN_KEY = 'admin';
+
+export type CrawlAccountStatus = 'ready' | 'error' | 'disabled';
+
+export interface CrawlAccount {
+  id: string;
+  username: string;
+  status: CrawlAccountStatus;
+  lastSessionAt: string | null;
+  note?: string | null;
+}
+
+export interface CrawlAccountPayload {
+  username: string;
+  note?: string;
+}
+
+export interface CrawlAccountPatch {
+  username?: string;
+  note?: string | null;
+  status?: CrawlAccountStatus;
+}
+
 export interface CrawlTarget {
   id: string;
   handle: string;
@@ -20,27 +43,9 @@ export interface CrawlTargetPatch {
   displayName?: string;
   isActive?: boolean;
   isFeatured?: boolean;
-  priority?: number;
 }
 
-export interface CrawlAccount {
-  id: string;
-  username: string;
-  status: 'ready' | 'error' | 'disabled';
-  lastSessionAt: string | null;
-  note?: string;
-}
-
-export interface CrawlAccountPayload {
-  username: string;
-  note?: string;
-}
-
-export interface CrawlAccountPatch {
-  username?: string;
-  note?: string;
-  status?: CrawlAccount['status'];
-}
+export type CrawlRunStatus = 'queued' | 'running' | 'success' | 'failure';
 
 export interface CrawlRun {
   id: string;
@@ -50,8 +55,8 @@ export interface CrawlRun {
   sessionId: string;
   startedAt: string;
   finishedAt: string | null;
-  status: 'queued' | 'running' | 'success' | 'failure';
-  message?: string;
+  status: CrawlRunStatus;
+  message?: string | null;
 }
 
 export interface ManualRunPayload {

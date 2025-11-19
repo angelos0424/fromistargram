@@ -1,4 +1,10 @@
 import { QueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+
+export const fetchApi = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+});
+
 
 export function createQueryClient() {
   return new QueryClient({

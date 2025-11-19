@@ -11,7 +11,6 @@ and monitor performance so the feed API responds in under 200 ms.
 ```
 backend/   # Fastify API server (Node.js + Prisma)
 frontend/  # React SPA for feed browsing (not covered by this plan)
-crawler/   # instaloader-based crawler orchestrator
 plans/     # Implementation plans & progress tracking
 docker-compose.yml  # Production-like stack definition
 ```
