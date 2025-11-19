@@ -6,6 +6,7 @@ interface JwtPayload {
   name?: string;
   preferred_username?: string;
   roles?: string[];
+  nonce?: string;
   [key: string]: unknown;
 }
 
@@ -54,6 +55,7 @@ export interface ParsedIdToken {
   name?: string;
   username?: string;
   roles: string[];
+  nonce?: string;
   raw: string;
 }
 
@@ -74,6 +76,7 @@ export const parseIdToken = (token: string): ParsedIdToken | null => {
     roles: Array.isArray(payload.roles)
       ? payload.roles.filter((role): role is string => typeof role === 'string')
       : [],
+    nonce: typeof payload.nonce === 'string' ? payload.nonce : undefined,
     raw: token
   };
 };

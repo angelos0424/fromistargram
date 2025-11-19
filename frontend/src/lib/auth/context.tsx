@@ -47,6 +47,7 @@ export interface AuthContextValue {
 
 const STORAGE_KEY = 'fromistargram.auth.session';
 const STATE_KEY = 'fromistargram.auth.state';
+const NONCE_KEY = 'fromistargram.auth.nonce';
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -130,13 +131,14 @@ const generateState = () => {
   return Math.random().toString(36).slice(2, 10);
 };
 
-const buildAuthorizeUrl = (config: AuthentikConfig, state: string) => {
+const buildAuthorizeUrl = (config: AuthentikConfig, state: string, nonce: string) => {
   const params = new URLSearchParams({
     response_type: 'id_token token',
     client_id: config.clientId,
     redirect_uri: config.redirectUri,
     scope: config.scope,
-    state
+    state,
+    nonce
   });
 
   if (config.audience) {
@@ -194,7 +196,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = useCallback(
     (options?: { prompt?: 'login' | 'consent'; force?: boolean }) => {
       const stateValue = generateState();
-      const authorizeUrl = new URL(buildAuthorizeUrl(config, stateValue));
+      const nonceValue = generateState();
+      const authorizeUrl = new URL(buildAuthorizeUrl(config, stateValue, nonceValue));
 
       if (options?.prompt) {
         authorizeUrl.searchParams.set('prompt', options.prompt);
@@ -205,6 +208,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       sessionStorage.setItem(STATE_KEY, stateValue);
+      sessionStorage.setItem(NONCE_KEY, nonceValue);
       window.location.assign(authorizeUrl.toString());
     },
     [config]
@@ -215,16 +219,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (hashResponse) {
       const stateValue = sessionStorage.getItem(STATE_KEY);
+      const nonceValue = sessionStorage.getItem(NONCE_KEY);
       if (hashResponse.state && hashResponse.state !== stateValue) {
         setState((prev) => ({
           ...prev,
           error: '인증 상태값이 일치하지 않습니다.',
           isLoading: false
         }));
+        sessionStorage.removeItem(STATE_KEY);
+        sessionStorage.removeItem(NONCE_KEY);
         return;
       }
 
       const expiresAt = resolveExpiresAt(hashResponse.id_token, hashResponse.expires_in);
+      const parsed = parseIdToken(hashResponse.id_token);
+      if (!parsed) {
+        persistSession(null);
+        sessionStorage.removeItem(STATE_KEY);
+        sessionStorage.removeItem(NONCE_KEY);
+        setState((prev) => ({
+          ...prev,
+          error: 'ID 토큰을 파싱할 수 없습니다.',
+          isLoading: false
+        }));
+        return;
+      }
+
+      if (nonceValue && parsed.nonce && parsed.nonce !== nonceValue) {
+        persistSession(null);
+        sessionStorage.removeItem(STATE_KEY);
+        sessionStorage.removeItem(NONCE_KEY);
+        setState((prev) => ({
+          ...prev,
+          error: '인증 nonce 값이 일치하지 않습니다.',
+          isLoading: false
+        }));
+        return;
+      }
 
       const session: StoredSession = {
         accessToken: hashResponse.access_token,
@@ -236,8 +267,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       persistSession(session);
       sessionStorage.removeItem(STATE_KEY);
+      sessionStorage.removeItem(NONCE_KEY);
       window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-      const parsed = parseIdToken(hashResponse.id_token);
       setState({
         token: hashResponse.access_token,
         idToken: parsed,
