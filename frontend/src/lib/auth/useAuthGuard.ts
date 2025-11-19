@@ -11,7 +11,7 @@ export const useAuthGuard = () => {
       return;
     }
 
-    if (!auth.isAuthenticated || !auth.hasAdminRole) {
+    if (!auth.isAuthenticated) {
       auth.login({ force: true });
     }
   }, [auth, location]);
@@ -19,7 +19,6 @@ export const useAuthGuard = () => {
   return {
     isLoading: auth.isLoading,
     isAuthenticated: auth.isAuthenticated,
-    hasAdminRole: auth.hasAdminRole,
     error: auth.error
   };
 };

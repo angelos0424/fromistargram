@@ -3,7 +3,6 @@ export interface AuthentikConfig {
   clientId: string;
   redirectUri: string;
   scope: string;
-  adminRole: string;
   audience?: string;
   logoutRedirectUri?: string;
 }
@@ -12,8 +11,7 @@ const requiredEnv = [
   'VITE_AUTHENTIK_ISSUER_URL',
   'VITE_AUTHENTIK_CLIENT_ID',
   'VITE_AUTHENTIK_REDIRECT_URI',
-  'VITE_AUTHENTIK_SCOPE',
-  'VITE_AUTHENTIK_ADMIN_ROLE'
+  'VITE_AUTHENTIK_SCOPE'
 ] as const;
 
 type RequiredEnvKey = (typeof requiredEnv)[number];
@@ -27,13 +25,7 @@ const getEnv = (key: RequiredEnvKey): string => {
 };
 
 export const loadAuthentikConfig = (): AuthentikConfig => {
-  const [
-    issuerUrl,
-    clientId,
-    redirectUri,
-    scope,
-    adminRole
-  ] = requiredEnv.map((key) => getEnv(key));
+  const [issuerUrl, clientId, redirectUri, scope] = requiredEnv.map((key) => getEnv(key));
 
   const optional: Partial<AuthentikConfig> = {};
 
@@ -50,7 +42,6 @@ export const loadAuthentikConfig = (): AuthentikConfig => {
     clientId,
     redirectUri,
     scope,
-    adminRole,
     ...optional
   };
 };

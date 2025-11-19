@@ -41,7 +41,6 @@ export interface AuthContextValue {
   idToken: ParsedIdToken | null;
   login: (options?: { prompt?: 'login' | 'consent'; force?: boolean }) => void;
   logout: () => void;
-  hasAdminRole: boolean;
   error: string | null;
 }
 
@@ -303,15 +302,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  const hasAdminRole = useMemo(() => {
-    if (!state.idToken) {
-      return false;
-    }
-
-    const normalizedRoles = state.idToken.roles.map((role) => role.toLowerCase());
-    return normalizedRoles.includes(config.adminRole.toLowerCase());
-  }, [state.idToken, config.adminRole]);
-
   const isAuthenticated = useMemo(() => {
     if (!state.token || !state.idToken || !state.expiresAt) {
       return false;
@@ -333,10 +323,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       idToken: state.idToken,
       login,
       logout,
-      hasAdminRole,
       error: state.error
     }),
-    [config, state, isAuthenticated, login, logout, hasAdminRole]
+    [config, state, isAuthenticated, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

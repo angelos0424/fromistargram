@@ -28,8 +28,7 @@ VITE_AUTHENTIK_ISSUER_URL=https://auth.example.com
 VITE_AUTHENTIK_CLIENT_ID=fromistargram-admin
 VITE_AUTHENTIK_REDIRECT_URI=http://localhost:5173/admin
 VITE_AUTHENTIK_LOGOUT_REDIRECT_URI=http://localhost:5173/admin
-VITE_AUTHENTIK_SCOPE=openid profile email roles
-VITE_AUTHENTIK_ADMIN_ROLE=admin
+VITE_AUTHENTIK_SCOPE=openid profile email
 ```
 
 필요 시 `VITE_AUTHENTIK_AUDIENCE` 값을 추가해 Authentik의 리소스 서버와 통신할 수 있습니다.

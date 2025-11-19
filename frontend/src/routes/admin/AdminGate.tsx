@@ -23,7 +23,7 @@ const AdminGate = () => {
     );
   }
 
-  if (!guard.isAuthenticated || !guard.hasAdminRole) {
+  if (!guard.isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-300">
         <div className="space-y-2 text-center">
@@ -32,18 +32,6 @@ const AdminGate = () => {
         </div>
       </div>
     );
-  }
-
-  if (!auth.hasAdminRole) {
-    return (
-
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-300">
-        관리자 역할을 확인할 수 없습니다.
-        <button onClick={handleRetry} type="button">재시도</button>
-      </div>
-    )
-
-
   }
 
   return (
