@@ -45,6 +45,16 @@ const triggerBodySchema = z.object({
   sessionId: z.string().min(1)
 });
 
+const triggerBodyJsonSchema = {
+  type: 'object',
+  properties: {
+    targetId: { type: 'string', minLength: 1 },
+    sessionId: { type: 'string', minLength: 1 }
+  },
+  required: ['targetId', 'sessionId'],
+  additionalProperties: false
+} as const;
+
 export async function registerAdminRunRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     '/api/admin/runs',
@@ -67,7 +77,7 @@ export async function registerAdminRunRoutes(app: FastifyInstance): Promise<void
     {
       schema: {
         tags: ['AdminRuns'],
-        body: triggerBodySchema,
+        body: triggerBodyJsonSchema,
         response: {
           201: singleResponseSchema
         }

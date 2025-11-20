@@ -60,6 +60,18 @@ const createBodySchema = z.object({
   isFeatured: z.boolean().optional()
 });
 
+const createBodyJsonSchema = {
+  type: 'object',
+  properties: {
+    handle: { type: 'string', minLength: 1 },
+    displayName: { type: 'string', minLength: 1 },
+    isActive: { type: 'boolean' },
+    isFeatured: { type: 'boolean' }
+  },
+  required: ['handle', 'displayName'],
+  additionalProperties: false
+} as const;
+
 const updateBodySchema = z
   .object({
     displayName: z.string().min(1).optional(),
@@ -70,6 +82,16 @@ const updateBodySchema = z
     message: 'At least one field is required'
   });
 
+const updateBodyJsonSchema = {
+  type: 'object',
+  properties: {
+    displayName: { type: 'string', minLength: 1 },
+    isActive: { type: 'boolean' },
+    isFeatured: { type: 'boolean' }
+  },
+  additionalProperties: false
+} as const;
+
 const paramsSchema = z.object({
   id: z.string().min(1)
 });
@@ -77,6 +99,19 @@ const paramsSchema = z.object({
 const reorderBodySchema = z.object({
   ids: z.array(z.string().min(1)).min(1)
 });
+
+const reorderBodyJsonSchema = {
+  type: 'object',
+  properties: {
+    ids: {
+      type: 'array',
+      items: { type: 'string', minLength: 1 },
+      minItems: 1
+    }
+  },
+  required: ['ids'],
+  additionalProperties: false
+} as const;
 
 export async function registerAdminTargetRoutes(app: FastifyInstance): Promise<void> {
   app.get(
@@ -100,7 +135,7 @@ export async function registerAdminTargetRoutes(app: FastifyInstance): Promise<v
     {
       schema: {
         tags: ['AdminTargets'],
-        body: createBodySchema,
+        body: createBodyJsonSchema,
         response: {
           201: singleResponseSchema
         }
@@ -124,7 +159,7 @@ export async function registerAdminTargetRoutes(app: FastifyInstance): Promise<v
       schema: {
         tags: ['AdminTargets'],
         params: paramsSchema,
-        body: updateBodySchema,
+        body: updateBodyJsonSchema,
         response: {
           200: singleResponseSchema
         }
@@ -167,7 +202,7 @@ export async function registerAdminTargetRoutes(app: FastifyInstance): Promise<v
     {
       schema: {
         tags: ['AdminTargets'],
-        body: reorderBodySchema,
+        body: reorderBodyJsonSchema,
         response: {
           200: listResponseSchema
         }

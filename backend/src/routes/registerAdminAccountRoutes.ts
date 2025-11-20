@@ -53,6 +53,16 @@ const createBodySchema = z.object({
   note: z.string().max(1000).optional().nullable()
 });
 
+const createBodyJsonSchema = {
+  type: 'object',
+  properties: {
+    username: { type: 'string', minLength: 1 },
+    note: { type: ['string', 'null'], maxLength: 1000 }
+  },
+  required: ['username'],
+  additionalProperties: false
+} as const;
+
 const updateBodySchema = z
   .object({
     username: z.string().min(1).optional(),
@@ -63,9 +73,28 @@ const updateBodySchema = z
     message: 'At least one field is required'
   });
 
+const updateBodyJsonSchema = {
+  type: 'object',
+  properties: {
+    username: { type: 'string', minLength: 1 },
+    note: { type: ['string', 'null'], maxLength: 1000 },
+    status: { type: 'string', enum: ['ready', 'error', 'disabled'] }
+  },
+  additionalProperties: false
+} as const;
+
 const sessionBodySchema = z.object({
   sessionId: z.string().min(1)
 });
+
+const sessionBodyJsonSchema = {
+  type: 'object',
+  properties: {
+    sessionId: { type: 'string', minLength: 1 }
+  },
+  required: ['sessionId'],
+  additionalProperties: false
+} as const;
 
 export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<void> {
   app.get(
@@ -89,7 +118,7 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
     {
       schema: {
         tags: ['AdminAccounts'],
-        body: createBodySchema,
+        body: createBodyJsonSchema,
         response: {
           201: singleResponseSchema
         }
@@ -108,7 +137,7 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
       schema: {
         tags: ['AdminAccounts'],
         params: paramsSchema,
-        body: updateBodySchema,
+        body: updateBodyJsonSchema,
         response: {
           200: singleResponseSchema
         }
@@ -152,7 +181,7 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
       schema: {
         tags: ['AdminAccounts'],
         params: paramsSchema,
-        body: sessionBodySchema,
+        body: sessionBodyJsonSchema,
         response: {
           200: singleResponseSchema
         }
