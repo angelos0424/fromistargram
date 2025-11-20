@@ -1,12 +1,35 @@
 import { FormEvent, useState } from 'react';
 import AdminSectionCard from '../../components/admin/AdminSectionCard';
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {ADMIN_KEY} from "../../lib/api/admin/consts";
+import {listRuns, triggerRun} from "../../lib/api/admin/runs";
+import type {ManualRunPayload} from "../../lib/api/admin/types";
+import {listTargets} from "../../lib/api/admin/targets";
 
 const AdminRunsPage = () => {
-  const { targets } = useCrawlTargets();
-  const { runs, isPending } = useCrawlRuns();
-  const triggerRun = useTriggerRun();
   const [selectedTargetId, setSelectedTargetId] = useState<string>('');
   const [sessionId, setSessionId] = useState('');
+
+  const queryClient = useQueryClient();
+
+  const { data: targets = [], isPending } = useQuery({
+    queryKey: [ADMIN_KEY, 'targets'],
+    queryFn: () => listTargets(),
+  })
+
+  const { data: runs = []} = useQuery({
+    queryKey: [ADMIN_KEY, 'runs'],
+    queryFn: () => listRuns().then(res => res.data),
+  })
+
+  const { mutate: runMutate, isPending: isRunPending } = useMutation({
+    mutationKey: [ADMIN_KEY, 'runs'],
+    mutationFn: (payload:ManualRunPayload) => triggerRun(payload).then(res=>res.data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'runs']})
+      setSessionId('')
+    }
+  })
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -14,15 +37,7 @@ const AdminRunsPage = () => {
       return;
     }
 
-    triggerRun.mutate(
-      {
-        targetId: selectedTargetId,
-        sessionId
-      },
-      {
-        onSuccess: () => setSessionId('')
-      }
-    );
+    runMutate({ targetId: selectedTargetId, sessionId });
   };
 
   return (
@@ -63,7 +78,7 @@ const AdminRunsPage = () => {
           <button
             type="submit"
             className="rounded bg-brand-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-brand-400"
-            disabled={triggerRun.isPending}
+            disabled={isRunPending}
           >
             실행 요청
           </button>
