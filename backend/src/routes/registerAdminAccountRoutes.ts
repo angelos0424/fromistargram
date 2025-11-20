@@ -59,6 +59,7 @@ const paramsJsonSchema = {
 
 const createBodySchema = z.object({
   username: z.string().min(1),
+  password: z.string().min(1),
   note: z.string().max(1000).optional().nullable()
 });
 
@@ -66,15 +67,17 @@ const createBodyJsonSchema = {
   type: 'object',
   properties: {
     username: { type: 'string', minLength: 1 },
+    password: { type: 'string', minLength: 1 },
     note: { type: ['string', 'null'], maxLength: 1000 }
   },
-  required: ['username'],
+  required: ['username', 'password'],
   additionalProperties: false
 } as const;
 
 const updateBodySchema = z
   .object({
     username: z.string().min(1).optional(),
+    password: z.union([z.string().min(1), z.null()]).optional(),
     note: z.string().max(1000).optional().nullable(),
     status: z.enum(['ready', 'error', 'disabled']).optional()
   })
@@ -86,6 +89,12 @@ const updateBodyJsonSchema = {
   type: 'object',
   properties: {
     username: { type: 'string', minLength: 1 },
+    password: {
+      anyOf: [
+        { type: 'string', minLength: 1 },
+        { type: 'null' }
+      ]
+    },
     note: { type: ['string', 'null'], maxLength: 1000 },
     status: { type: 'string', enum: ['ready', 'error', 'disabled'] }
   },

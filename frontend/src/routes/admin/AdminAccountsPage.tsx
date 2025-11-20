@@ -13,11 +13,13 @@ import type {CrawlAccountPayload} from "../../lib/api/admin/types";
 
 interface AccountFormState {
   username: string;
+  password: string;
   note: string;
 }
 
 const initialAccountForm: AccountFormState = {
   username: '',
+  password: '',
   note: ''
 };
 
@@ -25,6 +27,7 @@ const AdminAccountsPage = () => {
   const [form, setForm] = useState<AccountFormState>(initialAccountForm);
   const [sessionInput, setSessionInput] = useState<Record<string, string>>({});
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [passwordDrafts, setPasswordDrafts] = useState<Record<string, string>>({});
 
   const queryClient = useQueryClient();
   const { data: accounts = [], isPending } = useQuery({
@@ -36,8 +39,8 @@ const AdminAccountsPage = () => {
     mutationKey: [ADMIN_KEY, 'account', 'create'],
     mutationFn: async (data: CrawlAccountPayload) => createAccount(data),
     onSuccess: () => {
-      setForm(initialAccountForm)
-      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'account'] });
+      setForm(initialAccountForm);
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'accounts'] });
     },
     onError: (error: Error) => {
       console.log('createMutate error', error);
@@ -48,7 +51,7 @@ const AdminAccountsPage = () => {
     mutationKey: [ADMIN_KEY, 'account', 'update'],
     mutationFn: async (data: UpdateAccountInput) => updateAccount(data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'account'] });
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'accounts'] });
 
     },
     onError: (error: Error) => {
@@ -60,12 +63,11 @@ const AdminAccountsPage = () => {
     mutationKey: [ADMIN_KEY, 'session', 'update'],
     mutationFn: (data:RegisterSessionInput) => registerSession(data),
     onSuccess: (res) => {
-      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'session'] });
-
       setSessionInput((prev) => ({
         ...prev,
         [res.id]: ''
       }))
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'accounts'] });
     }
   })
 
@@ -73,7 +75,7 @@ const AdminAccountsPage = () => {
     mutationKey: [ADMIN_KEY, 'account', 'delete'],
     mutationFn: (id:string) => deleteAccount(id),
     onSuccess: (res) => {
-      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'account'] });
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'accounts'] });
     },
     onError: (res) => {
       console.log('deleteMutate error', res)
@@ -85,7 +87,7 @@ const AdminAccountsPage = () => {
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (!form.username.trim()) {
+    if (!form.username.trim() || !form.password.trim()) {
       return;
     }
 
@@ -101,7 +103,7 @@ const AdminAccountsPage = () => {
       return;
     }
 
-    registerSessionMutate({ id, sessionId })
+    registerSessionMutate({ id, sessionId });
   };
 
   const handleNoteSave = (id: string) => {
@@ -111,7 +113,25 @@ const AdminAccountsPage = () => {
       patch: {
         note: draft ?? ''
       }
-    })
+    });
+  };
+
+  const handlePasswordSave = (id: string) => {
+    const draft = passwordDrafts[id];
+    if (!draft?.trim()) {
+      return;
+    }
+
+    updateMutate({
+      id,
+      patch: {
+        password: draft
+      }
+    });
+    setPasswordDrafts((prev) => ({
+      ...prev,
+      [id]: ''
+    }));
   };
 
   const resolveNoteDraft = (id: string, fallback?: string | null) => {
@@ -138,6 +158,18 @@ const AdminAccountsPage = () => {
               value={form.username}
               onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
               placeholder="crawler_main"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+              로그인 비밀번호
+            </span>
+            <input
+              type="password"
+              className="rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-brand-400 focus:outline-none"
+              value={form.password}
+              onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+              placeholder="********"
             />
           </label>
           <label className="flex flex-col gap-2 text-sm">
@@ -178,6 +210,7 @@ const AdminAccountsPage = () => {
                   <th className="px-4 py-2 text-left">상태</th>
                   <th className="px-4 py-2 text-left">최근 세션 갱신</th>
                   <th className="px-4 py-2 text-left">비고</th>
+                  <th className="px-4 py-2 text-left">비밀번호</th>
                   <th className="px-4 py-2 text-right">관리</th>
                 </tr>
               </thead>
@@ -217,6 +250,30 @@ const AdminAccountsPage = () => {
                           }))
                         }
                       />
+                    </td>
+                    <td className="px-4 py-3 text-slate-300">
+                      <div className="flex flex-col gap-2 text-xs">
+                        <input
+                          type="password"
+                          className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100"
+                          placeholder="새 비밀번호"
+                          value={passwordDrafts[account.id] ?? ''}
+                          onChange={(event) =>
+                            setPasswordDrafts((prev) => ({
+                              ...prev,
+                              [account.id]: event.target.value
+                            }))
+                          }
+                        />
+                        <button
+                          type="button"
+                          className="rounded border border-slate-700 px-3 py-1 text-xs hover:border-slate-500"
+                          onClick={() => handlePasswordSave(account.id)}
+                          disabled={!passwordDrafts[account.id]?.trim()}
+                        >
+                          비밀번호 저장
+                        </button>
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex flex-col items-end gap-2">

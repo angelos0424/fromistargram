@@ -1,0 +1,1 @@
+ALTER TABLE "CrawlAccount" ADD COLUMN IF NOT EXISTS "password" TEXT;

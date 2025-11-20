@@ -1,4 +1,6 @@
 import type { CrawlRun, CrawlRunStatus, CrawlTarget as PrismaCrawlTarget } from '@prisma/client';
+import { spawn } from 'child_process';
+import path from 'path';
 import { prisma } from '../db/client.js';
 
 export type AdminCrawlTarget = {
@@ -215,6 +217,8 @@ export async function triggerManualRun(payload: ManualRunInput): Promise<AdminCr
     include: { target: { select: { handle: true } } }
   })) as CrawlRun & { target: { handle: string } };
 
+  launchManualCrawler(run.id, run.target.handle, payload.sessionId);
+
   return mapRun(run);
 }
 
@@ -257,4 +261,61 @@ export async function fetchFeedStatistics(): Promise<FeedStatistics> {
     totalPosts: postAggregate._count._all ?? 0,
     lastIndexedAt: totals._max.lastSyncedAt ? totals._max.lastSyncedAt.toISOString() : null
   };
+}
+
+const resolveCrawlerScriptPath = (): string => {
+  if (process.env.CRAWL_SCRIPT_PATH) {
+    return process.env.CRAWL_SCRIPT_PATH;
+  }
+
+  const baseDir = process.cwd();
+  return path.join(baseDir, 'src', 'utils', 'crawl.py');
+};
+
+const pythonExecutable = () => process.env.PYTHON_EXECUTABLE ?? 'python3';
+
+async function updateRunStatus(
+  runId: string,
+  status: CrawlRunStatus,
+  message?: string | null
+): Promise<void> {
+  await prisma.crawlRun.update({
+    where: { id: runId },
+    data: {
+      status,
+      message: message ?? null,
+      finishedAt: status === 'running' ? null : new Date()
+    }
+  });
+}
+
+function launchManualCrawler(runId: string, handle: string, sessionId: string): void {
+  const scriptPath = resolveCrawlerScriptPath();
+  console.log(`Run status: ${runId} || handle : ${handle}`);
+  const args = [scriptPath, '--profiles', handle, '--session-id', sessionId];
+
+  const child = spawn(pythonExecutable(), args, {
+    stdio: 'inherit'
+  });
+
+  child.once('spawn', () => {
+    updateRunStatus(runId, 'running').catch((error) => {
+      console.error('Failed to mark run running', error);
+    });
+  });
+
+  child.on('error', (error) => {
+    console.error('Failed to execute crawler script', error);
+    updateRunStatus(runId, 'failure', error.message).catch((err) => {
+      console.error('Failed to update run failure status', err);
+    });
+  });
+
+  child.on('close', (code) => {
+    const status: CrawlRunStatus = code === 0 ? 'success' : 'failure';
+    const message = code === 0 ? null : `Process exited with code ${code ?? 'unknown'}`;
+    updateRunStatus(runId, status, message).catch((error) => {
+      console.error('Failed to finalize run status', error);
+    });
+  });
 }

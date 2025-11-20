@@ -14,11 +14,13 @@ export interface CrawlAccount {
 
 export interface CrawlAccountPayload {
   username: string;
+  password: string;
   note?: string;
 }
 
 export interface CrawlAccountPatch {
   username?: string;
+  password?: string | null;
   note?: string | null;
   status?: CrawlAccountStatus;
 }

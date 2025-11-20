@@ -9,6 +9,8 @@ import {listTargets} from "../../lib/api/admin/targets";
 const AdminRunsPage = () => {
   const [selectedTargetId, setSelectedTargetId] = useState<string>('');
   const [sessionId, setSessionId] = useState('');
+  const [bulkSessionId, setBulkSessionId] = useState('');
+  const [bulkMessage, setBulkMessage] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -38,6 +40,25 @@ const AdminRunsPage = () => {
     }
 
     runMutate({ targetId: selectedTargetId, sessionId });
+  };
+
+  const handleBulkSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    setBulkMessage(null);
+    const activeTargets = targets.filter((target) => target.isActive);
+    if (!activeTargets.length || !bulkSessionId.trim()) {
+      setBulkMessage('활성화된 대상이 없거나 sessionId가 비어 있습니다.');
+      return;
+    }
+
+    activeTargets.forEach((target, index) => {
+      setTimeout(() => {
+        runMutate({ targetId: target.id, sessionId: bulkSessionId });
+      }, index * 100);
+    });
+
+    setBulkMessage(`활성 대상 ${activeTargets.length}개를 순차 실행 중입니다.`);
+    setBulkSessionId('');
   };
 
   return (
@@ -83,6 +104,45 @@ const AdminRunsPage = () => {
             실행 요청
           </button>
         </form>
+      </AdminSectionCard>
+
+      <AdminSectionCard
+        title="전체 대상 일괄 실행"
+        description="활성화된 모든 계정을 순차적으로 수동 실행합니다."
+      >
+        <form onSubmit={handleBulkSubmit} className="flex flex-col gap-3 md:flex-row md:items-end">
+          <label className="flex flex-1 flex-col gap-2 text-sm">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+              활성 대상 수
+            </span>
+            <input
+              readOnly
+              value={targets.filter((target) => target.isActive).length}
+              className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-slate-200"
+            />
+          </label>
+          <label className="flex flex-1 flex-col gap-2 text-sm">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+              sessionId
+            </span>
+            <input
+              className="rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-brand-400 focus:outline-none"
+              value={bulkSessionId}
+              onChange={(event) => setBulkSessionId(event.target.value)}
+              placeholder="sessionid=..."
+            />
+          </label>
+          <button
+            type="submit"
+            className="rounded bg-brand-600 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-brand-500"
+            disabled={isRunPending}
+          >
+            전체 실행
+          </button>
+        </form>
+        {bulkMessage ? (
+          <p className="mt-2 text-xs text-slate-400">{bulkMessage}</p>
+        ) : null}
       </AdminSectionCard>
 
       <AdminSectionCard

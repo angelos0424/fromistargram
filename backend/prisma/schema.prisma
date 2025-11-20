@@ -103,6 +103,7 @@ enum CrawlAccountStatus {
 model CrawlAccount {
   id            String             @id @default(cuid())
   username      String             @unique
+  password      String?
   status        CrawlAccountStatus @default(ready)
   note          String?
   lastSessionAt DateTime?

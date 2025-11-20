@@ -178,22 +178,24 @@ export const createMockAdminApiClient = (): AdminApiClient => ({
     return delay([...accounts]);
   },
   async createAccount(payload: CrawlAccountPayload) {
+    const { password: _password, ...rest } = payload;
     const account: CrawlAccount = {
       id: generateId('acc'),
-      username: payload.username,
+      username: rest.username,
       status: 'ready',
       lastSessionAt: null,
-      note: payload.note
+      note: rest.note
     };
     accounts = [...accounts, account];
     return delay(account);
   },
   async updateAccount(id: string, patch: CrawlAccountPatch) {
+    const { password: _password, ...restPatch } = patch;
     accounts = accounts.map((account) =>
       account.id === id
         ? {
             ...account,
-            ...patch
+            ...restPatch
           }
         : account
     );

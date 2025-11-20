@@ -73,11 +73,13 @@ const mapCrawlAccount = (account: {
 
 export type CreateCrawlerAccountInput = {
   username: string;
+  password: string;
   note?: string | null;
 };
 
 export type UpdateCrawlerAccountInput = {
   username?: string;
+  password?: string | null;
   note?: string | null;
   status?: CrawlAccountStatus;
 };
@@ -95,6 +97,7 @@ export async function createCrawlerAccount(
   const account = await prisma.crawlAccount.create({
     data: {
       username: payload.username,
+      password: payload.password,
       note: payload.note ?? null
     }
   });
@@ -112,12 +115,17 @@ export async function updateCrawlerAccount(
 
   const data: {
     username?: string;
+    password?: string | null;
     note?: string | null;
     status?: CrawlAccountStatus;
   } = {};
 
   if (typeof patch.username === 'string') {
     data.username = patch.username;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'password')) {
+    data.password = patch.password ?? null;
   }
 
   if (Object.prototype.hasOwnProperty.call(patch, 'note')) {

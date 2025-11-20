@@ -4,6 +4,7 @@ declare module '@prisma/client' {
   export type CrawlAccount = {
     id: string;
     username: string;
+    password: string | null;
     status: CrawlAccountStatus;
     note: string | null;
     lastSessionAt: Date | null;
@@ -66,6 +67,7 @@ declare module '@prisma/client' {
     crawlRun: {
       findMany(...args: any[]): Promise<CrawlRun[]>;
       create(...args: any[]): Promise<CrawlRun>;
+      update(...args: any[]): Promise<CrawlRun>;
     };
     post: {
       findMany(...args: any[]): Promise<any[]>;
