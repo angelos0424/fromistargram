@@ -294,9 +294,24 @@ function launchManualCrawler(runId: string, handle: string, sessionId: string): 
   console.log(`Run status: ${runId} || handle : ${handle}`);
   const args = [scriptPath, '--profiles', handle, '--session-id', sessionId];
 
-  const child = spawn(pythonExecutable(), args, {
-    stdio: 'inherit'
-  });
+  let child: ReturnType<typeof spawn>;
+  try {
+    child = spawn(pythonExecutable(), args, {
+      stdio: 'inherit'
+    });
+  } catch (error) {
+    console.error('Failed to spawn crawler process', {
+      runId,
+      handle,
+      scriptPath,
+      args,
+      error
+    });
+    updateRunStatus(runId, 'failure', error instanceof Error ? error.message : 'Unknown spawn error').catch((err) => {
+      console.error('Failed to update run failure status after spawn error', err);
+    });
+    return;
+  }
 
   child.once('spawn', () => {
     updateRunStatus(runId, 'running').catch((error) => {
@@ -305,7 +320,13 @@ function launchManualCrawler(runId: string, handle: string, sessionId: string): 
   });
 
   child.on('error', (error) => {
-    console.error('Failed to execute crawler script', error);
+    console.error('Failed to execute crawler script', {
+      runId,
+      handle,
+      scriptPath,
+      args,
+      error
+    });
     updateRunStatus(runId, 'failure', error.message).catch((err) => {
       console.error('Failed to update run failure status', err);
     });
@@ -314,6 +335,14 @@ function launchManualCrawler(runId: string, handle: string, sessionId: string): 
   child.on('close', (code) => {
     const status: CrawlRunStatus = code === 0 ? 'success' : 'failure';
     const message = code === 0 ? null : `Process exited with code ${code ?? 'unknown'}`;
+    if (status === 'failure') {
+      console.error('Crawler process finished with failure', {
+        runId,
+        handle,
+        scriptPath,
+        exitCode: code
+      });
+    }
     updateRunStatus(runId, status, message).catch((error) => {
       console.error('Failed to finalize run status', error);
     });

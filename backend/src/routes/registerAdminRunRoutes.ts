@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import { listCrawlRuns, triggerManualRun } from '../services/crawlTargetsService.js';
 
 const runSchema = {
@@ -66,9 +66,14 @@ export async function registerAdminRunRoutes(app: FastifyInstance): Promise<void
         }
       }
     },
-    async () => {
-      const data = await listCrawlRuns();
-      return { data };
+    async (request, reply) => {
+      try {
+        const data = await listCrawlRuns();
+        return { data };
+      } catch (error) {
+        request.log.error(error, 'Failed to fetch crawl runs');
+        return reply.code(500).send({ message: 'Failed to fetch crawl runs' });
+      }
     }
   );
 
@@ -84,12 +89,20 @@ export async function registerAdminRunRoutes(app: FastifyInstance): Promise<void
       }
     },
     async (request, reply) => {
-      const body = triggerBodySchema.parse(request.body);
-      const run = await triggerManualRun({ ...body, triggeredBy: 'admin:manual' });
-      if (!run) {
-        return reply.code(404).send({ message: 'Crawl target not found' });
+      try {
+        const body = triggerBodySchema.parse(request.body);
+        const run = await triggerManualRun({ ...body, triggeredBy: 'admin:manual' });
+        if (!run) {
+          return reply.code(404).send({ message: 'Crawl target not found' });
+        }
+        return reply.code(201).send({ data: run });
+      } catch (error) {
+        request.log.error(error, 'Failed to trigger manual crawl run');
+        if (error instanceof ZodError) {
+          return reply.code(400).send({ message: 'Invalid request body' });
+        }
+        return reply.code(500).send({ message: 'Failed to trigger manual crawl run' });
       }
-      return reply.code(201).send({ data: run });
     }
   );
 }

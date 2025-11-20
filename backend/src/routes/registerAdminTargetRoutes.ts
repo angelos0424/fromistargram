@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import {
   createCrawlTarget,
   deleteCrawlTarget,
@@ -133,9 +133,14 @@ export async function registerAdminTargetRoutes(app: FastifyInstance): Promise<v
         }
       }
     },
-    async () => {
-      const data = await listCrawlTargets();
-      return { data };
+    async (request, reply) => {
+      try {
+        const data = await listCrawlTargets();
+        return { data };
+      } catch (error) {
+        request.log.error(error, 'Failed to list crawl targets');
+        return reply.code(500).send({ message: 'Failed to list crawl targets' });
+      }
     }
   );
 
@@ -151,12 +156,15 @@ export async function registerAdminTargetRoutes(app: FastifyInstance): Promise<v
       }
     },
     async (request, reply) => {
-      const body = createBodySchema.parse(request.body);
       try {
+        const body = createBodySchema.parse(request.body);
         const data = await createCrawlTarget(body);
         return reply.code(201).send({ data });
       } catch (error) {
         request.log.error(error, 'Failed to create crawl target');
+        if (error instanceof ZodError) {
+          return reply.code(400).send({ message: 'Invalid request body' });
+        }
         return reply.code(400).send({ message: 'Failed to create crawl target' });
       }
     }
@@ -175,13 +183,21 @@ export async function registerAdminTargetRoutes(app: FastifyInstance): Promise<v
       }
     },
     async (request, reply) => {
-      const params = paramsSchema.parse(request.params);
-      const body = updateBodySchema.parse(request.body);
-      const updated = await updateCrawlTarget(params.id, body);
-      if (!updated) {
-        return reply.code(404).send({ message: 'Crawl target not found' });
+      try {
+        const params = paramsSchema.parse(request.params);
+        const body = updateBodySchema.parse(request.body);
+        const updated = await updateCrawlTarget(params.id, body);
+        if (!updated) {
+          return reply.code(404).send({ message: 'Crawl target not found' });
+        }
+        return reply.send({ data: updated });
+      } catch (error) {
+        request.log.error(error, 'Failed to update crawl target');
+        if (error instanceof ZodError) {
+          return reply.code(400).send({ message: 'Invalid request body' });
+        }
+        return reply.code(500).send({ message: 'Failed to update crawl target' });
       }
-      return reply.send({ data: updated });
     }
   );
 
@@ -197,12 +213,20 @@ export async function registerAdminTargetRoutes(app: FastifyInstance): Promise<v
       }
     },
     async (request, reply) => {
-      const params = paramsSchema.parse(request.params);
-      const deleted = await deleteCrawlTarget(params.id);
-      if (!deleted) {
-        return reply.code(404).send({ message: 'Crawl target not found' });
+      try {
+        const params = paramsSchema.parse(request.params);
+        const deleted = await deleteCrawlTarget(params.id);
+        if (!deleted) {
+          return reply.code(404).send({ message: 'Crawl target not found' });
+        }
+        return reply.code(204).send();
+      } catch (error) {
+        request.log.error(error, 'Failed to delete crawl target');
+        if (error instanceof ZodError) {
+          return reply.code(400).send({ message: 'Invalid request parameters' });
+        }
+        return reply.code(500).send({ message: 'Failed to delete crawl target' });
       }
-      return reply.code(204).send();
     }
   );
 
@@ -217,10 +241,18 @@ export async function registerAdminTargetRoutes(app: FastifyInstance): Promise<v
         }
       }
     },
-    async (request) => {
-      const body = reorderBodySchema.parse(request.body);
-      const data = await reorderCrawlTargets(body.ids);
-      return { data };
+    async (request, reply) => {
+      try {
+        const body = reorderBodySchema.parse(request.body);
+        const data = await reorderCrawlTargets(body.ids);
+        return { data };
+      } catch (error) {
+        request.log.error(error, 'Failed to reorder crawl targets');
+        if (error instanceof ZodError) {
+          return reply.code(400).send({ message: 'Invalid request body' });
+        }
+        return reply.code(500).send({ message: 'Failed to reorder crawl targets' });
+      }
     }
   );
 }

@@ -32,9 +32,14 @@ export async function registerAdminMetricsRoutes(app: FastifyInstance): Promise<
         }
       }
     },
-    async () => {
-      const data = await fetchFeedStatistics();
-      return { data };
+    async (request, reply) => {
+      try {
+        const data = await fetchFeedStatistics();
+        return { data };
+      } catch (error) {
+        request.log.error(error, 'Failed to fetch feed statistics');
+        return reply.code(500).send({ message: 'Failed to fetch feed statistics' });
+      }
     }
   );
 }
