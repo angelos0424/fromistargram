@@ -14,7 +14,7 @@ const AdminRunsPage = () => {
 
   const { data: targets = [], isPending } = useQuery({
     queryKey: [ADMIN_KEY, 'targets'],
-    queryFn: () => listTargets(),
+    queryFn: () => listTargets().then(res => res.data),
   })
 
   const { data: runs = []} = useQuery({

@@ -26,7 +26,7 @@ const FiltersPanel = ({
 }: FiltersPanelProps) => {
   const profileHistory = useMemo(
     () =>
-      activeAccount
+      activeAccount?.profilePictures
         ? [...activeAccount.profilePictures].sort(
             (a, b) =>
               new Date(b.takenAt).getTime() -

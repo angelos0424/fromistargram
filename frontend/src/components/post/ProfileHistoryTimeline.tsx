@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import type { ProfilePicture } from '../../lib/api/types';
+import {AccountProfilePicture} from "../../lib/api/types";
 
 interface ProfileHistoryTimelineProps {
-  pictures: ProfilePicture[];
+  pictures: AccountProfilePicture[];
   selectedId: string | null;
   onSelect: (pictureId: string) => void;
 }

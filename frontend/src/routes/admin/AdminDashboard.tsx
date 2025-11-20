@@ -1,16 +1,32 @@
 import { useMemo, useState } from 'react';
 import AdminSectionCard from '../../components/admin/AdminSectionCard';
-import { useFeedStatistics } from '../../hooks/admin/useFeedStatistics';
-import {
-  useCrawlTargets,
-  useReorderTargets
-} from '../../hooks/admin/useCrawlTargets';
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {listStatistics} from "../../lib/api/admin/dashboard";
+import {ADMIN_KEY} from "../../lib/api/admin/consts";
+import {listTargets, reorderTargets} from "../../lib/api/admin/targets";
 
 const AdminDashboard = () => {
-  const { statistics } = useFeedStatistics();
-  const { targets } = useCrawlTargets();
-  const reorder = useReorderTargets();
   const [localOrder, setLocalOrder] = useState<string[] | null>(null);
+
+  const queryClient = useQueryClient();
+  const { data: statistics } = useQuery({
+    queryFn: () => listStatistics().then(res => res.data),
+    queryKey: [ADMIN_KEY, 'statistics'],
+  })
+
+  const { data: targets = [] } = useQuery({
+    queryFn: () => listTargets().then(res => res.data),
+    queryKey: [ADMIN_KEY, 'targets'],
+  })
+
+  const { mutate: reorderMutate, isPending } = useMutation({
+    mutationFn: (idsInOrder: string[]) => reorderTargets(idsInOrder),
+    mutationKey: [ADMIN_KEY, 'targets', 'reorder'],
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'targets'] });
+      setLocalOrder(null);
+    }
+  })
 
   const orderedTargets = useMemo(() => {
     const data = [...targets].sort((a, b) => a.priority - b.priority);
@@ -26,11 +42,7 @@ const AdminDashboard = () => {
 
   const applyOrder = () => {
     const ids = (localOrder ?? orderedTargets.map((item) => item.id));
-    reorder.mutate(ids, {
-      onSuccess: () => {
-        setLocalOrder(null);
-      }
-    });
+    reorderMutate(ids);
   };
 
   const moveItem = (id: string, direction: -1 | 1) => {
@@ -64,13 +76,13 @@ const AdminDashboard = () => {
             <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
               <dt className="text-xs uppercase tracking-wide text-slate-400">전체 계정</dt>
               <dd className="mt-2 text-2xl font-semibold text-brand-200">
-                {statistics.totalTargets.toLocaleString()}
+                {statistics.totalTargets}
               </dd>
             </div>
             <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
               <dt className="text-xs uppercase tracking-wide text-slate-400">활성 계정</dt>
               <dd className="mt-2 text-2xl font-semibold text-brand-200">
-                {statistics.activeTargets.toLocaleString()}
+                {statistics.activeTargets}
               </dd>
             </div>
             <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
@@ -111,7 +123,7 @@ const AdminDashboard = () => {
               type="button"
               onClick={applyOrder}
               className="rounded bg-brand-500/80 px-3 py-1 font-semibold text-slate-950 transition hover:bg-brand-400"
-              disabled={reorder.isPending}
+              disabled={isPending}
             >
               순서 저장
             </button>

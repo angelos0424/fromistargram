@@ -1,11 +1,9 @@
 import { FormEvent, useMemo, useState } from 'react';
 import AdminSectionCard from '../../components/admin/AdminSectionCard';
-import {
-  useCreateTarget,
-  useCrawlTargets,
-  useDeleteTarget,
-  useUpdateTarget
-} from '../../hooks/admin/useCrawlTargets';
+import {ADMIN_KEY} from "../../lib/api/admin/consts";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {createTarget, deleteTarget, listTargets, updateTarget, UpdateTargetInput} from "../../lib/api/admin/targets";
+import type {CrawlTargetPayload} from "../../lib/api/admin/types";
 
 interface FormState {
   handle: string;
@@ -22,12 +20,41 @@ const initialFormState: FormState = {
 };
 
 const AdminTargetsPage = () => {
-  const { targets, isPending } = useCrawlTargets();
-  const createTarget = useCreateTarget();
-  const updateTarget = useUpdateTarget();
-  const deleteTarget = useDeleteTarget();
   const [form, setForm] = useState<FormState>(initialFormState);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
+  const { data: targets = [], isPending} = useQuery({
+    queryKey: [ADMIN_KEY, 'targets'],
+    queryFn: () => listTargets().then(res => res.data),
+  })
+
+  const { mutate: createMutate, isPending: isCreatePending } = useMutation({
+    mutationKey: [ADMIN_KEY, 'targets', 'create'],
+    mutationFn: (payload: CrawlTargetPayload) => createTarget(payload),
+    onSuccess: () => {
+      setForm(initialFormState)
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'targets']})
+    }
+  })
+
+  const { mutate: updateMutate, isPending: isUpdatePending } = useMutation({
+    mutationKey: [ADMIN_KEY, 'targets', 'update'],
+    mutationFn: (payload: UpdateTargetInput) => updateTarget(payload),
+    onSuccess: () => {
+      setEditingId(null);
+      setForm(initialFormState);
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'targets']})
+    }
+  })
+
+  const { mutate: deleteMutate } = useMutation({
+    mutationKey: [ADMIN_KEY, 'targets', 'delete'],
+    mutationFn: (id: string) => deleteTarget(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'targets']})
+    }
+  })
 
   const sortedTargets = useMemo(
     () => [...targets].sort((a, b) => a.priority - b.priority),
@@ -41,33 +68,26 @@ const AdminTargetsPage = () => {
     }
 
     if (editingId) {
-      updateTarget.mutate({
+
+      updateMutate({
         id: editingId,
         patch: {
           displayName: form.displayName,
           isFeatured: form.isFeatured,
           isActive: form.isActive
         }
-      }, {
-        onSuccess: () => {
-          setEditingId(null);
-          setForm(initialFormState);
-        }
       });
       return;
     }
 
-    createTarget.mutate(
+    createMutate(
       {
         handle: form.handle,
         displayName: form.displayName,
         isFeatured: form.isFeatured,
         isActive: form.isActive
-      },
-      {
-        onSuccess: () => setForm(initialFormState)
       }
-    );
+    )
   };
 
   const startEdit = (id: string) => {
@@ -142,7 +162,7 @@ const AdminTargetsPage = () => {
             <button
               type="submit"
               className="rounded bg-brand-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-brand-400"
-              disabled={createTarget.isPending || updateTarget.isPending}
+              disabled={ isCreatePending || isUpdatePending }
             >
               {editingId ? '대상 수정' : '대상 추가'}
             </button>
@@ -192,7 +212,7 @@ const AdminTargetsPage = () => {
                         className="size-4 rounded border border-slate-600 bg-slate-950 accent-brand-400"
                         checked={target.isFeatured}
                         onChange={(event) =>
-                          updateTarget.mutate({
+                          updateMutate({
                             id: target.id,
                             patch: { isFeatured: event.target.checked }
                           })
@@ -205,7 +225,7 @@ const AdminTargetsPage = () => {
                         className="size-4 rounded border border-slate-600 bg-slate-950 accent-brand-400"
                         checked={target.isActive}
                         onChange={(event) =>
-                          updateTarget.mutate({
+                          updateMutate({
                             id: target.id,
                             patch: { isActive: event.target.checked }
                           })
@@ -227,7 +247,7 @@ const AdminTargetsPage = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => deleteTarget.mutate(target.id)}
+                          onClick={() => deleteMutate(target.id)}
                           className="rounded border border-red-600/60 px-3 py-1 text-xs text-red-300 hover:border-red-500"
                         >
                           삭제

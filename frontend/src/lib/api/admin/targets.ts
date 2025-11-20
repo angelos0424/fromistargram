@@ -7,42 +7,28 @@ import {
   type CrawlTargetPayload
 } from './types';
 
-export const listTargets = async (): Promise<CrawlTarget[]> => {
-  const res = await fetchApi.get<ApiResponse<CrawlTarget[]>>(ADMIN_TARGETS_PATH);
-  return res.data.data;
-};
+export const listTargets =  () => fetchApi.get<ApiResponse<CrawlTarget[]>>(ADMIN_TARGETS_PATH).then(res=>res.data);
 
-export const createTarget = async (
-  payload: CrawlTargetPayload
-): Promise<CrawlTarget> => {
-  const res = await fetchApi.post<ApiResponse<CrawlTarget>>(ADMIN_TARGETS_PATH, payload);
-  return res.data.data;
-};
+export const createTarget = (payload: CrawlTargetPayload) =>
+  fetchApi.post<ApiResponse<CrawlTarget>>(ADMIN_TARGETS_PATH, payload).then(res=>res.data);
 
-interface UpdateTargetInput {
+export interface UpdateTargetInput {
   id: string;
   patch: CrawlTargetPatch;
 }
 
-export const updateTarget = async ({
+export const updateTarget = ({
   id,
   patch
-}: UpdateTargetInput): Promise<CrawlTarget> => {
-  const res = await fetchApi.patch<ApiResponse<CrawlTarget>>(
+}: UpdateTargetInput) => fetchApi.patch<ApiResponse<CrawlTarget>>(
     `${ADMIN_TARGETS_PATH}/${id}`,
     patch
-  );
-  return res.data.data;
-};
+  ).then(res=>res.data);
 
-export const deleteTarget = async (id: string): Promise<void> => {
-  await fetchApi.delete(`${ADMIN_TARGETS_PATH}/${id}`);
-};
 
-export const reorderTargets = async (idsInOrder: string[]): Promise<CrawlTarget[]> => {
-  const res = await fetchApi.post<ApiResponse<CrawlTarget[]>>(
+export const deleteTarget = (id: string) => fetchApi.delete(`${ADMIN_TARGETS_PATH}/${id}`);
+
+export const reorderTargets = (idsInOrder: string[]) => fetchApi.post<ApiResponse<CrawlTarget[]>>(
     `${ADMIN_TARGETS_PATH}/reorder`,
     { ids: idsInOrder }
-  );
-  return res.data.data;
-};
+  ).then(res=>res.data);
