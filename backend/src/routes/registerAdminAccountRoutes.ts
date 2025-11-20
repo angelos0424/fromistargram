@@ -48,6 +48,15 @@ const paramsSchema = z.object({
   id: z.string().min(1)
 });
 
+const paramsJsonSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', minLength: 1 }
+  },
+  required: ['id'],
+  additionalProperties: false
+} as const;
+
 const createBodySchema = z.object({
   username: z.string().min(1),
   note: z.string().max(1000).optional().nullable()
@@ -136,7 +145,7 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
     {
       schema: {
         tags: ['AdminAccounts'],
-        params: paramsSchema,
+        params: paramsJsonSchema,
         body: updateBodyJsonSchema,
         response: {
           200: singleResponseSchema
@@ -159,7 +168,7 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
     {
       schema: {
         tags: ['AdminAccounts'],
-        params: paramsSchema,
+        params: paramsJsonSchema,
         response: {
           204: { type: 'null' }
         }
@@ -180,7 +189,7 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
     {
       schema: {
         tags: ['AdminAccounts'],
-        params: paramsSchema,
+        params: paramsJsonSchema,
         body: sessionBodyJsonSchema,
         response: {
           200: singleResponseSchema

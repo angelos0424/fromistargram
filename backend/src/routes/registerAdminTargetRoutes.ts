@@ -96,6 +96,15 @@ const paramsSchema = z.object({
   id: z.string().min(1)
 });
 
+const paramsJsonSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', minLength: 1 }
+  },
+  required: ['id'],
+  additionalProperties: false
+} as const;
+
 const reorderBodySchema = z.object({
   ids: z.array(z.string().min(1)).min(1)
 });
@@ -158,7 +167,7 @@ export async function registerAdminTargetRoutes(app: FastifyInstance): Promise<v
     {
       schema: {
         tags: ['AdminTargets'],
-        params: paramsSchema,
+        params: paramsJsonSchema,
         body: updateBodyJsonSchema,
         response: {
           200: singleResponseSchema
@@ -181,7 +190,7 @@ export async function registerAdminTargetRoutes(app: FastifyInstance): Promise<v
     {
       schema: {
         tags: ['AdminTargets'],
-        params: paramsSchema,
+        params: paramsJsonSchema,
         response: {
           204: { type: 'null' }
         }
