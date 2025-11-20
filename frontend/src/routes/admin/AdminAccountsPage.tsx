@@ -7,7 +7,7 @@ import {
   useUpdateAccount,
 } from '../../hooks/admin/useCrawlAccounts';
 import { useQuery } from '@tanstack/react-query';
-import { ADMIN_KEY } from '../../lib/api/admin/types';
+import { ADMIN_KEY } from '../../lib/api/admin/consts';
 import { listAccount } from '../../lib/api/admin/accounts';
 
 interface AccountFormState {

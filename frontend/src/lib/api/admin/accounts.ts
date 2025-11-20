@@ -1,15 +1,11 @@
 import { fetchApi } from '../../queryClient';
+import { ADMIN_ACCOUNTS_PATH } from './consts';
 import {
+  type ApiResponse,
   type CrawlAccount,
   type CrawlAccountPatch,
   type CrawlAccountPayload
 } from './types';
-
-interface ApiResponse<T> {
-  data: T;
-}
-
-const ADMIN_ACCOUNTS_PATH = '/admin/accounts';
 
 export const listAccount = async (): Promise<CrawlAccount[]> => {
   const res = await fetchApi.get<ApiResponse<CrawlAccount[]>>(ADMIN_ACCOUNTS_PATH);

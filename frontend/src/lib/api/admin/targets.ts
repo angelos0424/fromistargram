@@ -1,15 +1,11 @@
 import { fetchApi } from '../../queryClient';
+import { ADMIN_TARGETS_PATH } from './consts';
 import {
+  type ApiResponse,
   type CrawlTarget,
   type CrawlTargetPatch,
   type CrawlTargetPayload
 } from './types';
-
-interface ApiResponse<T> {
-  data: T;
-}
-
-const ADMIN_TARGETS_PATH = '/admin/targets';
 
 export const listTargets = async (): Promise<CrawlTarget[]> => {
   const res = await fetchApi.get<ApiResponse<CrawlTarget[]>>(ADMIN_TARGETS_PATH);

@@ -1,6 +1,8 @@
-export const ADMIN_KEY = 'admin';
-
 export type CrawlAccountStatus = 'ready' | 'error' | 'disabled';
+
+export interface ApiResponse<T> {
+  data: T;
+}
 
 export interface CrawlAccount {
   id: string;

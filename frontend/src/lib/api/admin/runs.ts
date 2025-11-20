@@ -1,11 +1,6 @@
 import { fetchApi } from '../../queryClient';
-import { type CrawlRun, type ManualRunPayload } from './types';
-
-interface ApiResponse<T> {
-  data: T;
-}
-
-const ADMIN_RUNS_PATH = '/admin/runs';
+import { ADMIN_RUNS_PATH } from './consts';
+import { type ApiResponse, type CrawlRun, type ManualRunPayload } from './types';
 
 export const listRuns = async (): Promise<CrawlRun[]> => {
   const res = await fetchApi.get<ApiResponse<CrawlRun[]>>(ADMIN_RUNS_PATH);
