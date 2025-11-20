@@ -19,7 +19,7 @@ export const createAccount = async (
   return res.data.data;
 };
 
-interface UpdateAccountInput {
+export interface UpdateAccountInput {
   id: string;
   patch: CrawlAccountPatch;
 }
@@ -39,7 +39,7 @@ export const deleteAccount = async (id: string): Promise<void> => {
   await fetchApi.delete(`${ADMIN_ACCOUNTS_PATH}/${id}`);
 };
 
-interface RegisterSessionInput {
+export interface RegisterSessionInput {
   id: string;
   sessionId: string;
 }

@@ -1,14 +1,15 @@
 import { FormEvent, useMemo, useState } from 'react';
 import AdminSectionCard from '../../components/admin/AdminSectionCard';
-import {
-  useCreateAccount,
-  useDeleteAccount,
-  useRegisterSession,
-  useUpdateAccount,
-} from '../../hooks/admin/useCrawlAccounts';
-import { useQuery } from '@tanstack/react-query';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import { ADMIN_KEY } from '../../lib/api/admin/consts';
-import { listAccount } from '../../lib/api/admin/accounts';
+import {
+  createAccount, deleteAccount,
+  listAccount,
+  registerSession,
+  RegisterSessionInput,
+  updateAccount, UpdateAccountInput
+} from '../../lib/api/admin/accounts';
+import type {CrawlAccountPayload} from "../../lib/api/admin/types";
 
 interface AccountFormState {
   username: string;
@@ -21,21 +22,63 @@ const initialAccountForm: AccountFormState = {
 };
 
 const AdminAccountsPage = () => {
-
-  const createAccount = useCreateAccount();
-  const updateAccount = useUpdateAccount();
-  const deleteAccount = useDeleteAccount();
-  const registerSession = useRegisterSession();
   const [form, setForm] = useState<AccountFormState>(initialAccountForm);
   const [sessionInput, setSessionInput] = useState<Record<string, string>>({});
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
+  const queryClient = useQueryClient();
   const { data: accounts = [], isPending } = useQuery({
     queryFn: () => listAccount(),
     queryKey: [ADMIN_KEY, 'accounts']
   });
 
+  const { mutate: createMutate, isPending: isCreatePending } = useMutation({
+    mutationKey: [ADMIN_KEY, 'account', 'create'],
+    mutationFn: async (data: CrawlAccountPayload) => createAccount(data),
+    onSuccess: () => {
+      setForm(initialAccountForm)
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'account'] });
+    },
+    onError: (error: Error) => {
+      console.log('createMutate error', error);
+    }
+  })
 
+  const { mutate: updateMutate } = useMutation({
+    mutationKey: [ADMIN_KEY, 'account', 'update'],
+    mutationFn: async (data: UpdateAccountInput) => updateAccount(data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'account'] });
+
+    },
+    onError: (error: Error) => {
+      console.log('updateMutate error', error);
+    }
+  })
+
+  const { mutate: registerSessionMutate } = useMutation({
+    mutationKey: [ADMIN_KEY, 'session', 'update'],
+    mutationFn: (data:RegisterSessionInput) => registerSession(data),
+    onSuccess: (res) => {
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'session'] });
+
+      setSessionInput((prev) => ({
+        ...prev,
+        [res.id]: ''
+      }))
+    }
+  })
+
+  const { mutate: deleteMutate } = useMutation({
+    mutationKey: [ADMIN_KEY, 'account', 'delete'],
+    mutationFn: (id:string) => deleteAccount(id),
+    onSuccess: (res) => {
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'account'] });
+    },
+    onError: (res) => {
+      console.log('deleteMutate error', res)
+    }
+  })
   const sortedAccounts = useMemo(() => {
     return [...accounts].sort((a, b) => a.username.localeCompare(b.username));
   }, [accounts]);
@@ -46,13 +89,11 @@ const AdminAccountsPage = () => {
       return;
     }
 
-    createAccount.mutate(form, {
-      onSuccess: () => setForm(initialAccountForm)
-    });
+    createMutate(form);
   };
 
   const handleStatusChange = (id: string, status: 'ready' | 'error' | 'disabled') => {
-    updateAccount.mutate({ id, patch: { status } });
+    updateMutate({id, patch: { status }})
   };
 
   const handleSessionSubmit = (id: string, sessionId: string) => {
@@ -60,23 +101,17 @@ const AdminAccountsPage = () => {
       return;
     }
 
-    registerSession.mutate({ id, sessionId }, {
-      onSuccess: () =>
-        setSessionInput((prev) => ({
-          ...prev,
-          [id]: ''
-        }))
-    });
+    registerSessionMutate({ id, sessionId })
   };
 
   const handleNoteSave = (id: string) => {
     const draft = noteDrafts[id];
-    updateAccount.mutate({
+    updateMutate({
       id,
       patch: {
         note: draft ?? ''
       }
-    });
+    })
   };
 
   const resolveNoteDraft = (id: string, fallback?: string | null) => {
@@ -120,7 +155,7 @@ const AdminAccountsPage = () => {
             <button
               type="submit"
               className="rounded bg-brand-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-brand-400"
-              disabled={createAccount.isPending}
+              disabled={isCreatePending}
             >
               계정 추가
             </button>
@@ -217,7 +252,7 @@ const AdminAccountsPage = () => {
                           </button>
                           <button
                             type="button"
-                            onClick={() => deleteAccount.mutate(account.id)}
+                            onClick={() => deleteMutate(account.id)}
                             className="rounded border border-red-600/70 px-3 py-1 text-xs text-red-300 hover:border-red-500"
                           >
                             삭제
