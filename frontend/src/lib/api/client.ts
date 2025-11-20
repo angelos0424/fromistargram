@@ -1,10 +1,18 @@
 import { fetchApi } from '../queryClient';
-import {AccountsResponse, PostResponse, PostsRequest, PostsResponse} from './types';
+import {
+  type AccountsResponse,
+  type Post,
+  type PostResponse,
+  type PostsRequest,
+  type PostsResponse
+} from './types';
 
 export const CLIENT_KEY = 'client';
 
-export const listAccount = () => fetchApi.get<AccountsResponse>('/accounts').then(res => res.data);
-
+export const listAccount = async () => {
+  const res = await fetchApi.get<AccountsResponse>('/accounts');
+  return res.data.data;
+};
 
 export const listPost = async (params: PostsRequest) => {
   const search = new URLSearchParams();
@@ -15,11 +23,12 @@ export const listPost = async (params: PostsRequest) => {
   if (params.page) search.set('page', String(params.page));
   if (params.cursor) search.set('cursor', params.cursor);
 
-  const qs = search.toString() ? '?' + search.toString() : '';
-
+  const qs = search.toString() ? `?${search.toString()}` : '';
   const res = await fetchApi.get<PostsResponse>(`/posts${qs}`);
   return res.data;
-}
+};
 
-
-export const detailPost = (postId: string) => fetchApi.get<PostResponse>(`/posts/${postId}`);
+export const detailPost = async (postId: string): Promise<Post> => {
+  const res = await fetchApi.get<PostResponse>(`/posts/${postId}`);
+  return res.data.data;
+};

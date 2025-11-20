@@ -7,7 +7,7 @@ import {
   useUpdateAccount,
 } from '../../hooks/admin/useCrawlAccounts';
 import { useQuery } from '@tanstack/react-query';
-import { ADMIN_KEY } from '../../lib/api/admin/types';
+import { ADMIN_KEY } from '../../lib/api/admin/consts';
 import { listAccount } from '../../lib/api/admin/accounts';
 
 interface AccountFormState {
@@ -30,15 +30,14 @@ const AdminAccountsPage = () => {
   const [sessionInput, setSessionInput] = useState<Record<string, string>>({});
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
-  const { data: accounts, isPending } = useQuery({
-    queryFn: () => listAccount().then(res => res.data),
-    queryKey: [ADMIN_KEY]
-  })
+  const { data: accounts = [], isPending } = useQuery({
+    queryFn: () => listAccount(),
+    queryKey: [ADMIN_KEY, 'accounts']
+  });
 
 
   const sortedAccounts = useMemo(() => {
-    const source = accounts ?? [];
-    return [...source].sort((a, b) => a.username.localeCompare(b.username));
+    return [...accounts].sort((a, b) => a.username.localeCompare(b.username));
   }, [accounts]);
 
   const handleSubmit = (event: FormEvent) => {

@@ -17,12 +17,12 @@ import {
   parseFeedSearchParams
 } from '../lib/url/feedSearchParams';
 import { useQuery } from '@tanstack/react-query';
-import {CLIENT_KEY, detailPost, getFeed, listAccount, listPost} from '../lib/api/client';
+import { CLIENT_KEY, detailPost, listAccount, listPost } from '../lib/api/client';
 
 const FeedPage = () => {
 
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
-    queryFn: () => listAccount().then(res => res.data),
+    queryFn: () => listAccount(),
     queryKey: [CLIENT_KEY, 'accounts']
   });
   const location = useLocation();
@@ -109,14 +109,14 @@ const FeedPage = () => {
   );
 
   const { data: feedResponse, isLoading: feedLoading, error: feedError } = useQuery({
-    queryFn: () => listPost(query).then(res=>res.data),
+    queryFn: () => listPost(query),
     queryKey: [CLIENT_KEY, 'feed']
   });
 
 
 
   const { data: modalPost, isLoading: modalLoading } = useQuery({
-    queryFn: () => detailPost(activePostId!).then(res => res.data),
+    queryFn: () => detailPost(activePostId!),
     queryKey: [CLIENT_KEY, 'detailPost'],
     enabled: !!activePostId
   });
@@ -129,7 +129,7 @@ const FeedPage = () => {
     [accounts, modalPost]
   );
 
-  const feedPosts = feedResponse?.posts ?? [];
+  const feedPosts = feedResponse?.data ?? [];
   const totalPosts = feedResponse?.total ?? 0;
 
   const handleAccountSelect = (accountId: string | null) => {
@@ -237,7 +237,7 @@ const FeedPage = () => {
         />
       </div>
       <PostModal
-        post={modalPost}
+        post={modalPost ?? null}
         account={modalAccount}
         isOpen={Boolean(activePostId)}
         isLoading={modalLoading}
