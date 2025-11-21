@@ -80,6 +80,37 @@ async function ensureAccountExists(handle: string): Promise<void> {
   });
 }
 
+type LoginCredentials = {
+  id: string;
+  username: string;
+  password: string;
+};
+
+async function findReadyCrawlerAccount(): Promise<LoginCredentials | null> {
+  const account = await prisma.crawlAccount.findFirst({
+    where: {
+      status: 'ready',
+      password: { not: null }
+    },
+    orderBy: { updatedAt: 'desc' },
+    select: {
+      id: true,
+      username: true,
+      password: true
+    }
+  });
+
+  if (!account || !account.password) {
+    return null;
+  }
+
+  return {
+    id: account.id,
+    username: account.username,
+    password: account.password
+  };
+}
+
 export async function listCrawlTargets(): Promise<AdminCrawlTarget[]> {
   const targets = (await prisma.crawlTarget.findMany({
     orderBy: { priority: 'asc' }
@@ -205,19 +236,22 @@ export async function triggerManualRun(payload: ManualRunInput): Promise<AdminCr
     return null;
   }
 
+  const loginAccount = await findReadyCrawlerAccount();
+
   const run = (await prisma.crawlRun.create({
     data: {
       targetId: payload.targetId,
       sessionId: payload.sessionId,
       status: 'queued',
       triggeredBy: payload.triggeredBy ?? 'admin:manual',
+      sessionAccountId: loginAccount?.id ?? null,
       message: null,
       finishedAt: null
     },
     include: { target: { select: { handle: true } } }
   })) as CrawlRun & { target: { handle: string } };
 
-  launchManualCrawler(run.id, run.target.handle, payload.sessionId);
+  launchManualCrawler(run.id, run.target.handle, payload.sessionId, loginAccount ?? undefined);
 
   return mapRun(run);
 }
@@ -289,10 +323,20 @@ async function updateRunStatus(
   });
 }
 
-function launchManualCrawler(runId: string, handle: string, sessionId: string): void {
+function launchManualCrawler(
+  runId: string,
+  handle: string,
+  sessionId: string,
+  credentials?: { username: string; password: string }
+): void {
   const scriptPath = resolveCrawlerScriptPath();
   console.log(`Run status: ${runId} || handle : ${handle}`);
-  const args = [scriptPath, '--profiles', handle, '--session-id', sessionId];
+  const args = [scriptPath, '--profiles', handle, '--session-id', sessionId, '-f', '-s', '-hl', '-r'];
+
+  if (credentials) {
+    args.push('-l', credentials.username, '-p', credentials.password);
+    console.log('Login User Info : ', credentials.username, ' || ', credentials.password);
+  }
 
   let child: ReturnType<typeof spawn>;
   try {
