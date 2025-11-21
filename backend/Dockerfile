@@ -1,5 +1,8 @@
 # syntax=docker/dockerfile:1.7
 FROM node:20-alpine
+RUN apk add --no-cache python3 py3-pip
+RUN pip3 install --no-cache-dir instaloader
+
 WORKDIR /workspace
 ENV PNPM_HOME=/root/.local/share/pnpm
 ENV PATH="$PNPM_HOME:$PATH"
