@@ -76,6 +76,16 @@ export interface FeedStatistics {
   lastIndexedAt: string | null;
 }
 
+export type IndexerRunStatus = 'idle' | 'running' | 'success' | 'failure';
+
+export interface IndexerStatus {
+  status: IndexerRunStatus;
+  running: boolean;
+  lastStartedAt: string | null;
+  lastFinishedAt: string | null;
+  lastError: string | null;
+}
+
 export interface AdminApiClient {
   listTargets(): Promise<CrawlTarget[]>;
   createTarget(payload: CrawlTargetPayload): Promise<CrawlTarget>;
@@ -90,4 +100,6 @@ export interface AdminApiClient {
   listRuns(): Promise<CrawlRun[]>;
   triggerRun(payload: ManualRunPayload): Promise<CrawlRun>;
   fetchFeedStatistics(): Promise<FeedStatistics>;
+  fetchIndexerStatus(): Promise<IndexerStatus>;
+  runIndexer(): Promise<IndexerStatus>;
 }

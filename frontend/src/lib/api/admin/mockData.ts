@@ -8,6 +8,7 @@ import {
   type CrawlTargetPatch,
   type CrawlTargetPayload,
   type FeedStatistics,
+  type IndexerStatus,
   type ManualRunPayload
 } from './types';
 
@@ -84,6 +85,14 @@ let runs: CrawlRun[] = [
     message: 'HTTP 429 rate limited'
   }
 ];
+
+let indexerState: IndexerStatus = {
+  status: 'idle',
+  running: false,
+  lastStartedAt: null,
+  lastFinishedAt: null,
+  lastError: null
+};
 
 const delay = async <T>(value: T, ms = 80): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(value), ms));
@@ -268,5 +277,27 @@ export const createMockAdminApiClient = (): AdminApiClient => ({
   },
   async fetchFeedStatistics() {
     return delay(computeStatistics());
+  },
+  async fetchIndexerStatus() {
+    return delay({ ...indexerState });
+  },
+  async runIndexer() {
+    const startedAt = new Date().toISOString();
+    indexerState = {
+      status: 'running',
+      running: true,
+      lastStartedAt: startedAt,
+      lastFinishedAt: indexerState.lastFinishedAt,
+      lastError: null
+    };
+    await delay(undefined, 150);
+    indexerState = {
+      status: 'success',
+      running: false,
+      lastStartedAt: startedAt,
+      lastFinishedAt: new Date().toISOString(),
+      lastError: null
+    };
+    return { ...indexerState };
   }
 });

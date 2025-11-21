@@ -54,6 +54,7 @@ def main():
     args = parser.parse_args()
 
     # 기본 디렉토리 설정
+    # base_dir = Path(__file__).resolve().parents[2]
     base_dir = Path(os.path.dirname(os.path.abspath(__file__)))
     profiles_file = args.profiles_file or base_dir / "profiles.txt"
     log_file = base_dir / "download_log.txt"

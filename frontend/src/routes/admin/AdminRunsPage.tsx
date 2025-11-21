@@ -1,37 +1,60 @@
 import { FormEvent, useState } from 'react';
 import AdminSectionCard from '../../components/admin/AdminSectionCard';
-import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
-import {ADMIN_KEY} from "../../lib/api/admin/consts";
-import {listRuns, triggerRun} from "../../lib/api/admin/runs";
-import type {ManualRunPayload} from "../../lib/api/admin/types";
-import {listTargets} from "../../lib/api/admin/targets";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ADMIN_KEY } from '../../lib/api/admin/consts';
+import { listRuns, triggerRun } from '../../lib/api/admin/runs';
+import type { ManualRunPayload } from '../../lib/api/admin/types';
+import { listTargets } from '../../lib/api/admin/targets';
+import { fetchIndexerStatus, requestIndexerRun } from '../../lib/api/admin/indexer';
 
 const AdminRunsPage = () => {
   const [selectedTargetId, setSelectedTargetId] = useState<string>('');
   const [sessionId, setSessionId] = useState('');
   const [bulkSessionId, setBulkSessionId] = useState('');
   const [bulkMessage, setBulkMessage] = useState<string | null>(null);
+  const formatDateTime = (value: string | null | undefined) =>
+    value ? new Date(value).toLocaleString() : '-';
 
   const queryClient = useQueryClient();
 
   const { data: targets = [], isPending } = useQuery({
     queryKey: [ADMIN_KEY, 'targets'],
-    queryFn: () => listTargets().then(res => res.data),
-  })
+    queryFn: () => listTargets().then((res) => res.data)
+  });
 
-  const { data: runs = []} = useQuery({
+  const { data: runs = [] } = useQuery({
     queryKey: [ADMIN_KEY, 'runs'],
-    queryFn: () => listRuns().then(res => res.data),
-  })
+    queryFn: () => listRuns().then((res) => res.data)
+  });
+
+  const {
+    data: indexerStatus,
+    isPending: isIndexerStatusPending,
+    isFetching: isIndexerFetching
+  } = useQuery({
+    queryKey: [ADMIN_KEY, 'indexer'],
+    queryFn: () => fetchIndexerStatus().then(res => res.data),
+    refetchIntervalInBackground: true
+  });
 
   const { mutate: runMutate, isPending: isRunPending } = useMutation({
     mutationKey: [ADMIN_KEY, 'runs'],
-    mutationFn: (payload:ManualRunPayload) => triggerRun(payload).then(res=>res.data),
+    mutationFn: (payload: ManualRunPayload) => triggerRun(payload).then((res) => res.data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'runs']})
-      setSessionId('')
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'runs'] });
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'indexer'] });
+      setSessionId('');
     }
-  })
+  });
+
+  const { mutate: runIndexerMutate, isPending: isIndexerRunPending } = useMutation({
+    mutationKey: [ADMIN_KEY, 'indexer', 'run'],
+    mutationFn: () => requestIndexerRun().then((res) => res.data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'indexer'] });
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'runs'] });
+    }
+  });
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -61,8 +84,72 @@ const AdminRunsPage = () => {
     setBulkSessionId('');
   };
 
+  const handleIndexerRun = () => {
+    runIndexerMutate();
+  };
+
+  const indexerCardBody = () => {
+    if (isIndexerStatusPending && !indexerStatus) {
+      return <p className="text-sm text-slate-400">인덱서 상태를 불러오는 중입니다…</p>;
+    }
+
+    if (!indexerStatus) {
+      return <p className="text-sm text-red-300">인덱서 상태를 불러오지 못했습니다.</p>;
+    }
+
+    const { status, running, lastStartedAt, lastFinishedAt, lastError } = indexerStatus;
+    return (
+      <>
+        <dl className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+          <div className="rounded border border-slate-800 bg-slate-900/50 p-3">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">상태</dt>
+            <dd className="mt-1 text-lg font-semibold text-slate-100">
+              {running ? 'RUNNING' : status.toUpperCase()}
+            </dd>
+          </div>
+          <div className="rounded border border-slate-800 bg-slate-900/50 p-3">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">최근 시작</dt>
+            <dd className="mt-1 text-base text-slate-100">{formatDateTime(lastStartedAt)}</dd>
+          </div>
+          <div className="rounded border border-slate-800 bg-slate-900/50 p-3">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              최근 종료
+            </dt>
+            <dd className="mt-1 text-base text-slate-100">{formatDateTime(lastFinishedAt)}</dd>
+          </div>
+          <div className="rounded border border-slate-800 bg-slate-900/50 p-3">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              마지막 오류
+            </dt>
+            <dd className="mt-1 text-sm text-slate-100">{lastError ?? '-'}</dd>
+          </div>
+        </dl>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="rounded bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={handleIndexerRun}
+            disabled={running || isIndexerRunPending}
+          >
+            {running || isIndexerRunPending ? '인덱싱 중…' : '인덱싱 실행'}
+          </button>
+          {isIndexerFetching ? (
+            <span className="text-xs text-slate-400">상태 갱신 중…</span>
+          ) : null}
+        </div>
+      </>
+    );
+  };
+
   return (
     <div className="space-y-6">
+      <AdminSectionCard
+        title="인덱서 상태"
+        description="다운로드된 미디어 파일을 DB에 반영합니다. 필요 시 여기에서 수동으로 동기화를 실행하세요."
+      >
+        {indexerCardBody()}
+      </AdminSectionCard>
+
       <AdminSectionCard
         title="수동 크롤링 실행"
         description="세션 ID를 지정하여 즉시 크롤링을 트리거합니다."

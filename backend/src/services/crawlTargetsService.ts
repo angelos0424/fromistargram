@@ -2,6 +2,7 @@ import type { CrawlRun, CrawlRunStatus, CrawlTarget as PrismaCrawlTarget } from 
 import { spawn } from 'child_process';
 import path from 'path';
 import { prisma } from '../db/client.js';
+import { scheduleIndexerRun } from './indexerService.js';
 
 export type AdminCrawlTarget = {
   id: string;
@@ -387,6 +388,8 @@ function launchManualCrawler(
         scriptPath,
         exitCode: code
       });
+    } else {
+      scheduleIndexerRun(`run:${runId}`);
     }
     updateRunStatus(runId, status, message).catch((error) => {
       console.error('Failed to finalize run status', error);

@@ -104,7 +104,7 @@
 ## 3.1 파일 시스템 구조
 
 ```
-/root/<account>/
+/src/utils/downloads/<account>/
   2025-11-02_19-30-52_UTC_profile_pic.jpg
   2025-11-02_19-40-12_UTC_1.jpg
   2025-11-02_19-40-12_UTC_2.mp4
