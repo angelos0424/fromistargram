@@ -87,12 +87,13 @@ type LoginCredentials = {
 };
 
 async function findReadyCrawlerAccount(): Promise<LoginCredentials | null> {
-  const account = await prisma.crawlAccount.findFirst({
+  const [account] = await prisma.crawlAccount.findMany({
     where: {
       status: 'ready',
       password: { not: null }
     },
     orderBy: { updatedAt: 'desc' },
+    take: 1,
     select: {
       id: true,
       username: true,
