@@ -1,7 +1,10 @@
 # syntax=docker/dockerfile:1.7
 FROM node:20-alpine
 RUN apk add --no-cache python3 py3-pip
-RUN pip3 install --no-cache-dir instaloader
+RUN python3 -m venv /venv \
+    && /venv/bin/pip install --upgrade pip \
+    && /venv/bin/pip install --no-cache-dir instaloader
+ENV PYTHON_EXECUTABLE=/venv/bin/python
 
 WORKDIR /workspace
 ENV PNPM_HOME=/root/.local/share/pnpm
