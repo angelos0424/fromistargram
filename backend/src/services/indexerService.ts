@@ -1,4 +1,4 @@
-import { indexFileSystem } from '../indexer/indexer.js';
+import { indexFileSystem, IndexerResult } from '../indexer/indexer.js';
 
 type IndexerStatus = 'idle' | 'running' | 'success' | 'failure';
 
@@ -7,6 +7,7 @@ type IndexerState = {
   lastStartedAt: Date | null;
   lastFinishedAt: Date | null;
   lastError: string | null;
+  lastResult: IndexerResult | null;
 };
 
 let currentRun: Promise<void> | null = null;
@@ -15,7 +16,8 @@ let lastState: IndexerState = {
   status: 'idle',
   lastStartedAt: null,
   lastFinishedAt: null,
-  lastError: null
+  lastError: null,
+  lastResult: null
 };
 
 function runIndexer(reason?: string): void {
@@ -23,16 +25,19 @@ function runIndexer(reason?: string): void {
     ...lastState,
     status: 'running',
     lastStartedAt: new Date(),
-    lastError: null
+    lastError: null,
+    lastResult: null
   };
 
   currentRun = indexFileSystem()
-    .then(() => {
+    .then((result) => {
+      console.info('Indexer run succeeded', { reason, ...result });
       lastState = {
         ...lastState,
         status: 'success',
         lastFinishedAt: new Date(),
-        lastError: null
+        lastError: null,
+        lastResult: result
       };
     })
     .catch((error) => {
@@ -42,7 +47,8 @@ function runIndexer(reason?: string): void {
         ...lastState,
         status: 'failure',
         lastFinishedAt: new Date(),
-        lastError: message
+        lastError: message,
+        lastResult: null
       };
     })
     .finally(() => {
