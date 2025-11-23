@@ -337,7 +337,6 @@ function launchManualCrawler(
 
   if (credentials) {
     args.push('-l', credentials.username, '-p', credentials.password);
-    console.log('Login User Info : ', credentials.username, ' || ', credentials.password);
   }
 
   let child: ReturnType<typeof spawn>;

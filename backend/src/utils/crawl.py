@@ -154,7 +154,9 @@ def main():
         log(f"현재 세션 ID: {session_id[:10]}... (정상)")
     else:
         log("경고: 세션 ID가 설정되지 않았습니다. 로그인 상태를 확인하세요.")
-        l.context._session.cookies.set('sessionid', '75098765446%3AlIzFfRW9US2paa%3A10%3AAYg0UJGH8uUjNC-FSiLnThkzUo9iCeZEt0RG3BukKA') # 여기에 session_id를 넣어야함.
+        log("args.sessionId = " + str(args.sessionId))
+        log("args.sessionid = " + str(args.sessionid))
+        l.context._session.cookies.set('sessionid', args.sessionId) # 여기에 session_id를 넣어야함.
         log(f"Set session ID to default value : {l.context._session.cookies.get('sessionid')}")
 
     # 각 프로필 다운로드
