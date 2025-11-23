@@ -57,15 +57,18 @@ def main():
     # 기본 디렉토리 설정
     # base_dir = Path(__file__).resolve().parents[2]
     base_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+    env_output_root = os.environ.get("CRAWL_OUTPUT_DIR") or os.environ.get("DATA_ROOT")
+    default_output_dir = Path(env_output_root) if env_output_root else base_dir / "downloads"
+    output_dir = Path(args.output_dir) if args.output_dir else default_output_dir
     profiles_file = args.profiles_file or base_dir / "profiles.txt"
     log_file = base_dir / "download_log.txt"
-    output_dir = args.output_dir or base_dir / "downloads"
 
     # 출력 디렉토리 생성
     os.makedirs(output_dir, exist_ok=True)
 
     # 로그 설정
     log = create_logger(log_file)
+    log(f"다운로드 경로: {output_dir}")
     log(f"인스타그램 다운로더 시작 (로컬 수정된 Instaloader 사용)")
     # log(f"Instaloader 경로: {INSTALOADER_PATH}")
 

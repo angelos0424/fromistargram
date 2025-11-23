@@ -30,7 +30,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       DATA_ROOT: /data
     volumes:
-      - data_root:/data:ro
+      - data_root:/data
     ports:
       - '${API_PORT:-4000}:4000'
     command: ['node', 'dist/server.js']
