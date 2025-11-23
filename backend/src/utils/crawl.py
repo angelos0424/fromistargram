@@ -155,9 +155,7 @@ def main():
         log(f"현재 세션 ID: {session_id[:10]}... (정상)")
     else:
         log("경고: 세션 ID가 설정되지 않았습니다. 로그인 상태를 확인하세요.")
-        log("args.sessionId = " + str(args.sessionId))
-        log("args.sessionid = " + str(args.sessionid))
-        l.context._session.cookies.set('sessionid', args.sessionId) # 여기에 session_id를 넣어야함.
+        l.context._session.cookies.set('sessionid', args.session_id) # 여기에 session_id를 넣어야함.
         log(f"Set session ID to default value : {l.context._session.cookies.get('sessionid')}")
 
     errors = []
