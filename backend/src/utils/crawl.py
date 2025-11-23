@@ -5,6 +5,7 @@
 """
 
 import os
+import sys
 import time
 import argparse
 import datetime
@@ -159,6 +160,8 @@ def main():
         l.context._session.cookies.set('sessionid', args.sessionId) # 여기에 session_id를 넣어야함.
         log(f"Set session ID to default value : {l.context._session.cookies.get('sessionid')}")
 
+    errors = []
+
     # 각 프로필 다운로드
     for idx, username in enumerate(profiles, 1):
         try:
@@ -202,6 +205,11 @@ def main():
 
         except Exception as e:
             log(f"{username} 다운로드 중 오류 발생: {e}")
+            errors.append(f"{username}: {e}")
+
+    if errors:
+        log(f"다운로드 중 {len(errors)}건 실패: {'; '.join(errors)}")
+        sys.exit(1)
 
     log("모든 다운로드 작업 완료")
 

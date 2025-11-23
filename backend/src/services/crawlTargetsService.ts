@@ -340,9 +340,11 @@ function launchManualCrawler(
   }
 
   let child: ReturnType<typeof spawn>;
+  let stdoutBuffer = '';
+  let stderrBuffer = '';
   try {
     child = spawn(pythonExecutable(), args, {
-      stdio: 'inherit'
+      stdio: ['inherit', 'pipe', 'pipe']
     });
   } catch (error) {
     console.error('Failed to spawn crawler process', {
@@ -357,6 +359,30 @@ function launchManualCrawler(
     });
     return;
   }
+
+  child.stdout?.on('data', (chunk) => {
+    const text = chunk.toString();
+    stdoutBuffer += text;
+    process.stdout.write(chunk);
+  });
+
+  child.stderr?.on('data', (chunk) => {
+    const text = chunk.toString();
+    stderrBuffer += text;
+    process.stderr.write(chunk);
+  });
+
+  const buildFailureMessage = (code: number | null): string => {
+    const combined = `${stderrBuffer}\n${stdoutBuffer}`.trim();
+    if (combined) {
+      const lines = combined.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      const lastLine = lines[lines.length - 1];
+      if (lastLine) {
+        return lastLine.slice(-500);
+      }
+    }
+    return `Process exited with code ${code ?? 'unknown'}`;
+  };
 
   child.once('spawn', () => {
     updateRunStatus(runId, 'running').catch((error) => {
@@ -379,7 +405,7 @@ function launchManualCrawler(
 
   child.on('close', (code) => {
     const status: CrawlRunStatus = code === 0 ? 'success' : 'failure';
-    const message = code === 0 ? null : `Process exited with code ${code ?? 'unknown'}`;
+    const message = code === 0 ? null : buildFailureMessage(code);
     if (status === 'failure') {
       console.error('Crawler process finished with failure', {
         runId,
