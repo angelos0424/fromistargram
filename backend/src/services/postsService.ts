@@ -189,6 +189,7 @@ function inferMediaType(mime: string): 'image' | 'video' {
 
 function buildThumbnailUrl(mediaUrl: string, mime: string): string {
   const absoluteSource = isAbsoluteMediaBase() ? mediaUrl : null;
+  console.log('buildThumbnailUrl', mediaUrl, absoluteSource);
   if (absoluteSource) {
     const signed = buildImgproxyUrl(absoluteSource);
     if (signed) {
@@ -204,6 +205,7 @@ function buildThumbnailUrl(mediaUrl: string, mime: string): string {
 }
 
 function mapMediaItem(accountId: string, media: PrismaMedia): MediaItem {
+  console.log('mapMediaItem')
   const mediaUrl = buildMediaUrl(accountId, media.filename);
   const type = inferMediaType(media.mime);
   const thumbnailUrl = buildThumbnailUrl(mediaUrl, media.mime);

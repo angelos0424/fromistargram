@@ -7,6 +7,7 @@ function ensureTrailingSlash(value: string): string {
 }
 
 export function buildMediaUrl(accountId: string, filename: string): string {
+  console.log('buildMediaUrl', accountId, filename);
   const safeFilename = encodeURIComponent(filename);
   const safeAccount = encodeURIComponent(accountId);
   const normalizedBase = ensureTrailingSlash(mediaPublicBase);
