@@ -31,6 +31,8 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
     tagsCreated: 0
   };
 
+  console.log('syncSnapshotToDatabase', snapshot);
+
   await prisma.$transaction(async (tx: any) => {
     for (const account of snapshot.accounts) {
       const existingAccount = await tx.account.findUnique({ where: { id: account.id } });
