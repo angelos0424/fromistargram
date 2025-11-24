@@ -192,7 +192,7 @@ def main():
                 highlights=args.highlights,
                 stories=args.stories,
                 fast_update=args.fast_update,
-                max_count=args.count,
+                # max_count=args.count,
                 reels=args.reels
             )
 
