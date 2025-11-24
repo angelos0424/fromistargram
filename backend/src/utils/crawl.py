@@ -142,7 +142,7 @@ def main():
 
             log(f"{args.login} 계정으로 로그인 성공")
             # 세션 저장
-            session_file = base_dir / f"session-{args.login}"
+            session_file = env_output_root / f"session-{args.login}"
             l.save_session_to_file(str(session_file))
             log(f"세션이 '{session_file}' 파일에 저장되었습니다.")
         else:
