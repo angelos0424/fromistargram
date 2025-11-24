@@ -190,13 +190,13 @@ def main():
                 profiles=profile_set,
                 profile_pic=True,
                 posts=True,
-                tagged=args.tagged,
-                igtv=args.igtv,
-                highlights=args.highlights,
-                stories=args.stories,
+                # tagged=args.tagged,
+                # igtv=args.igtv,
+                # highlights=args.highlights,
+                # stories=args.stories,
                 fast_update=args.fast_update,
                 # max_count=args.count,
-                reels=args.reels
+                # reels=args.reels
             )
 
             log(f"{username} 다운로드 완료")
