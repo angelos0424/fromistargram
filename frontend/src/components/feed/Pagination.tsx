@@ -14,11 +14,12 @@ const Pagination = ({
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 px-4 py-3 text-sm text-slate-300">
-      <span>
+    <div className="flex flex-col gap-3 rounded-2xl border border-white/5 bg-white/5 px-4 py-3 text-sm text-slate-300 sm:flex-row sm:items-center sm:justify-between">
+      <span className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-slate-200 sm:bg-transparent sm:text-sm sm:font-normal sm:text-slate-300">
+        <span className="hidden h-2 w-2 rounded-full bg-brand-400 shadow shadow-brand-500/40 sm:inline-block" aria-hidden />
         페이지 {page} / {totalPages} · 총 {total}개
       </span>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <button
           type="button"
           onClick={() => onChange(Math.max(1, page - 1))}
