@@ -68,19 +68,15 @@ const AdminRunsPage = () => {
   const handleBulkSubmit = (event: FormEvent) => {
     event.preventDefault();
     setBulkMessage(null);
-    const activeTargets = targets.filter((target) => target.isActive);
-    if (!activeTargets.length || !bulkSessionId.trim()) {
+    const activeCount = targets.filter((target) => target.isActive).length;
+    if (!activeCount || !bulkSessionId.trim()) {
       setBulkMessage('활성화된 대상이 없거나 sessionId가 비어 있습니다.');
       return;
     }
 
-    activeTargets.forEach((target, index) => {
-      setTimeout(() => {
-        runMutate({ targetId: target.id, sessionId: bulkSessionId });
-      }, index * 100);
-    });
+    runMutate({ sessionId: bulkSessionId });
 
-    setBulkMessage(`활성 대상 ${activeTargets.length}개를 순차 실행 중입니다.`);
+    setBulkMessage(`활성 대상 ${activeCount}개 실행을 요청했습니다.`);
     setBulkSessionId('');
   };
 

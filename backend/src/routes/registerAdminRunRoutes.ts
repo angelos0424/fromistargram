@@ -41,8 +41,8 @@ const singleResponseSchema = {
 } as const;
 
 const triggerBodySchema = z.object({
-  targetId: z.string().min(1),
-  sessionId: z.string().min(1)
+  sessionId: z.string().min(1),
+  targetId: z.string().min(1).optional()
 });
 
 const triggerBodyJsonSchema = {
@@ -51,7 +51,7 @@ const triggerBodyJsonSchema = {
     targetId: { type: 'string', minLength: 1 },
     sessionId: { type: 'string', minLength: 1 }
   },
-  required: ['targetId', 'sessionId'],
+  required: ['sessionId'],
   additionalProperties: false
 } as const;
 

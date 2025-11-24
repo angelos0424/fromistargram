@@ -29,7 +29,7 @@ export type UpdateCrawlTargetInput = {
 };
 
 export type ManualRunInput = {
-  targetId: string;
+  targetId?: string;
   sessionId: string;
   triggeredBy?: string;
 };
@@ -233,16 +233,22 @@ export async function listCrawlRuns(limit = 50): Promise<AdminCrawlRun[]> {
 }
 
 export async function triggerManualRun(payload: ManualRunInput): Promise<AdminCrawlRun | null> {
-  const target = await prisma.crawlTarget.findUnique({ where: { id: payload.targetId } });
-  if (!target) {
+  const targets = (await prisma.crawlTarget.findMany({
+    where: payload.targetId ? { id: payload.targetId, isActive: true } : { isActive: true }
+  })) as PrismaCrawlTarget[];
+
+  const handles = targets.map((target) => target.handle);
+
+  if (!handles.length) {
     return null;
   }
 
+  const target = targets[0];
   const loginAccount = await findReadyCrawlerAccount();
 
   const run = (await prisma.crawlRun.create({
     data: {
-      targetId: payload.targetId,
+      targetId: target.id,
       sessionId: payload.sessionId,
       status: 'queued',
       triggeredBy: payload.triggeredBy ?? 'admin:manual',
@@ -253,7 +259,7 @@ export async function triggerManualRun(payload: ManualRunInput): Promise<AdminCr
     include: { target: { select: { handle: true } } }
   })) as CrawlRun & { target: { handle: string } };
 
-  launchManualCrawler(run.id, run.target.handle, payload.sessionId, loginAccount ?? undefined);
+  launchManualCrawler(run.id, handles, payload.sessionId, loginAccount ?? undefined);
 
   return mapRun(run);
 }
@@ -327,13 +333,13 @@ async function updateRunStatus(
 
 function launchManualCrawler(
   runId: string,
-  handle: string,
+  handles: string[],
   sessionId: string,
   credentials?: { username: string; password: string }
 ): void {
   const scriptPath = resolveCrawlerScriptPath();
-  console.log(`Run status: ${runId} || handle : ${handle}`);
-  const args = [scriptPath, '--profiles', handle, '--session-id', sessionId, '-f', '-s', '-hl', '-r'];
+  console.log(`Run status: ${runId} || handles: ${handles.join(', ')}`);
+  const args = [scriptPath, '--profiles', ...handles, '--session-id', sessionId, '-f', '-s', '-hl', '-r'];
 
   if (credentials) {
     args.push('-l', credentials.username, '-p', credentials.password);
@@ -349,7 +355,7 @@ function launchManualCrawler(
   } catch (error) {
     console.error('Failed to spawn crawler process', {
       runId,
-      handle,
+      handles,
       scriptPath,
       args,
       error
@@ -393,7 +399,7 @@ function launchManualCrawler(
   child.on('error', (error) => {
     console.error('Failed to execute crawler script', {
       runId,
-      handle,
+      handles,
       scriptPath,
       args,
       error
@@ -409,7 +415,7 @@ function launchManualCrawler(
     if (status === 'failure') {
       console.error('Crawler process finished with failure', {
         runId,
-        handle,
+        handles,
         scriptPath,
         exitCode: code
       });

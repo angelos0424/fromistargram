@@ -256,7 +256,10 @@ export const createMockAdminApiClient = (): AdminApiClient => ({
     return delay([...runs]);
   },
   async triggerRun(payload: ManualRunPayload) {
-    const target = targets.find((item) => item.id === payload.targetId);
+    const target = payload.targetId
+      ? targets.find((item) => item.id === payload.targetId)
+      : targets.find((item) => item.isActive) ?? targets[0];
+
     if (!target) {
       throw new Error('Target not found');
     }
