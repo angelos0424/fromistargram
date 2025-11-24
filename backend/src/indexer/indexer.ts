@@ -17,9 +17,7 @@ export type IndexerResult = {
 };
 
 export async function buildSnapshot(options: IndexerOptions = {}): Promise<IndexerSnapshot> {
-  console.log('options:', options);
-  const dataRoot = options.dataRoot ?? process.env.DATA_ROOT ?? '/root';
-  console.log('dataRoot', dataRoot);
+  const dataRoot = options.dataRoot ?? process.env.CRAWL_OUTPUT_DIR ?? '/root';
   return scanDataRoot(path.resolve(dataRoot));
 }
 
