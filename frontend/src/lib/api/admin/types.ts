@@ -64,7 +64,7 @@ export interface CrawlRun {
 }
 
 export interface ManualRunPayload {
-  targetId: string;
+  targetId?: string;
   sessionId: string;
 }
 
