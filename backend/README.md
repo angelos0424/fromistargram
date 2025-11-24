@@ -31,3 +31,5 @@ pnpm --filter @fromistargram/backend lint   # 타입 검사
 ## 썸네일 서버 연동
 
 `/api/media/:account/:filename` 엔드포인트는 `MEDIA_ROOT` 환경 변수 기반으로 원본 파일을 Range 스트리밍합니다. 추후 `imgproxy` 와 같은 썸네일 서버를 붙일 때는 해당 경로를 역프록시 대상으로 활용하거나, Fastify 플러그인으로 프리사이즈 이미지를 반환하도록 확장할 수 있습니다.
+
+크롤링 산출물 이름(예: `2025-02-18_10-59-28_UTC_profile_pic.jpg`)만 전달되는 경우에는 `/api/media/by-filename/:filename` 를 사용하세요. 백엔드는 DB에서 해당 파일을 보유한 계정을 조회한 뒤 `/root/<account>/<filename>` 경로의 실제 파일을 Range 스트리밍합니다. 중복 파일명이 둘 이상 발견되면 409를 반환해 모호성을 알립니다.
