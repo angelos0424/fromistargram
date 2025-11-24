@@ -58,7 +58,7 @@ def main():
     # base_dir = Path(__file__).resolve().parents[2]
     base_dir = Path(os.path.dirname(os.path.abspath(__file__)))
     env_output_root = os.environ.get("CRAWL_OUTPUT_DIR") or os.environ.get("DATA_ROOT")
-    default_output_dir = Path(env_output_root) if env_output_root else base_dir / "downloads"
+    default_output_dir = env_output_root if env_output_root else base_dir / "downloads"
     output_dir = Path(args.output_dir) if args.output_dir else default_output_dir
     profiles_file = args.profiles_file or base_dir / "profiles.txt"
     log_file = base_dir / "download_log.txt"
@@ -142,7 +142,9 @@ def main():
 
             log(f"{args.login} 계정으로 로그인 성공")
             # 세션 저장
-            session_file = env_output_root / f"session-{args.login}"
+            session_root = env_output_root if env_output_root else base_dir
+            session_root.mkdir(parents=True, exist_ok=True)
+            session_file = session_root / f"session-{args.login}"
             l.save_session_to_file(str(session_file))
             log(f"세션이 '{session_file}' 파일에 저장되었습니다.")
         else:
