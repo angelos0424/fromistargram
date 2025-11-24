@@ -46,41 +46,48 @@ const FiltersPanel = ({
           </p>
         </header>
         <div className="space-y-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-xs text-slate-400">시작일</span>
-            <input
-              type="date"
-              value={dateRange.from ?? ''}
-              onChange={(event) =>
-                onDateRangeChange({
-                  from: event.target.value || null,
-                  to: dateRange.to
-                })
-              }
-              className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-brand-400 focus:bg-white/10"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-xs text-slate-400">종료일</span>
-            <input
-              type="date"
-              value={dateRange.to ?? ''}
-              onChange={(event) =>
-                onDateRangeChange({
-                  from: dateRange.from,
-                  to: event.target.value || null
-                })
-              }
-              className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-brand-400 focus:bg-white/10"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={onReset}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 transition hover:border-brand-400 hover:bg-brand-400/10 hover:text-white"
-          >
-            필터 초기화
-          </button>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-xs text-slate-400">시작일</span>
+              <input
+                type="date"
+                value={dateRange.from ?? ''}
+                onChange={(event) =>
+                  onDateRangeChange({
+                    from: event.target.value || null,
+                    to: dateRange.to
+                  })
+                }
+                className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-brand-400 focus:bg-white/10"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-xs text-slate-400">종료일</span>
+              <input
+                type="date"
+                value={dateRange.to ?? ''}
+                onChange={(event) =>
+                  onDateRangeChange({
+                    from: dateRange.from,
+                    to: event.target.value || null
+                  })
+                }
+                className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-brand-400 focus:bg-white/10"
+              />
+            </label>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onReset}
+              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 transition hover:border-brand-400 hover:bg-brand-400/10 hover:text-white"
+            >
+              필터 초기화
+            </button>
+            <div className="flex-1 rounded-lg border border-dashed border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-400">
+              선택된 필터가 자동으로 피드에 반영됩니다.
+            </div>
+          </div>
         </div>
       </section>
       <section className="space-y-4">

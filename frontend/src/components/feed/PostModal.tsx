@@ -188,7 +188,7 @@ const PostModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 px-3 py-4 backdrop-blur sm:items-center sm:px-6 sm:py-8"
       onMouseDown={handleBackdropClick}
     >
       <div
@@ -196,13 +196,13 @@ const PostModal = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="post-detail-title"
-        className="flex h-[92vh] w-[92vw] max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/60 focus:outline-none"
+        className="flex w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/60 focus:outline-none sm:h-[90vh]"
         tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-          <div className="flex flex-col">
+        <header className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex flex-col gap-1">
             <h3 id="post-detail-title" className="text-lg font-semibold text-white">
               게시물 상세
             </h3>
@@ -215,13 +215,13 @@ const PostModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-slate-100 transition hover:border-brand-400 hover:bg-brand-400/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+            className="self-end rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-slate-100 transition hover:border-brand-400 hover:bg-brand-400/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 sm:self-auto"
             aria-label="게시물 상세 닫기"
           >
             닫기
           </button>
         </header>
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 lg:flex-row">
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-5 sm:p-6 lg:flex-row">
           <div className="flex flex-1 flex-col gap-5">
             <PostMediaCarousel
               media={post?.media ?? []}
@@ -230,7 +230,7 @@ const PostModal = ({
               isLoading={isLoading}
             />
           </div>
-          <aside className="flex w-full flex-col gap-5 rounded-2xl border border-white/10 bg-white/5 p-6 lg:max-w-sm">
+          <aside className="flex w-full flex-col gap-5 rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6 lg:max-w-sm">
             {isLoading ? (
               <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
                 게시물 정보를 불러오는 중입니다.

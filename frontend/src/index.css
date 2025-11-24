@@ -6,13 +6,13 @@
   color-scheme: dark;
 }
 
-body {
-  margin: 0;
-  font-family: theme('fontFamily.sans');
-  background: radial-gradient(circle at top left, #1f2937 0%, #020617 50%);
-  min-height: 100vh;
-}
+@layer base {
+  body {
+    @apply m-0 min-h-screen bg-slate-950 font-sans text-slate-100 antialiased;
+    background: radial-gradient(circle at 20% 20%, #1f2937 0%, #0b1224 45%, #020617 80%);
+  }
 
-#root {
-  min-height: 100vh;
+  #root {
+    @apply min-h-screen;
+  }
 }
