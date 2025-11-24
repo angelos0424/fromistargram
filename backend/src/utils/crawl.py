@@ -57,7 +57,8 @@ def main():
     # 기본 디렉토리 설정
     # base_dir = Path(__file__).resolve().parents[2]
     base_dir = Path(os.path.dirname(os.path.abspath(__file__)))
-    env_output_root = os.environ.get("CRAWL_OUTPUT_DIR") or os.environ.get("DATA_ROOT")
+    env_output_root_raw = os.environ.get("CRAWL_OUTPUT_DIR") or os.environ.get("DATA_ROOT")
+    env_output_root = Path(env_output_root_raw) if env_output_root_raw else None
     default_output_dir = env_output_root if env_output_root else base_dir / "downloads"
     output_dir = Path(args.output_dir) if args.output_dir else default_output_dir
     profiles_file = args.profiles_file or base_dir / "profiles.txt"
