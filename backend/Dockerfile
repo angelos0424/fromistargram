@@ -3,7 +3,7 @@ FROM node:20-alpine
 RUN apk add --no-cache python3 py3-pip
 RUN python3 -m venv /venv \
     && /venv/bin/pip install --upgrade pip \
-    && /venv/bin/pip install --no-cache-dir instaloader==4.12.2
+    && /venv/bin/pip install --no-cache-dir instaloader
 ENV PYTHON_EXECUTABLE=/venv/bin/python
 
 WORKDIR /workspace
