@@ -44,6 +44,7 @@ declare module '@prisma/client' {
     constructor(...args: any[]);
     account: {
       findMany(...args: any[]): Promise<any[]>;
+      findUnique(...args: any[]): Promise<any | null>;
       upsert(...args: any[]): Promise<any>;
       delete(...args: any[]): Promise<any>;
       aggregate(...args: any[]): Promise<any>;

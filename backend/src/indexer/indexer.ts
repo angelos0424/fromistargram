@@ -34,16 +34,9 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
   for (const account of snapshot.accounts) {
     const existingAccount = await prisma.account.findUnique({ where: { id: account.id } });
     if (!existingAccount) {
-      await prisma.account.create({
-        data: {
-          id: account.id,
-          latestProfilePicUrl: account.profilePictures.at(-1)?.filename ?? null,
-          lastIndexedAt: now
-        }
-      });
       stats.accountsCreated += 1;
     } else {
-      await prisma.account.update({
+      await prisma.account.upsert({
         where: { id: account.id },
         data: {
           latestProfilePicUrl: account.profilePictures.at(-1)?.filename ?? null,
@@ -54,7 +47,7 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
     }
 
     for (const post of account.posts) {
-      await prisma.$transaction(async (tx: any) => {
+      await (prisma.$transaction as any)(async (tx: any) => {
         const existingPost = await tx.post.findUnique({ where: { id: post.id } });
         const isNewPost = !existingPost;
         if (!existingPost) {
@@ -122,7 +115,7 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
             content: post.textContent ?? ''
           }
         });
-      });
+      }, { timeout: 30000 });
     }
 
     await prisma.profilePic.deleteMany({ where: { accountId: account.id } });
