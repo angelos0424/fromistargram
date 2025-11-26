@@ -17,12 +17,29 @@ const PostCard = ({ post, onOpen }: PostCardProps) => {
       >
         <div className="relative aspect-square w-full overflow-hidden">
           {firstMedia ? (
-            <img
-              src={firstMedia.thumbnailUrl}
-              alt={(post.caption ?? '게시물 이미지').slice(0, 40)}
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-              loading="lazy"
-            />
+            firstMedia.thumbnailUrl.endsWith('.mp4') ? (
+              <div className="flex h-full w-full items-center justify-center bg-slate-900">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="h-12 w-12 text-white/50"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+            ) : (
+              <img
+                src={firstMedia.thumbnailUrl}
+                alt={(post.caption ?? '게시물 이미지').slice(0, 40)}
+                className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                loading="lazy"
+              />
+            )
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-slate-900 text-sm text-slate-500">
               미디어 없음
