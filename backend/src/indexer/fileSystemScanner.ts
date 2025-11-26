@@ -49,6 +49,10 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
         index?: string;
         extension: string;
       };
+
+      if (['json', 'txt'].includes(extension.toLowerCase())) {
+        continue;
+      }
       const postId = `${timestamp}_UTC`;
       let accumulator = postMap.get(postId);
       if (!accumulator) {
