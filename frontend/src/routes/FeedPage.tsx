@@ -111,7 +111,7 @@ const FeedPage = () => {
 
   const { data: feedResponse, isLoading: feedLoading, error: feedError } = useQuery({
     queryFn: () => listPost(query),
-    queryKey: [CLIENT_KEY, 'feed']
+    queryKey: [CLIENT_KEY, 'feed', query]
   });
 
 

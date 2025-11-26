@@ -1,7 +1,7 @@
-import {FastifyInstance} from 'fastify';
-import {z} from 'zod';
-import {getPostById, listPosts} from '../services/postsService.js';
-import {ListPostsResponseSchema, PostSummarySchema} from './schemas.js';
+import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
+import { getPostById, listPosts } from '../services/postsService.js';
+import { ListPostsResponseSchema, PostSummarySchema } from './schemas.js';
 
 const listQuerySchema = z.object({
   accountId: z.string().optional(),
@@ -25,8 +25,8 @@ export async function registerPostRoutes(app: FastifyInstance): Promise<void> {
             accountId: { type: 'string' },
             cursor: { type: 'string' },
             limit: { type: 'integer', minimum: 1, maximum: 60 },
-            from: { type: 'string', format: 'date-time' },
-            to: { type: 'string', format: 'date-time' },
+            from: { type: 'string' },
+            to: { type: 'string' },
             page: { type: 'integer', minimum: 1 }
           },
           additionalProperties: false
