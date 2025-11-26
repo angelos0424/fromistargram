@@ -50,7 +50,7 @@ async function resolveAccountForFilename(filename: string): Promise<{ accountId:
 }
 
 export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
-  const dataRoot = process.env.MEDIA_ROOT ?? '/root';
+  const dataRoot = process.env.DATA_ROOT ?? '/root';
 
   app.get(
     '/api/media/:account/:filename',
