@@ -35,16 +35,24 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
     const existingAccount = await prisma.account.findUnique({ where: { id: account.id } });
     if (!existingAccount) {
       stats.accountsCreated += 1;
-    } else {
-      await prisma.account.upsert({
-        where: { id: account.id },
-        data: {
-          latestProfilePicUrl: account.profilePictures.at(-1)?.filename ?? null,
-          updatedAt: now,
-          lastIndexedAt: now
-        }
-      });
     }
+
+    const latestProfilePicUrl = account.profilePictures.at(-1)?.filename ?? null;
+
+    await prisma.account.upsert({
+      where: { id: account.id },
+      create: {
+        id: account.id,
+        latestProfilePicUrl,
+        lastIndexedAt: now,
+        updatedAt: now
+      },
+      update: {
+        latestProfilePicUrl,
+        lastIndexedAt: now,
+        updatedAt: now
+      }
+    });
 
     for (const post of account.posts) {
       await (prisma.$transaction as any)(async (tx: any) => {
