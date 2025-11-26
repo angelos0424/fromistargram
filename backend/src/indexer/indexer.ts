@@ -31,30 +31,30 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
     tagsCreated: 0
   };
 
-  await prisma.$transaction(async (tx: any) => {
-    for (const account of snapshot.accounts) {
-      const existingAccount = await tx.account.findUnique({ where: { id: account.id } });
-      if (!existingAccount) {
-        await tx.account.create({
-          data: {
-            id: account.id,
-            latestProfilePicUrl: account.profilePictures.at(-1)?.filename ?? null,
-            lastIndexedAt: now
-          }
-        });
-        stats.accountsCreated += 1;
-      } else {
-        await tx.account.update({
-          where: { id: account.id },
-          data: {
-            latestProfilePicUrl: account.profilePictures.at(-1)?.filename ?? null,
-            updatedAt: now,
-            lastIndexedAt: now
-          }
-        });
-      }
+  for (const account of snapshot.accounts) {
+    const existingAccount = await prisma.account.findUnique({ where: { id: account.id } });
+    if (!existingAccount) {
+      await prisma.account.create({
+        data: {
+          id: account.id,
+          latestProfilePicUrl: account.profilePictures.at(-1)?.filename ?? null,
+          lastIndexedAt: now
+        }
+      });
+      stats.accountsCreated += 1;
+    } else {
+      await prisma.account.update({
+        where: { id: account.id },
+        data: {
+          latestProfilePicUrl: account.profilePictures.at(-1)?.filename ?? null,
+          updatedAt: now,
+          lastIndexedAt: now
+        }
+      });
+    }
 
-      for (const post of account.posts) {
+    for (const post of account.posts) {
+      await prisma.$transaction(async (tx: any) => {
         const existingPost = await tx.post.findUnique({ where: { id: post.id } });
         const isNewPost = !existingPost;
         if (!existingPost) {
@@ -122,22 +122,22 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
             content: post.textContent ?? ''
           }
         });
-      }
-
-      await tx.profilePic.deleteMany({ where: { accountId: account.id } });
-      if (account.profilePictures.length > 0) {
-        const profilePicResult = await tx.profilePic.createMany({
-          data: account.profilePictures.map((picture) => ({
-            id: picture.id,
-            accountId: picture.accountId,
-            takenAt: picture.takenAt,
-            filename: picture.filename
-          }))
-        });
-        stats.profilePicsCreated += profilePicResult.count ?? account.profilePictures.length;
-      }
+      });
     }
-  });
+
+    await prisma.profilePic.deleteMany({ where: { accountId: account.id } });
+    if (account.profilePictures.length > 0) {
+      const profilePicResult = await prisma.profilePic.createMany({
+        data: account.profilePictures.map((picture) => ({
+          id: picture.id,
+          accountId: picture.accountId,
+          takenAt: picture.takenAt,
+          filename: picture.filename
+        }))
+      });
+      stats.profilePicsCreated += profilePicResult.count ?? account.profilePictures.length;
+    }
+  }
 
   await clearCache();
 
