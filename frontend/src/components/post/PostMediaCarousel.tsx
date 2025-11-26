@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type { MediaItem } from '../../lib/api/types';
+import { getResponsiveImageProps } from '../../lib/utils/image';
 import VideoPlayer from './VideoPlayer';
 
 interface PostMediaCarouselProps {
   media: MediaItem[];
+  accountId: string;
   activeIndex: number;
   onActiveIndexChange: (index: number) => void;
   isLoading?: boolean;
@@ -11,6 +13,7 @@ interface PostMediaCarouselProps {
 
 const PostMediaCarousel = ({
   media,
+  accountId,
   activeIndex,
   onActiveIndexChange,
   isLoading
@@ -113,9 +116,10 @@ const PostMediaCarousel = ({
           ) : (
             <img
               key={activeMedia.id}
-              src={activeMedia.mediaUrl}
+              {...getResponsiveImageProps(accountId, activeMedia.filename, [600, 1080])}
               alt="게시물 이미지"
               className="h-full w-full object-contain"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 60vw"
             />
           )
         ) : (
@@ -164,11 +168,10 @@ const PostMediaCarousel = ({
               role="tab"
               aria-selected={activeIndex === index}
               aria-label={`${index + 1}번째 미디어`}
-              className={`flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ${
-                activeIndex === index
-                  ? 'border-brand-400'
-                  : 'border-white/10 opacity-70 hover:opacity-100'
-              }`}
+              className={`flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ${activeIndex === index
+                ? 'border-brand-400'
+                : 'border-white/10 opacity-70 hover:opacity-100'
+                }`}
               onClick={() => handleSelect(index)}
             >
               {item.type === 'video' ? (
@@ -182,9 +185,10 @@ const PostMediaCarousel = ({
                 />
               ) : (
                 <img
-                  src={item.thumbnailUrl}
+                  {...getResponsiveImageProps(accountId, item.filename, [100, 200])}
                   alt={`${index + 1}번째 미디어 썸네일`}
                   className="h-full w-full object-cover"
+                  sizes="56px"
                 />
               )}
             </button>

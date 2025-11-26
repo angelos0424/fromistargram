@@ -1,4 +1,5 @@
 import type { Post } from '../../lib/api/types';
+import { getResponsiveImageProps } from '../../lib/utils/image';
 
 interface PostCardProps {
   post: Post;
@@ -34,10 +35,11 @@ const PostCard = ({ post, onOpen }: PostCardProps) => {
               </div>
             ) : (
               <img
-                src={firstMedia.thumbnailUrl}
+                {...getResponsiveImageProps(post.accountId, firstMedia.filename, [300, 600])}
                 alt={(post.caption ?? '게시물 이미지').slice(0, 40)}
                 className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 loading="lazy"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
             )
           ) : (

@@ -225,6 +225,7 @@ const PostModal = ({
           <div className="flex flex-1 flex-col gap-5">
             <PostMediaCarousel
               media={post?.media ?? []}
+              accountId={post?.accountId ?? ''}
               activeIndex={activeIndex}
               onActiveIndexChange={setActiveIndex}
               isLoading={isLoading}
@@ -254,31 +255,30 @@ const PostModal = ({
                   <div className="space-y-2">
                     <h4 className="text-sm font-semibold text-white">본문</h4>
                     <div
-                      className={`whitespace-pre-wrap text-sm leading-relaxed text-slate-100 ${
-                        isCaptionExpanded
+                      className={`whitespace-pre-wrap text-sm leading-relaxed text-slate-100 ${isCaptionExpanded
                           ? ''
                           : 'overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:6] [-webkit-box-orient:vertical]'
-                      }`}
+                        }`}
                     >
                       {captionSegments.length
                         ? captionSegments.map((segment, index) => {
-                            if (segment.type === 'text') {
-                              return <span key={`caption-text-${index}`}>{segment.value}</span>;
-                            }
+                          if (segment.type === 'text') {
+                            return <span key={`caption-text-${index}`}>{segment.value}</span>;
+                          }
 
-                            const href = getCaptionLink(segment);
-                            return (
-                              <a
-                                key={`caption-link-${index}`}
-                                href={href ?? '#'}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="font-semibold text-brand-300 underline decoration-dotted underline-offset-4 hover:text-brand-200"
-                              >
-                                {segment.value}
-                              </a>
-                            );
-                          })
+                          const href = getCaptionLink(segment);
+                          return (
+                            <a
+                              key={`caption-link-${index}`}
+                              href={href ?? '#'}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-semibold text-brand-300 underline decoration-dotted underline-offset-4 hover:text-brand-200"
+                            >
+                              {segment.value}
+                            </a>
+                          );
+                        })
                         : postDetail.caption ?? '본문이 없습니다.'}
                     </div>
                     {(postDetail.caption?.length ?? 0) > 160 ? (

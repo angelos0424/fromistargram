@@ -36,7 +36,7 @@ services:
     command: ['node', 'dist/server.js']
 
   thumb:
-    image: darthsim/imgproxy:v3.21
+    image: ghcr.io/imgproxy/imgproxy:latest
     container_name: fromistargram_thumb
     env_file:
       - .env
