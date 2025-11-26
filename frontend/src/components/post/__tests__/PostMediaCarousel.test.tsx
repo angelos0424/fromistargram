@@ -37,6 +37,7 @@ const ControlledCarousel = () => {
   return (
     <PostMediaCarousel
       media={sampleMedia}
+      accountId={''}
       activeIndex={activeIndex}
       onActiveIndexChange={setActiveIndex}
     />
@@ -46,7 +47,7 @@ const ControlledCarousel = () => {
 describe('PostMediaCarousel', () => {
   it('renders fallback when no media is available', () => {
     render(
-      <PostMediaCarousel media={[]} activeIndex={0} onActiveIndexChange={() => undefined} />
+      <PostMediaCarousel accountId={''} media={[]} activeIndex={0} onActiveIndexChange={() => undefined} />
     );
 
     expect(screen.getByText('표시할 미디어가 없습니다.')).toBeInTheDocument();
