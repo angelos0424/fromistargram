@@ -10,5 +10,8 @@
     "lint": "pnpm -r lint",
     "dev:frontend": "pnpm --filter @fromistargram/frontend dev",
     "dev:backend": "pnpm --filter @fromistargram/backend dev"
+  },
+  "dependencies": {
+    "axios": "^1.13.2"
   }
 }

@@ -6,7 +6,11 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    dependencies:
+      axios:
+        specifier: ^1.13.2
+        version: 1.13.2
 
   backend:
     dependencies:

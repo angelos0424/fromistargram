@@ -9,10 +9,7 @@ import {
 
 export const CLIENT_KEY = 'client';
 
-export const listAccount = async () => {
-  const res = await fetchApi.get<AccountsResponse>('/accounts');
-  return res.data.data;
-};
+export const listAccount = () => fetchApi.get<AccountsResponse>('/accounts').then((res) => res.data);
 
 export const listPost = async (params: PostsRequest) => {
   const search = new URLSearchParams();
@@ -28,7 +25,4 @@ export const listPost = async (params: PostsRequest) => {
   return res.data;
 };
 
-export const detailPost = async (postId: string): Promise<Post> => {
-  const res = await fetchApi.get<PostResponse>(`/posts/${postId}`);
-  return res.data.data;
-};
+export const detailPost = (postId: string) => fetchApi.get<PostResponse>(`/posts/${postId}`).then((res) => res.data);

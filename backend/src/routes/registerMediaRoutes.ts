@@ -20,16 +20,16 @@ const filenameOnlySchema = z.object({
 
 async function resolveAccountForFilename(filename: string): Promise<{ accountId: string } | { ambiguous: true } | null> {
   const [mediaMatches, profilePicMatches] = await Promise.all([
-    prisma.media.findMany({
+    (prisma.media as any).findMany({
       where: { filename },
       select: { post: { select: { accountId: true } } },
       take: 2
-    }),
-    prisma.profilePic.findMany({
+    }) as Promise<{ post: { accountId: string } }[]>,
+    (prisma.profilePic as any).findMany({
       where: { filename },
       select: { accountId: true },
       take: 2
-    })
+    }) as Promise<{ accountId: string }[]>
   ]);
 
   const accountIds = [

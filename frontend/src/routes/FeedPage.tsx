@@ -18,11 +18,12 @@ import {
 } from '../lib/url/feedSearchParams';
 import { useQuery } from '@tanstack/react-query';
 import { CLIENT_KEY, detailPost, listAccount, listPost } from '../lib/api/client';
+import type { AccountSummary } from '../lib/api/types';
 
 const FeedPage = () => {
 
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
-    queryFn: () => listAccount(),
+    queryFn: () => listAccount().then(res => res.data),
     queryKey: [CLIENT_KEY, 'accounts']
   });
   const location = useLocation();
@@ -116,7 +117,7 @@ const FeedPage = () => {
 
 
   const { data: modalPost, isLoading: modalLoading } = useQuery({
-    queryFn: () => detailPost(activePostId!),
+    queryFn: () => detailPost(activePostId!).then((res) => res.data),
     queryKey: [CLIENT_KEY, 'detailPost'],
     enabled: !!activePostId
   });
@@ -165,11 +166,11 @@ const FeedPage = () => {
     const state =
       (location.state as
         | {
-            returnTo?: {
-              pathname: string;
-              search: string;
-            };
-          }
+          returnTo?: {
+            pathname: string;
+            search: string;
+          };
+        }
         | undefined) ?? undefined;
 
     if (state?.returnTo) {
