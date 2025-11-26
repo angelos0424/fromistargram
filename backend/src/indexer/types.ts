@@ -29,6 +29,18 @@ export type AccountSnapshot = {
   id: string;
   posts: IndexedPost[];
   profilePictures: IndexedProfilePicture[];
+  highlights: IndexedHighlight[];
+};
+
+export type IndexedHighlightMedia = {
+  filename: string;
+  orderIndex: number;
+  mime: string;
+};
+
+export type IndexedHighlight = {
+  title: string;
+  media: IndexedHighlightMedia[];
 };
 
 export type IndexerSnapshot = {

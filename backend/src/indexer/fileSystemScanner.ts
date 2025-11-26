@@ -7,7 +7,9 @@ import {
   IndexerSnapshot,
   IndexedMedia,
   IndexedPost,
-  IndexedProfilePicture
+  IndexedProfilePicture,
+  IndexedHighlight,
+  IndexedHighlightMedia
 } from './types.js';
 
 const MEDIA_REGEX = /^(?<timestamp>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})_UTC(?:_(?<index>\d+))?\.(?<extension>[a-zA-Z0-9]+)$/;
@@ -36,8 +38,51 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
   const entries = await readdir(accountDir, { withFileTypes: true });
   const postMap = new Map<string, PostAccumulator>();
   const profilePictures: IndexedProfilePicture[] = [];
+  const highlights: IndexedHighlight[] = [];
 
   for (const entry of entries) {
+    if (entry.isDirectory()) {
+      const highlightTitle = entry.name;
+      const highlightDir = path.join(accountDir, highlightTitle);
+      const highlightEntries = await readdir(highlightDir, { withFileTypes: true });
+      const highlightMedia: IndexedHighlightMedia[] = [];
+
+      for (const hEntry of highlightEntries) {
+        if (!hEntry.isFile()) continue;
+
+        const hName = hEntry.name;
+        // Skip hidden files or non-media if needed, but for now accept all files or filter by extension
+        // Assuming similar media extensions as posts
+        if (hName.startsWith('.')) continue;
+
+        const absolutePath = path.join(highlightDir, hName);
+        const mime = lookup(absolutePath) || 'application/octet-stream';
+
+        // Try to extract order index if filename has it, otherwise use 0 or list order
+        // Regex for highlight media? Or just sort by name?
+        // Requirement: "folder below contents gathered and shown at once"
+        // Let's just sort by filename for orderIndex if not specified.
+
+        highlightMedia.push({
+          filename: hName,
+          orderIndex: 0, // Will sort and re-index later
+          mime: typeof mime === 'string' ? mime : 'application/octet-stream'
+        });
+      }
+
+      // Sort by filename to ensure deterministic order
+      highlightMedia.sort((a, b) => a.filename.localeCompare(b.filename));
+      highlightMedia.forEach((m, i) => m.orderIndex = i);
+
+      if (highlightMedia.length > 0) {
+        highlights.push({
+          title: highlightTitle,
+          media: highlightMedia
+        });
+      }
+      continue;
+    }
+
     if (!entry.isFile()) continue;
 
     const { name } = entry;
@@ -145,7 +190,8 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
   return {
     id: accountId,
     posts,
-    profilePictures
+    profilePictures,
+    highlights
   };
 }
 

@@ -95,3 +95,16 @@ interface FeedStatistics {
 export interface FeedResponse {
   data: FeedStatistics
 }
+
+export interface HighlightMedia {
+  id: string;
+  filename: string;
+  mime: string;
+  orderIndex: number;
+}
+
+export interface Highlight {
+  id: string;
+  title: string;
+  media: HighlightMedia[];
+}

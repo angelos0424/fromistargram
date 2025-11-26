@@ -4,7 +4,8 @@ import {
   type Post,
   type PostResponse,
   type PostsRequest,
-  type PostsResponse
+  type PostsResponse,
+  type Highlight
 } from './types';
 
 export const CLIENT_KEY = 'client';
@@ -26,3 +27,5 @@ export const listPost = async (params: PostsRequest) => {
 };
 
 export const detailPost = (postId: string) => fetchApi.get<PostResponse>(`/posts/${postId}`).then((res) => res.data);
+
+export const listHighlights = (accountId: string) => fetchApi.get<Highlight[]>(`/accounts/${accountId}/highlights`).then((res) => res.data);

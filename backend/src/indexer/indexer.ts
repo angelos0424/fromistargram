@@ -138,6 +138,35 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
       });
       stats.profilePicsCreated += profilePicResult.count ?? account.profilePictures.length;
     }
+
+    // Sync Highlights
+    for (const highlight of account.highlights) {
+      const savedHighlight = await prisma.highlight.upsert({
+        where: {
+          accountId_title: {
+            accountId: account.id,
+            title: highlight.title
+          }
+        },
+        create: {
+          accountId: account.id,
+          title: highlight.title
+        },
+        update: {}
+      });
+
+      await prisma.highlightMedia.deleteMany({ where: { highlightId: savedHighlight.id } });
+      if (highlight.media.length > 0) {
+        await prisma.highlightMedia.createMany({
+          data: highlight.media.map((media) => ({
+            highlightId: savedHighlight.id,
+            filename: media.filename,
+            mime: media.mime,
+            orderIndex: media.orderIndex
+          }))
+        });
+      }
+    }
   }
 
   await clearCache();
