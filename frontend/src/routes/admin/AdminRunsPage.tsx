@@ -3,7 +3,7 @@ import AdminSectionCard from '../../components/admin/AdminSectionCard';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ADMIN_KEY } from '../../lib/api/admin/consts';
 import { listRuns, triggerRun } from '../../lib/api/admin/runs';
-import type { ManualRunPayload } from '../../lib/api/admin/types';
+import type { ManualRunPayload, IndexerStatus } from '../../lib/api/admin/types';
 import { listTargets } from '../../lib/api/admin/targets';
 import { fetchIndexerStatus, requestIndexerRun } from '../../lib/api/admin/indexer';
 
@@ -34,6 +34,10 @@ const AdminRunsPage = () => {
   } = useQuery({
     queryKey: [ADMIN_KEY, 'indexer'],
     queryFn: () => fetchIndexerStatus().then(res => res.data),
+    refetchInterval: (query) => {
+      const data = query.state.data as IndexerStatus | undefined;
+      return data?.running ? 1000 : false;
+    },
     refetchIntervalInBackground: true
   });
 

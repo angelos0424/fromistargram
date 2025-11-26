@@ -31,11 +31,6 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
     tagsCreated: 0
   };
 
-  console.log('syncSnapshotToDatabase', snapshot);
-  if (snapshot.accounts[0]) {
-
-    console.log('profiles ', ...snapshot.accounts[0].profilePictures)
-  }
   await prisma.$transaction(async (tx: any) => {
     for (const account of snapshot.accounts) {
       const existingAccount = await tx.account.findUnique({ where: { id: account.id } });
@@ -98,9 +93,7 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
               duration: media.duration
             }))
           });
-          if (isNewPost) {
-            stats.mediaCreated += post.media.length;
-          }
+          stats.mediaCreated += post.media.length;
         }
 
         await tx.postTag.deleteMany({ where: { postId: post.id } });
@@ -141,9 +134,7 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
             filename: picture.filename
           }))
         });
-        if (!existingAccount) {
-          stats.profilePicsCreated += profilePicResult.count ?? account.profilePictures.length;
-        }
+        stats.profilePicsCreated += profilePicResult.count ?? account.profilePictures.length;
       }
     }
   });

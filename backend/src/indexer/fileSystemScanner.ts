@@ -10,7 +10,7 @@ import {
   IndexedProfilePicture
 } from './types.js';
 
-const MEDIA_REGEX = /^(?<timestamp>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})_UTC_(?<index>\d+)\.(?<extension>[a-zA-Z0-9]+)$/;
+const MEDIA_REGEX = /^(?<timestamp>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})_UTC(?:_(?<index>\d+))?\.(?<extension>[a-zA-Z0-9]+)$/;
 const TEXT_REGEX = /^(?<timestamp>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})_UTC\.txt$/;
 const PROFILE_REGEX = /^(?<timestamp>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})_UTC_profile_pic\.(?<extension>[a-zA-Z0-9]+)$/;
 
@@ -46,7 +46,7 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
     if (mediaMatch?.groups) {
       const { timestamp, index, extension } = mediaMatch.groups as {
         timestamp: string;
-        index: string;
+        index?: string;
         extension: string;
       };
       const postId = `${timestamp}_UTC`;
@@ -67,7 +67,7 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
 
       const absolutePath = path.join(accountDir, name);
       const mime = lookup(absolutePath) || 'application/octet-stream';
-      const orderIndex = Number.parseInt(index, 10) - 1;
+      const orderIndex = index ? Number.parseInt(index, 10) - 1 : 0;
 
       accumulator.media.push({
         filename: name,
