@@ -42,6 +42,37 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
 
     const { name } = entry;
 
+    const textMatch = name.match(TEXT_REGEX);
+    if (textMatch?.groups) {
+      const { timestamp } = textMatch.groups as { timestamp: string };
+      const postId = `${timestamp}_UTC`;
+      let accumulator = postMap.get(postId);
+      if (!accumulator) {
+        accumulator = {
+          id: postId,
+          accountId,
+          postedAt: parseTimestamp(timestamp),
+          media: [],
+          textContent: null,
+          hasText: false,
+          tags: new Set<string>(),
+          caption: null
+        };
+        postMap.set(postId, accumulator);
+      }
+
+      const content = await readFile(path.join(accountDir, name), 'utf-8');
+      const trimmed = content.trim();
+      accumulator.textContent = content;
+      accumulator.caption = trimmed.length > 0 ? content : null;
+      accumulator.hasText = trimmed.length > 0;
+
+      if (trimmed.length > 0) {
+        extractHashtags(trimmed).forEach((tag) => accumulator.tags.add(tag));
+      }
+      continue;
+    }
+
     const mediaMatch = name.match(MEDIA_REGEX);
     if (mediaMatch?.groups) {
       const { timestamp, index, extension } = mediaMatch.groups as {
@@ -81,37 +112,6 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
         height: null,
         duration: null
       });
-      continue;
-    }
-
-    const textMatch = name.match(TEXT_REGEX);
-    if (textMatch?.groups) {
-      const { timestamp } = textMatch.groups as { timestamp: string };
-      const postId = `${timestamp}_UTC`;
-      let accumulator = postMap.get(postId);
-      if (!accumulator) {
-        accumulator = {
-          id: postId,
-          accountId,
-          postedAt: parseTimestamp(timestamp),
-          media: [],
-          textContent: null,
-          hasText: false,
-          tags: new Set<string>(),
-          caption: null
-        };
-        postMap.set(postId, accumulator);
-      }
-
-      const content = await readFile(path.join(accountDir, name), 'utf-8');
-      const trimmed = content.trim();
-      accumulator.textContent = content;
-      accumulator.caption = trimmed.length > 0 ? content : null;
-      accumulator.hasText = trimmed.length > 0;
-
-      if (trimmed.length > 0) {
-        extractHashtags(trimmed).forEach((tag) => accumulator.tags.add(tag));
-      }
       continue;
     }
 

@@ -118,7 +118,7 @@ const FeedPage = () => {
 
   const { data: modalPost, isLoading: modalLoading } = useQuery({
     queryFn: () => detailPost(activePostId!).then((res) => res.data),
-    queryKey: [CLIENT_KEY, 'detailPost'],
+    queryKey: [CLIENT_KEY, 'detailPost', activePostId],
     enabled: !!activePostId
   });
 
