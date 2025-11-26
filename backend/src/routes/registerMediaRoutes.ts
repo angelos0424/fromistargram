@@ -87,6 +87,8 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
       const { account, filename } = paramsSchema.parse(request.params);
       const filePath = path.join(dataRoot, account, filename);
 
+      console.log('filePath....', filePath, dataRoot, account, filename)
+
       try {
         await access(filePath, constants.R_OK);
       } catch (error) {
