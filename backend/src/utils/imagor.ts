@@ -25,7 +25,8 @@ function signPath(path: string): string | null {
     return null;
   }
   const hmac = createHmac('sha1', secret);
-  hmac.update(path);
+  // Imagor expects the path to start with / for signing
+  hmac.update(path.startsWith('/') ? path : '/' + path);
   return hmac.digest('base64url');
 }
 
