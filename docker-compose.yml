@@ -40,7 +40,7 @@ services:
     command: ['node', 'dist/server.js']
 
   imagor:
-    image: cshum/imagor:latest
+    image: shumc/imagor:latest
     container_name: fromistargram_imagor
     env_file:
       - .env
