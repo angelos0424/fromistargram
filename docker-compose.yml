@@ -70,6 +70,3 @@ services:
     container_name: fromistargram_redis
     volumes:
       - /mnt/volume1/fromistargram/redis:/data
-
-volumes:
-  pg_data:
