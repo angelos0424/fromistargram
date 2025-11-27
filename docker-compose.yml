@@ -55,12 +55,12 @@ services:
       - /mnt/volume1/fromistargram/data:/data:ro
 
   nginx-cache:
-    image: nginx:alpine
+    build:
+      context: ./nginx
     container_name: fromistargram_cache
     depends_on:
       - thumb
     volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - /mnt/volume1/fromistargram/nginx_cache:/var/cache/nginx
     ports:
       - '${THUMBNAIL_PORT:-8080}:80'
