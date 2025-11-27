@@ -1,6 +1,81 @@
 declare module '@prisma/client' {
   export type CrawlAccountStatus = 'ready' | 'error' | 'disabled';
 
+  export type Account = {
+    id: string;
+    latestProfilePicUrl: string | null;
+    lastIndexedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+
+  export type Post = {
+    id: string;
+    accountId: string;
+    postedAt: Date;
+    caption: string | null;
+    hasText: boolean;
+    postText: { content: string} | null;
+    media: Media[];
+    tags: { tag : { name : string }}[];
+    createdAt: Date;
+    updatedAt: Date;
+  };
+
+  export type Media = {
+    id: string;
+    postId: string;
+    orderIndex: number;
+    filename: string;
+    mime: string;
+    width: number | null;
+    height: number | null;
+    duration: number | null;
+    createdAt: Date;
+  };
+
+  export type ProfilePic = {
+    id: string;
+    accountId: string;
+    takenAt: Date;
+    filename: string;
+    createdAt: Date;
+  };
+
+  export type Tag = {
+    id: number;
+    name: string;
+  };
+
+  export type PostTag = {
+    postId: string;
+    tagId: number;
+  };
+
+  export type PostText = {
+    postId: string;
+    content: string;
+    updatedAt: Date;
+  };
+
+  export type Highlight = {
+    id: string;
+    accountId: string;
+    title: string;
+    createdAt: Date;
+    updatedAt: Date;
+    media: HighlightMedia[]
+  };
+
+  export type HighlightMedia = {
+    id: string;
+    highlightId: string;
+    filename: string;
+    mime: string;
+    orderIndex: number;
+    createdAt: Date;
+  };
+
   export type CrawlAccount = {
     id: string;
     username: string;
@@ -43,11 +118,12 @@ declare module '@prisma/client' {
   export class PrismaClient {
     constructor(...args: any[]);
     account: {
-      findMany(...args: any[]): Promise<any[]>;
-      findUnique(...args: any[]): Promise<any | null>;
-      upsert(...args: any[]): Promise<any>;
-      delete(...args: any[]): Promise<any>;
+      findMany(...args: any[]): Promise<Account[]>;
+      findUnique(...args: any[]): Promise<Account | null>;
+      upsert(...args: any[]): Promise<Account>;
+      delete(...args: any[]): Promise<Account>;
       aggregate(...args: any[]): Promise<any>;
+      count(...args: any[]): Promise<number>;
     };
     crawlAccount: {
       findMany(...args: any[]): Promise<CrawlAccount[]>;
@@ -71,9 +147,9 @@ declare module '@prisma/client' {
       update(...args: any[]): Promise<CrawlRun>;
     };
     post: {
-      findMany(...args: any[]): Promise<any[]>;
-      findUnique(...args: any[]): Promise<any | null>;
-      upsert(...args: any[]): Promise<any>;
+      findMany(...args: any[]): Promise<Post[]>;
+      findUnique(...args: any[]): Promise<Post | null>;
+      upsert(...args: any[]): Promise<Post>;
       count(...args: any[]): Promise<number>;
       groupBy(...args: any[]): Promise<any[]>;
       aggregate(...args: any[]): Promise<any>;
@@ -81,25 +157,27 @@ declare module '@prisma/client' {
     media: {
       deleteMany(...args: any[]): Promise<any>;
       createMany(...args: any[]): Promise<any>;
+      findMany(...args: any[]): Promise<Media[]>;
     };
     profilePic: {
       deleteMany(...args: any[]): Promise<any>;
       createMany(...args: any[]): Promise<any>;
+      findMany(...args: any[]): Promise<ProfilePic[]>;
     };
     tag: {
-      upsert(...args: any[]): Promise<any>;
+      upsert(...args: any[]): Promise<Tag>;
     };
     postTag: {
       deleteMany(...args: any[]): Promise<any>;
-      create(...args: any[]): Promise<any>;
+      create(...args: any[]): Promise<PostTag>;
     };
     postText: {
-      upsert(...args: any[]): Promise<any>;
+      upsert(...args: any[]): Promise<PostText>;
     };
     highlight: {
-      findMany(...args: any[]): Promise<any[]>;
-      findUnique(...args: any[]): Promise<any | null>;
-      upsert(...args: any[]): Promise<any>;
+      findMany(...args: any[]): Promise<Highlight[]>;
+      findUnique(...args: any[]): Promise<Highlight | null>;
+      upsert(...args: any[]): Promise<Highlight>;
     };
     highlightMedia: {
       deleteMany(...args: any[]): Promise<any>;

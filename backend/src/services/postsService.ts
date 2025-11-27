@@ -108,14 +108,14 @@ export async function listPosts(input: ListPostsInput): Promise<ListPostsRespons
     }
 
     const [posts, total] = await Promise.all([
-      prisma.post.findMany(queryArgs) as Promise<PrismaPostWithRelations[]>,
+      prisma.post.findMany(queryArgs),
       prisma.post.count({ where })
     ]);
     const hasNextPage = posts.length > limit;
     const trimmedPosts = hasNextPage ? posts.slice(0, limit) : posts;
     const nextCursor = hasNextPage ? trimmedPosts[trimmedPosts.length - 1]?.id ?? null : null;
 
-    const data = trimmedPosts.map((post: PrismaPostWithRelations) => ({
+    const data = trimmedPosts.map((post) => ({
       id: post.id,
       accountId: post.accountId,
       caption: post.caption,
@@ -123,7 +123,7 @@ export async function listPosts(input: ListPostsInput): Promise<ListPostsRespons
       hasText: post.hasText,
       textContent: post.postText?.content ?? null,
       media: post.media.map((media) => mapMediaItem(post.accountId, media)),
-      tags: post.tags.map((relation: PrismaTagRelation) => relation.tag.name)
+      tags: post.tags.map((relation) => relation.tag.name)
     }));
 
     return {

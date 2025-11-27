@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../db/client.js';
+import { buildImgproxyUrl } from '../utils/imgproxy.js';
 
 export async function registerHighlightRoutes(app: FastifyInstance) {
     app.get<{ Params: { accountId: string } }>(
@@ -21,6 +22,7 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
                             properties: {
                                 id: { type: 'string' },
                                 title: { type: 'string' },
+                                coverUrl: { type: 'string' },
                                 media: {
                                     type: 'array',
                                     items: {
@@ -29,13 +31,15 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
                                             id: { type: 'string' },
                                             filename: { type: 'string' },
                                             mime: { type: 'string' },
-                                            orderIndex: { type: 'number' }
+                                            orderIndex: { type: 'number' },
+                                            url: { type: 'string' },
+                                            thumbnailUrl: { type: 'string' }
                                         },
-                                        required: ['id', 'filename', 'mime', 'orderIndex']
+                                        required: ['id', 'filename', 'mime', 'orderIndex', 'url', 'thumbnailUrl']
                                     }
                                 }
                             },
-                            required: ['id', 'title', 'media']
+                            required: ['id', 'title', 'media', 'coverUrl']
                         }
                     }
                 }
@@ -54,7 +58,39 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
                 orderBy: { title: 'asc' }
             });
 
-            return highlights;
+            return highlights.map((highlight) => {
+                // Map media items to include signed URLs
+                const mediaWithUrls = highlight.media.map((m) => {
+                    const source = `local:///${accountId}/${m.filename}`;
+                    
+                    // Full URL (Original or high quality)
+                    const url = buildImgproxyUrl(source) ?? '';
+                    
+                    // Thumbnail URL (Resized)
+                    const thumbnailUrl = buildImgproxyUrl(source, {
+                         resize: { width: 320, type: 'fit' }
+                    }) ?? '';
+
+                    return {
+                        ...m,
+                        url,
+                        thumbnailUrl
+                    };
+                });
+
+                // Determine cover URL (use the first media item's thumbnail as cover)
+                let coverUrl = '';
+                if (mediaWithUrls.length > 0) {
+                    coverUrl = mediaWithUrls[0].thumbnailUrl;
+                }
+
+                return {
+                    id: highlight.id,
+                    title: highlight.title,
+                    coverUrl,
+                    media: mediaWithUrls
+                };
+            });
         }
     );
 }

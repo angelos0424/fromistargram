@@ -1,6 +1,7 @@
 import type { CrawlAccountStatus } from '@prisma/client';
 import { prisma } from '../db/client.js';
 import { cacheKey, cacheTtlSeconds, withCache } from '../utils/cache.js';
+import { buildImgproxyUrl } from '../utils/imgproxy.js';
 
 export type AccountSummary = {
   id: string;
@@ -40,14 +41,27 @@ export async function listAccounts(): Promise<AccountSummary[]> {
         include: { _count: { select: { posts: true } } }
       }) as AccountRow[];
 
-      return accounts.map((account: AccountRow) => ({
-        id: account.id,
-        latestProfilePicUrl: account.latestProfilePicUrl,
-        createdAt: account.createdAt.toISOString(),
-        updatedAt: account.updatedAt.toISOString(),
-        lastIndexedAt: account.lastIndexedAt ? account.lastIndexedAt.toISOString() : null,
-        postCount: account._count.posts
-      }));
+      return accounts.map((account: AccountRow) => {
+        let profileUrl = account.latestProfilePicUrl;
+        if (profileUrl) {
+          const source = `local:///${account.id}/${profileUrl}`;
+          const signed = buildImgproxyUrl(source, {
+              resize: { width: 100, height: 100, type: 'fill' } // Reasonable default for profile pics
+          });
+          if (signed) {
+            profileUrl = signed;
+          }
+        }
+
+        return {
+          id: account.id,
+          latestProfilePicUrl: profileUrl,
+          createdAt: account.createdAt.toISOString(),
+          updatedAt: account.updatedAt.toISOString(),
+          lastIndexedAt: account.lastIndexedAt ? account.lastIndexedAt.toISOString() : null,
+          postCount: account._count.posts
+        };
+      });
     },
     cacheTtlSeconds()
   );
