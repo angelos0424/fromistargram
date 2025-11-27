@@ -55,19 +55,29 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
         // Assuming similar media extensions as posts
         if (hName.startsWith('.')) continue;
 
-        const absolutePath = path.join(highlightDir, hName);
-        const mime = lookup(absolutePath) || 'application/octet-stream';
+        const mediaMatch = name.match(MEDIA_REGEX);
+        if (mediaMatch?.groups) {
+          const {extension} = mediaMatch.groups as {
+            extension: string;
+          };
 
-        // Try to extract order index if filename has it, otherwise use 0 or list order
-        // Regex for highlight media? Or just sort by name?
-        // Requirement: "folder below contents gathered and shown at once"
-        // Let's just sort by filename for orderIndex if not specified.
+          if (['json', 'txt'].includes(extension.toLowerCase())) {
+            continue;
+          }
+          const absolutePath = path.join(highlightDir, hName);
+          const mime = lookup(absolutePath) || 'application/octet-stream';
 
-        highlightMedia.push({
-          filename: hName,
-          orderIndex: 0, // Will sort and re-index later
-          mime: typeof mime === 'string' ? mime : 'application/octet-stream'
-        });
+          // Try to extract order index if filename has it, otherwise use 0 or list order
+          // Regex for highlight media? Or just sort by name?
+          // Requirement: "folder below contents gathered and shown at once"
+          // Let's just sort by filename for orderIndex if not specified.
+
+          highlightMedia.push({
+            filename: hName,
+            orderIndex: 0, // Will sort and re-index later
+            mime: typeof mime === 'string' ? mime : 'application/octet-stream'
+          });
+        }
       }
 
       // Sort by filename to ensure deterministic order
