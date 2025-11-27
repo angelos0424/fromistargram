@@ -1,7 +1,7 @@
 import { prisma } from '../db/client.js';
 import { cacheKey, cacheTtlSeconds, clearCache, withCache } from '../utils/cache.js';
 import { buildImgproxyUrl } from '../utils/imgproxy.js';
-import { buildMediaUrl, isAbsoluteMediaBase } from '../utils/media.js';
+import { buildMediaUrl } from '../utils/media.js';
 
 export type ListPostsInput = {
   accountId?: string;
@@ -187,28 +187,28 @@ function inferMediaType(mime: string): 'image' | 'video' {
   return 'image';
 }
 
-function buildThumbnailUrl(mediaUrl: string, mime: string): string {
-  const absoluteSource = isAbsoluteMediaBase() ? mediaUrl : null;
-  console.log('buildThumbnailUrl', mediaUrl, absoluteSource);
-  if (absoluteSource) {
-    const signed = buildImgproxyUrl(absoluteSource);
-    if (signed) {
-      return signed;
-    }
+function buildThumbnailUrl(accountId: string, filename: string, mime: string): string {
+  const source = `local:///${accountId}/${filename}`;
+  
+  // If it's a video, we might want to let imgproxy attempt to extract a frame
+  // or just return the raw video URL if imgproxy isn't configured for video.
+  // For now, assuming imgproxy can handle the file or we fallback.
+  
+  const signed = buildImgproxyUrl(source);
+  if (signed) {
+    return signed;
   }
 
-  if (mime.startsWith('video/')) {
-    return mediaUrl;
-  }
-
-  return mediaUrl;
+  // Fallback if imgproxy not configured
+  return buildMediaUrl(accountId, filename);
 }
 
 function mapMediaItem(accountId: string, media: PrismaMedia): MediaItem {
-  console.log('mapMediaItem')
   const mediaUrl = buildMediaUrl(accountId, media.filename);
   const type = inferMediaType(media.mime);
-  const thumbnailUrl = buildThumbnailUrl(mediaUrl, media.mime);
+  
+  // Use the new logic to generate signed imgproxy URL
+  const thumbnailUrl = buildThumbnailUrl(accountId, media.filename, media.mime);
 
   return {
     id: media.id,
