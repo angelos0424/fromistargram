@@ -51,6 +51,8 @@ services:
       IMGPROXY_ENABLE_VIDEO_THUMBNAILS: 'true'
       IMGPROXY_TTL: '2628000' # 1month
       IMGPROXY_USE_ETAG: 'true'
+      IMGPROXY_KEY: ${IMGPROXY_KEY}
+      IMGPROXY_SALT: ${IMGPROXY_SALT}
     volumes:
       - /mnt/volume1/fromistargram/data:/data:ro
 
