@@ -17,8 +17,8 @@ export function getImagorUrl(
     filename: string,
     options: ImageOptions = {}
 ): string {
-    // If filename is already a full URL (e.g. returned from backend signed), return it as is.
-    if (filename.startsWith('http')) {
+    // If filename is already a full URL (e.g. returned from backend signed) or an API path, return it as is.
+    if (filename.startsWith('http') || filename.startsWith('/api')) {
         return filename;
     }
 
@@ -55,7 +55,7 @@ export function getResponsiveImageProps(
 ): ResponsiveImageProps {
     // If filename is a full URL, we can't resize it responsibly without re-signing.
     // So we return the single URL for all sizes.
-    if (filename.startsWith('http')) {
+    if (filename.startsWith('http') || filename.startsWith('/api')) {
         return {
             src: filename,
             srcSet: `${filename} 1080w`
