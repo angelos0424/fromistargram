@@ -42,8 +42,8 @@ const HighlightViewer = ({ highlight, onClose }: HighlightViewerProps) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm" onClick={onClose}>
-            <div className="relative h-full w-full max-w-md bg-black" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black" onClick={onClose}>
+            <div className="relative h-full w-full max-w-3xl bg-black" onClick={(e) => e.stopPropagation()}>
                 {/* Progress Bar */}
                 <div className="absolute top-4 left-0 right-0 z-10 flex gap-1 px-2">
                     {highlight.media.map((_, idx) => (
@@ -75,7 +75,7 @@ const HighlightViewer = ({ highlight, onClose }: HighlightViewerProps) => {
                         />
                     ) : (
                         <img
-                            src={`/api/media/${currentMedia.filename}`}
+                            src={currentMedia.thumbnailUrl ?? currentMedia.url ?? ''}
                             alt={`Highlight ${currentIndex + 1}`}
                             className="max-h-full max-w-full object-contain"
                         />

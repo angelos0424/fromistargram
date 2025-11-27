@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { HighlightMedia } from '@prisma/client';
 import { prisma } from '../db/client.js';
 import { buildImgproxyUrl } from '../utils/imgproxy.js';
 

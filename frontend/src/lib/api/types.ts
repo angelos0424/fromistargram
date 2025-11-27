@@ -108,5 +108,6 @@ export interface HighlightMedia {
 export interface Highlight {
   id: string;
   title: string;
+  coverUrl: string;
   media: HighlightMedia[];
 }

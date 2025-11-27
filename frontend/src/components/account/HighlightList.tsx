@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import ReactDOM from 'react-dom'; // Import ReactDOM for createPortal
 import { listHighlights } from '../../lib/api/client';
 import type { Highlight } from '../../lib/api/types';
 import HighlightViewer from './HighlightViewer';
@@ -49,20 +50,13 @@ const HighlightList = ({ accountId }: HighlightListProps) => {
                         className="flex flex-col items-center gap-2"
                     >
                         <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/20 bg-white/5 p-1 transition hover:border-white/40">
-                            {highlight.media.length > 0 ? (
+                            {highlight.coverUrl ? (
                                 <div className="h-full w-full overflow-hidden rounded-full">
-                                    {highlight.media[0].mime.startsWith('video') ? (
-                                        <video
-                                            src={highlight.media[0].thumbnailUrl}
-                                            className="h-full w-full object-cover"
-                                        />
-                                    ) : (
-                                        <img
-                                            src={highlight.media[0].thumbnailUrl}
-                                            alt={highlight.title}
-                                            className="h-full w-full object-cover"
-                                        />
-                                    )}
+                                    <img
+                                        src={highlight.coverUrl}
+                                        alt={highlight.title}
+                                        className="h-full w-full object-cover"
+                                    />
                                 </div>
                             ) : (
                                 <div className="h-full w-full rounded-full bg-white/10" />
@@ -75,11 +69,12 @@ const HighlightList = ({ accountId }: HighlightListProps) => {
                 ))}
             </div>
 
-            {selectedHighlight && (
+            {selectedHighlight && ReactDOM.createPortal(
                 <HighlightViewer
                     highlight={selectedHighlight}
                     onClose={() => setSelectedHighlight(null)}
-                />
+                />,
+                document.body
             )}
         </>
     );

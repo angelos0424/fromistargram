@@ -7,6 +7,9 @@ declare module '@prisma/client' {
     lastIndexedAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
+    posts?: Post[];
+    profilePics?: ProfilePic[];
+    highlights?: Highlight[];
   };
 
   export type Post = {
@@ -15,11 +18,11 @@ declare module '@prisma/client' {
     postedAt: Date;
     caption: string | null;
     hasText: boolean;
-    postText: { content: string} | null;
-    media: Media[];
-    tags: { tag : { name : string }}[];
     createdAt: Date;
     updatedAt: Date;
+    media: Media[];
+    postText?: PostText | null;
+    tags: PostTag[];
   };
 
   export type Media = {
@@ -32,6 +35,7 @@ declare module '@prisma/client' {
     height: number | null;
     duration: number | null;
     createdAt: Date;
+    post?: Post;
   };
 
   export type ProfilePic = {
@@ -40,22 +44,27 @@ declare module '@prisma/client' {
     takenAt: Date;
     filename: string;
     createdAt: Date;
+    account?: Account;
   };
 
   export type Tag = {
     id: number;
     name: string;
+    posts?: PostTag[];
   };
 
   export type PostTag = {
     postId: string;
     tagId: number;
+    post?: Post;
+    tag: Tag;
   };
 
   export type PostText = {
     postId: string;
     content: string;
     updatedAt: Date;
+    post?: Post;
   };
 
   export type Highlight = {
@@ -64,7 +73,8 @@ declare module '@prisma/client' {
     title: string;
     createdAt: Date;
     updatedAt: Date;
-    media: HighlightMedia[]
+    account?: Account;
+    media?: HighlightMedia[];
   };
 
   export type HighlightMedia = {
@@ -74,7 +84,9 @@ declare module '@prisma/client' {
     mime: string;
     orderIndex: number;
     createdAt: Date;
+    highlight?: Highlight;
   };
+
 
   export type CrawlAccount = {
     id: string;

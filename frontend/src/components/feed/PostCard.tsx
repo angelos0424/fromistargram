@@ -18,7 +18,7 @@ const PostCard = ({ post, onOpen }: PostCardProps) => {
       >
         <div className="relative aspect-square w-full overflow-hidden">
           {firstMedia ? (
-            firstMedia.thumbnailUrl.endsWith('.mp4') ? (
+            firstMedia.type === 'video' ? (
               <div className="flex h-full w-full items-center justify-center bg-slate-900">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -35,7 +35,7 @@ const PostCard = ({ post, onOpen }: PostCardProps) => {
               </div>
             ) : (
               <img
-                {...getResponsiveImageProps(post.accountId, firstMedia.filename, [300, 600])}
+                {...getResponsiveImageProps(post.accountId, firstMedia.thumbnailUrl, [300, 600])}
                 alt={(post.caption ?? '게시물 이미지').slice(0, 40)}
                 className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 loading="lazy"
