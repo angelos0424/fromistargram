@@ -96,6 +96,16 @@ declare module '@prisma/client' {
     postText: {
       upsert(...args: any[]): Promise<any>;
     };
+    highlight: {
+      findMany(...args: any[]): Promise<any[]>;
+      findUnique(...args: any[]): Promise<any | null>;
+      upsert(...args: any[]): Promise<any>;
+    };
+    highlightMedia: {
+      deleteMany(...args: any[]): Promise<any>;
+      createMany(...args: any[]): Promise<any>;
+    }
+
     $transaction<T>(handler: (client: PrismaClient) => Promise<T>): Promise<T>;
     $transaction<T>(operations: any[]): Promise<T>;
   }
