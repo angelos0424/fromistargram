@@ -45,10 +45,23 @@ services:
       IMGPROXY_BIND: ':8080'
       IMGPROXY_PATH_PREFIX: '/thumb'
       IMGPROXY_ENABLE_VIDEO_THUMBNAILS: 'true'
+      IMGPROXY_TTL: '2628000' # 1month
+      IMGPROXY_USE_ETAG: 'true'
     volumes:
       - /mnt/volume1/fromistargram:/data:ro
+    # Ports removed as it is now behind nginx-cache
+
+  nginx-cache:
+    image: nginx:alpine
+    container_name: fromistargram_cache
+    depends_on:
+      - thumb
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - nginx_cache:/var/cache/nginx
     ports:
-      - '${THUMBNAIL_PORT:-8080}:8080'
+      - '${THUMBNAIL_PORT:-8080}:80'
 
 volumes:
   pg_data:
+  nginx_cache:
