@@ -43,8 +43,10 @@ services:
     environment:
       IMGPROXY_LOCAL_FILESYSTEM_ROOT: /data
       IMGPROXY_BIND: ':8080'
+      IMGPROXY_PATH_PREFIX: '/thumb'
+      IMGPROXY_ENABLE_VIDEO_THUMBNAILS: 'true'
     volumes:
-      - data_root:/data:ro
+      - /mnt/volume1/fromistargram:/data:ro
     ports:
       - '${THUMBNAIL_PORT:-8080}:8080'
 
