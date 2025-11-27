@@ -73,7 +73,7 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
           // Let's just sort by filename for orderIndex if not specified.
 
           highlightMedia.push({
-            filename: hName,
+            filename: path.join(highlightTitle, hName),
             orderIndex: 0, // Will sort and re-index later
             mime: typeof mime === 'string' ? mime : 'application/octet-stream'
           });
