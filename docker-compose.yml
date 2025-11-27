@@ -58,7 +58,7 @@ services:
       - imagorvideo
 
   imagorvideo:
-    image: cshum/imagorvideo:latest
+    image: shumc/imagorvideo:latest
     container_name: fromistargram_imagorvideo
     volumes:
       - /mnt/volume1/fromistargram:/data:ro
