@@ -39,29 +39,36 @@ services:
       - '${API_PORT:-4000}:4000'
     command: ['node', 'dist/server.js']
 
-  thumb:
-    image: ghcr.io/imgproxy/imgproxy:latest
-    container_name: fromistargram_thumb
+  imagor:
+    image: cshum/imagor:latest
+    container_name: fromistargram_imagor
     env_file:
       - .env
     environment:
-      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /data
-      IMGPROXY_BIND: ':8080'
-      IMGPROXY_PATH_PREFIX: '/thumb'
-      IMGPROXY_ENABLE_VIDEO_THUMBNAILS: 'true'
-      IMGPROXY_TTL: '2628000' # 1month
-      IMGPROXY_USE_ETAG: 'true'
-      IMGPROXY_KEY: ${IMGPROXY_KEY}
-      IMGPROXY_SALT: ${IMGPROXY_SALT}
+      IMAGOR_SECRET: ${IMAGOR_SECRET}
+      IMAGOR_BIND: ':8000'
+      IMAGOR_PATH_PREFIX: '/thumb'
+      IMAGOR_BASE_DIR: '/data'
+      IMAGOR_VIDEO_URL: 'grpc://imagorvideo:50051'
+      IMAGOR_CACHE_HEADER_TTL: '2628000'
+      IMAGOR_USE_ETAG: 'true'
     volumes:
-      - /mnt/volume1/fromistargram/data:/data:ro
+      - /mnt/volume1/fromistargram:/data:ro
+    depends_on:
+      - imagorvideo
+
+  imagorvideo:
+    image: cshum/imagorvideo:latest
+    container_name: fromistargram_imagorvideo
+    volumes:
+      - /mnt/volume1/fromistargram:/data:ro
 
   nginx-cache:
     build:
       context: ./nginx
     container_name: fromistargram_cache
     depends_on:
-      - thumb
+      - imagor
     volumes:
       - /mnt/volume1/fromistargram/nginx_cache:/var/cache/nginx
     ports:

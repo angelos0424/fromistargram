@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { HighlightMedia } from '@prisma/client';
 import { prisma } from '../db/client.js';
-import { buildImgproxyUrl } from '../utils/imgproxy.js';
+import { buildImagorUrl } from '../utils/imagor.js';
 
 export async function registerHighlightRoutes(app: FastifyInstance) {
     app.get<{ Params: { accountId: string } }>(
@@ -61,15 +61,15 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
 
             return highlights.map((highlight) => {
                 // Map media items to include signed URLs
-                const mediaWithUrls = highlight.media.map((m) => {
+                const mediaWithUrls = highlight.media.map((m: HighlightMedia) => {
                     const source = `local:///${accountId}/${m.filename}`;
                     
                     // Full URL (Original or high quality)
-                    const url = buildImgproxyUrl(source) ?? '';
+                    const url = buildImagorUrl(source) ?? '';
                     
                     // Thumbnail URL (Resized)
-                    const thumbnailUrl = buildImgproxyUrl(source, {
-                         resize: { width: 320, type: 'fit' }
+                    const thumbnailUrl = buildImagorUrl(source, {
+                         resize: { width: 640, type: 'fit' }
                     }) ?? '';
 
                     return {

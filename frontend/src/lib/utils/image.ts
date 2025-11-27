@@ -1,45 +1,42 @@
-export const IMGPROXY_BASE_URL = 'https://fromistargram.ddunddun.shop/thumb';
+export const THUMB_BASE_URL = 'https://fromistargram.ddunddun.shop/thumb';
 
 type ResizeType = 'fit' | 'fill' | 'auto';
 
-interface ImgproxyOptions {
+interface ImageOptions {
     width?: number;
     height?: number;
     type?: ResizeType;
-    enlarge?: boolean;
-}
-
-function urlSafeBase64(str: string): string {
-    return btoa(str)
-        .replace(/=+$/, '')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_');
 }
 
 /**
- * Generates an imgproxy URL for a given local file path.
- * URL format: http://localhost:8080/insecure/rs:{type}:{width}:{height}:{enlarge}/{base64_path}
+ * Generates an Imagor URL for a given local file path.
+ * URL format: /unsafe/fit-in/{width}x{height}/filters:format(webp)/{path}
  */
-export function getImgproxyUrl(
+export function getImagorUrl(
     accountId: string,
     filename: string,
-    options: ImgproxyOptions = {}
+    options: ImageOptions = {}
 ): string {
     // If filename is already a full URL (e.g. returned from backend signed), return it as is.
     if (filename.startsWith('http')) {
         return filename;
     }
 
-    const { width = 0, height = 0, type = 'fill', enlarge = false } = options;
+    const { width = 0, height = 0 } = options;
 
-    // Fallback for when we need to generate URL on frontend (e.g. optimistic updates or if backend returns raw path)
-    // Note: This uses 'insecure' because frontend doesn't have the signature key.
-    // If backend enforces signatures, this fallback will fail.
-    const processingOptions = `rs:${type}:${width}:${height}:${enlarge ? 1 : 0}`;
-    const path = `local:///${accountId}/${filename}`;
-    const encodedPath = urlSafeBase64(path);
+    // Construct path: accountId/filename
+    const path = `${accountId}/${filename}`;
 
-    return `${IMGPROXY_BASE_URL}/insecure/${processingOptions}/${encodedPath}`;
+    const parts: string[] = ['unsafe'];
+
+    if (width > 0 || height > 0) {
+        parts.push(`fit-in/${width}x${height}`);
+    }
+
+    parts.push('filters:format(webp)');
+    parts.push(path);
+
+    return `${THUMB_BASE_URL}/${parts.join('/')}`;
 }
 
 interface ResponsiveImageProps {
@@ -61,7 +58,7 @@ export function getResponsiveImageProps(
     if (filename.startsWith('http')) {
         return {
             src: filename,
-            srcSet: `${filename} 1080w` // Mock srcSet to satisfy type, or we could return empty string if handled
+            srcSet: `${filename} 1080w`
         };
     }
 
@@ -69,12 +66,12 @@ export function getResponsiveImageProps(
     const maxWidth = Math.max(...widths);
     const baseHeight = aspectRatio ? Math.round(maxWidth / aspectRatio) : 0;
 
-    const src = getImgproxyUrl(accountId, filename, { width: maxWidth, height: baseHeight });
+    const src = getImagorUrl(accountId, filename, { width: maxWidth, height: baseHeight });
 
     const srcSet = widths
         .map((w) => {
             const h = aspectRatio ? Math.round(w / aspectRatio) : 0;
-            const url = getImgproxyUrl(accountId, filename, { width: w, height: h });
+            const url = getImagorUrl(accountId, filename, { width: w, height: h });
             return `${url} ${w}w`;
         })
         .join(', ');

@@ -74,7 +74,7 @@ declare module '@prisma/client' {
     createdAt: Date;
     updatedAt: Date;
     account?: Account;
-    media?: HighlightMedia[];
+    media: HighlightMedia[];
   };
 
   export type HighlightMedia = {

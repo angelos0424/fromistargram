@@ -1,6 +1,6 @@
 import { prisma } from '../db/client.js';
 import { cacheKey, cacheTtlSeconds, clearCache, withCache } from '../utils/cache.js';
-import { buildImgproxyUrl } from '../utils/imgproxy.js';
+import { buildImagorUrl } from '../utils/imagor.js';
 import { buildMediaUrl } from '../utils/media.js';
 
 export type ListPostsInput = {
@@ -194,7 +194,7 @@ function buildThumbnailUrl(accountId: string, filename: string, mime: string): s
   // or just return the raw video URL if imgproxy isn't configured for video.
   // For now, assuming imgproxy can handle the file or we fallback.
   
-  const signed = buildImgproxyUrl(source);
+  const signed = buildImagorUrl(source);
   if (signed) {
     return signed;
   }
