@@ -55,7 +55,7 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
         // Assuming similar media extensions as posts
         if (hName.startsWith('.')) continue;
 
-        const mediaMatch = name.match(MEDIA_REGEX);
+        const mediaMatch = hName.match(MEDIA_REGEX);
         if (mediaMatch?.groups) {
           const {extension} = mediaMatch.groups as {
             extension: string;
