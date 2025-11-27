@@ -10,8 +10,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pg_data:/var/lib/postgresql/data
-    ports:
-      - '5432:5432'
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
       interval: 10s
@@ -32,7 +30,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       DATA_ROOT: /data
     volumes:
-      - ./data:/data
+      - /mnt/volume1/fromistargram:/data
     ports:
       - '${API_PORT:-4000}:4000'
     command: ['node', 'dist/server.js']
@@ -45,9 +43,8 @@ services:
     environment:
       IMGPROXY_LOCAL_FILESYSTEM_ROOT: /data
       IMGPROXY_BIND: ':8080'
-      IMGPROXY_PATH_PREFIX: /thumb
     volumes:
-      - ./data:/data:ro
+      - data_root:/data:ro
     ports:
       - '${THUMBNAIL_PORT:-8080}:8080'
 
