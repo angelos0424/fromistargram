@@ -1,5 +1,4 @@
 import { FastifyInstance } from 'fastify';
-import { z } from 'zod';
 import { prisma } from '../db/client.js';
 
 export async function registerHighlightRoutes(app: FastifyInstance) {
@@ -7,24 +6,38 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
         '/api/accounts/:accountId/highlights',
         {
             schema: {
-                params: z.object({
-                    accountId: z.string()
-                }),
+                params: {
+                    type: 'object',
+                    properties: {
+                        accountId: { type: 'string' }
+                    },
+                    required: ['accountId']
+                },
                 response: {
-                    200: z.array(
-                        z.object({
-                            id: z.string(),
-                            title: z.string(),
-                            media: z.array(
-                                z.object({
-                                    id: z.string(),
-                                    filename: z.string(),
-                                    mime: z.string(),
-                                    orderIndex: z.number()
-                                })
-                            )
-                        })
-                    )
+                    200: {
+                        type: 'array',
+                        items: {
+                            type: 'object',
+                            properties: {
+                                id: { type: 'string' },
+                                title: { type: 'string' },
+                                media: {
+                                    type: 'array',
+                                    items: {
+                                        type: 'object',
+                                        properties: {
+                                            id: { type: 'string' },
+                                            filename: { type: 'string' },
+                                            mime: { type: 'string' },
+                                            orderIndex: { type: 'number' }
+                                        },
+                                        required: ['id', 'filename', 'mime', 'orderIndex']
+                                    }
+                                }
+                            },
+                            required: ['id', 'title', 'media']
+                        }
+                    }
                 }
             }
         },
