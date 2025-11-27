@@ -9,7 +9,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - pg_data:/var/lib/postgresql/data
+#      - pg_data:/var/lib/postgresql/data
+       - /mnt/volume1/fromistargram/pg_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
       interval: 10s
@@ -33,7 +34,7 @@ services:
       DATA_ROOT: /data
       REDIS_URL: redis://redis:6379
     volumes:
-      - /mnt/volume1/fromistargram:/data
+      - /mnt/volume1/fromistargram/data:/data
     ports:
       - '${API_PORT:-4000}:4000'
     command: ['node', 'dist/server.js']
@@ -51,7 +52,7 @@ services:
       IMGPROXY_TTL: '2628000' # 1month
       IMGPROXY_USE_ETAG: 'true'
     volumes:
-      - /mnt/volume1/fromistargram:/data:ro
+      - /mnt/volume1/fromistargram/data:/data:ro
 
   nginx-cache:
     image: nginx:alpine
@@ -59,7 +60,7 @@ services:
     depends_on:
       - thumb
     volumes:
-      - ./nginx/imgproxy_cache.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - /mnt/volume1/fromistargram/nginx_cache:/var/cache/nginx
     ports:
       - '${THUMBNAIL_PORT:-8080}:80'
