@@ -50,7 +50,6 @@ services:
       IMAGOR_PATH_PREFIX: '/thumb'
       IMAGOR_BASE_DIR: '/data'
       IMAGOR_VIDEO_URL: 'grpc://imagorvideo:50051'
-      IMAGOR_CACHE_HEADER_TTL: '2628000'
       IMAGOR_USE_ETAG: 'true'
     volumes:
       - /mnt/volume1/fromistargram:/data:ro
