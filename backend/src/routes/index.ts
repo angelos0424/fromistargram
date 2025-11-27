@@ -17,7 +17,6 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   await app.register(registerAdminTargetRoutes);
   await app.register(registerAdminRunRoutes);
   await app.register(registerAdminMetricsRoutes);
-  await app.register(registerAdminMetricsRoutes);
   await app.register(registerAdminIndexerRoutes);
   await app.register(registerHighlightRoutes);
 
