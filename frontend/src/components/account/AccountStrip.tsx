@@ -18,12 +18,6 @@ const AccountChip = ({
   onClick: () => void;
 }) => {
 
-  const validUrl = account.latestProfilePicUrl
-    ? (account.latestProfilePicUrl.startsWith('/api/media/')
-      ? account.latestProfilePicUrl
-      : `/api/media/${account.id}/${account.latestProfilePicUrl}`)
-    : null;
-
   return (
     <button
       type="button"
@@ -36,7 +30,7 @@ const AccountChip = ({
       <span className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-md shadow-black/40">
         {account.latestProfilePicUrl ? (
           <img
-            src={validUrl ?? undefined}
+            src={account.latestProfilePicUrl ?? undefined}
             alt={account.displayName}
             className="h-full w-full rounded-full object-cover"
             loading="lazy"

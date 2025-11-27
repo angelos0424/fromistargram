@@ -53,12 +53,12 @@ const HighlightList = ({ accountId }: HighlightListProps) => {
                                 <div className="h-full w-full overflow-hidden rounded-full">
                                     {highlight.media[0].mime.startsWith('video') ? (
                                         <video
-                                            src={`/api/media/${highlight.media[0].filename}`}
+                                            src={highlight.media[0].thumbnailUrl}
                                             className="h-full w-full object-cover"
                                         />
                                     ) : (
                                         <img
-                                            src={`/api/media/${highlight.media[0].filename}`}
+                                            src={highlight.media[0].thumbnailUrl}
                                             alt={highlight.title}
                                             className="h-full w-full object-cover"
                                         />

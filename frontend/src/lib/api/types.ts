@@ -101,6 +101,8 @@ export interface HighlightMedia {
   filename: string;
   mime: string;
   orderIndex: number;
+  url: string;
+  thumbnailUrl: string;
 }
 
 export interface Highlight {
