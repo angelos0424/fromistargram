@@ -38,6 +38,12 @@ services:
     ports:
       - '${API_PORT:-4000}:4000'
     command: ['node', 'dist/server.js']
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`${SERVICE_FQDN_API}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.api.loadbalancer.server.port=4000"
 
   imagor:
     image: shumc/imagor:latest
@@ -73,6 +79,12 @@ services:
       - /mnt/volume1/fromistargram/nginx_cache:/var/cache/nginx
     ports:
       - '${THUMBNAIL_PORT:-8080}:80'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.thumb.rule=Host(`${SERVICE_FQDN_THUMB}`) && PathPrefix(`/thumb`)"
+      - "traefik.http.routers.thumb.entrypoints=websecure"
+      - "traefik.http.routers.thumb.tls.certresolver=letsencrypt"
+      - "traefik.http.services.thumb.loadbalancer.server.port=80"
 
   redis:
     image: redis:alpine
