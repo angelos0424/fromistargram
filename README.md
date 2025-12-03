@@ -1,5 +1,8 @@
 # Fromistargram 인프라 & 배포 가이드 (Coolify 기준)
 
+[fromistargram.ddunddun.shop](fromistargram.ddunddun.shop)
+
+
 Instaloader로 인스타그램 계정을 크롤링해 Prisma/Fastify API로 노출하고, 이미지·동영상 썸네일을 Imagor/Imagorvideo(+Nginx 캐시)로 제공하는 스택입니다. 이 문서는 imgproxy가 아닌 **Imagor**를 사용하는 현재 구성을 기준으로 Coolify에서 빌드·배포·운영하는 방법을 정리합니다.
 
 ## 구성 요소
