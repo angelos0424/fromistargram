@@ -55,3 +55,9 @@ Instaloader로 인스타그램 계정을 크롤링해 Prisma/Fastify API로 노�
 - `/mnt/volume1/fromistargram/data`에는 크롤링 원본과 Imagor 결과물(`result/`)이 함께 저장되므로 최우선 백업 대상으로 지정합니다.
 - `pg_data`, `redis`, `nginx_cache`도 같은 루트 경로에 있으니 동일한 스토리지/백업 정책을 적용합니다.
 - 로그 확인: Coolify 콘솔에서 `api`/`imagor`/`nginx-cache` 로그를 보거나 필요 시 `docker compose logs -f <service>`로 조사합니다.
+
+
+# Todo
+- video thumbnail 처리
+
+# Change logs
