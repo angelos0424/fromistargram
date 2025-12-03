@@ -1,0 +1,86 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: fromistargram_db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+#      - pg_data:/var/lib/postgresql/data
+       - /mnt/volume1/fromistargram/pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: fromistargram_api
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DATA_ROOT: /data
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - /mnt/volume1/fromistargram/data:/data
+    ports:
+      - '${API_PORT:-4000}:4000'
+    command: ['node', 'dist/server.js']
+
+  imagor:
+    image: shumc/imagor:latest
+    container_name: fromistargram_imagor
+    environment:
+      IMAGOR_SECRET: ${IMAGOR_SECRET}
+      FILE_LOADER_BASE_DIR: '/data'
+      FILE_STORAGE_BASE_DIR: '/data'
+      DEBUG: 1
+      FILE_RESULT_STORAGE_BASE_DIR: '/data/result'
+      HTTP_LOADER_ALLOWED_SOURCES: 'https://fromistargram.ddunddun.shop'
+      PORT: 8000
+      IMAGOR_UNSAFE: 0
+      SERVER_PATH_PREFIX: '/thumb'
+      IMAGOR_BASE_DIR: '/data'
+      IMAGOR_VIDEO_URL: 'grpc://imagorvideo:50051'
+      IMAGOR_USE_ETAG: 'true'
+    volumes:
+      - /mnt/volume1/fromistargram/data:/data
+    depends_on:
+      - imagorvideo
+
+  imagorvideo:
+    image: shumc/imagorvideo:latest
+    container_name: fromistargram_imagorvideo
+    environment:
+      IMAGOR_SECRET: ${IMAGOR_SECRET}
+    volumes:
+      - /mnt/volume1/fromistargram/data:/data
+
+  nginx-cache:
+    build:
+      context: ./nginx
+    container_name: fromistargram_cache
+    depends_on:
+      - imagor
+    volumes:
+      - /mnt/volume1/fromistargram/nginx_cache:/var/cache/nginx
+    ports:
+      - '${THUMBNAIL_PORT:-8080}:80'
+
+  redis:
+    image: redis:alpine
+    container_name: fromistargram_redis
+    volumes:
+      - /mnt/volume1/fromistargram/redis:/data

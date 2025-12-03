@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                  String       @id
+  latestProfilePicUrl String?
+  lastIndexedAt       DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  posts               Post[]
+  profilePics         ProfilePic[]
+  highlights          Highlight[]
+}
+
+model Post {
+  id        String    @id
+  accountId String
+  account   Account   @relation(fields: [accountId], references: [id])
+  postedAt  DateTime
+  caption   String?
+  type      String    @default("Post")
+  hasText   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  media     Media[]
+  postText  PostText?
+  tags      PostTag[]
+
+  @@index([accountId, postedAt])
+}
+
+model Media {
+  id         String   @id @default(cuid())
+  postId     String
+  post       Post     @relation(fields: [postId], references: [id])
+  orderIndex Int
+  filename   String
+  mime       String
+  width      Int?
+  height     Int?
+  duration   Int?
+  createdAt  DateTime @default(now())
+
+  @@index([postId, orderIndex])
+}
+
+model ProfilePic {
+  id        String   @id
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id])
+  takenAt   DateTime
+  filename  String
+  createdAt DateTime @default(now())
+
+  @@index([accountId, takenAt])
+}
+
+model Tag {
+  id    Int       @id @default(autoincrement())
+  name  String    @unique
+  posts PostTag[]
+}
+
+model PostTag {
+  postId String
+  tagId  Int
+  post   Post @relation(fields: [postId], references: [id])
+  tag    Tag  @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId])
+}
+
+model PostText {
+  postId   String  @id
+  post     Post    @relation(fields: [postId], references: [id])
+  content  String
+  updatedAt DateTime @updatedAt
+}
+
+model CrawlTarget {
+  id            String       @id @default(cuid())
+  handle        String       @unique
+  displayName   String
+  isActive      Boolean      @default(true)
+  isFeatured    Boolean      @default(false)
+  priority      Int          @default(0)
+  lastSyncedAt  DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  runs          CrawlRun[]
+}
+
+enum CrawlAccountStatus {
+  ready
+  error
+  disabled
+}
+
+model CrawlAccount {
+  id            String             @id @default(cuid())
+  username      String             @unique
+  password      String?
+  status        CrawlAccountStatus @default(ready)
+  note          String?
+  lastSessionAt DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  runs          CrawlRun[]
+}
+
+enum CrawlRunStatus {
+  queued
+  running
+  success
+  failure
+}
+
+model CrawlRun {
+  id               String         @id @default(cuid())
+  targetId         String
+  target           CrawlTarget    @relation(fields: [targetId], references: [id])
+  sessionAccountId String?
+  sessionAccount   CrawlAccount?  @relation(fields: [sessionAccountId], references: [id])
+  triggeredBy      String
+  sessionId        String
+  status           CrawlRunStatus
+  startedAt        DateTime       @default(now())
+  finishedAt       DateTime?
+  message          String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([targetId, startedAt])
+  @@index([sessionAccountId, startedAt])
+}
+
+model Highlight {
+  id        String   @id @default(cuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id])
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  media     HighlightMedia[] @relation("HighlightItems")
+  
+  coverMediaId String? @unique
+  coverMedia   HighlightMedia? @relation("HighlightCover", fields: [coverMediaId], references: [id])
+
+  @@unique([accountId, title])
+}
+
+model HighlightMedia {
+  id          String    @id @default(cuid())
+  highlightId String
+  highlight   Highlight @relation("HighlightItems", fields: [highlightId], references: [id])
+  
+  coverForHighlight Highlight? @relation("HighlightCover")
+
+  filename    String
+  mime        String
+  orderIndex  Int
+  createdAt   DateTime  @default(now())
+
+  @@index([highlightId, orderIndex])
+}
