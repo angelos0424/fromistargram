@@ -1,135 +1,54 @@
-# Fromistargram Infrastructure & Crawler
+# Fromistargram 인프라 & 배포 가이드 (Coolify 기준)
 
-Fromistargram is a multi-service stack that indexes Instagram content harvested
-with [instaloader](https://instaloader.github.io/) and exposes it through a
-Fastify API as well as optimized thumbnails via [imgproxy](https://imgproxy.net/).
-This README documents how to bootstrap the crawler, configure Docker Compose,
-and monitor performance so the feed API responds in under 200 ms.
+Instaloader로 인스타그램 계정을 크롤링해 Prisma/Fastify API로 노출하고, 이미지·동영상 썸네일을 Imagor/Imagorvideo(+Nginx 캐시)로 제공하는 스택입니다. 이 문서는 imgproxy가 아닌 **Imagor**를 사용하는 현재 구성을 기준으로 Coolify에서 빌드·배포·운영하는 방법을 정리합니다.
 
-## Repository Structure
+## 구성 요소
+- `api`: Fastify 기반 백엔드. Instaloader 파이프라인과 인덱서, 관리용 Admin API 포함 (포트 4000).
+- `db`: PostgreSQL 16.
+- `redis`: 캐시/큐(선택).
+- `imagor`, `imagorvideo`: 이미지/동영상 리사이즈·인코딩.
+- `nginx-cache`: Imagor 앞단 캐싱 리버스 프록시, 외부 노출 포트 `${THUMBNAIL_PORT:-8080}`.
+- 데이터 볼륨: `/mnt/volume1/fromistargram/{data,pg_data,redis,nginx_cache}` (필요 시 경로 변경).
 
-```
-backend/   # Fastify API server (Node.js + Prisma)
-frontend/  # React SPA for feed browsing (not covered by this plan)
-plans/     # Implementation plans & progress tracking
-docker-compose.yml  # Production-like stack definition
-```
+## 사전 준비물
+- Coolify 4.x에서 Docker Compose 앱을 생성할 권한.
+- 빌드가 가능한 Docker 호스트와 위 볼륨 경로를 만들 권한.
+- Instagram 세션 혹은 로그인 계정 정보, API/썸네일용 도메인.
 
-## Prerequisites
+## 환경 변수
+`.env.sample`을 복사해 `.env`를 만들고 아래 값을 채웁니다. IMGPROXY 관련 키는 더 이상 사용하지 않으며, Imagor용 키를 넣어야 합니다.
+- **DB**: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `DATABASE_URL`
+- **API**: `API_PORT`(기본 4000), `PUBLIC_API_BASE_URL`, `LOG_LEVEL`
+- **썸네일**: `THUMBNAIL_PORT`(기본 8080), `IMAGOR_SECRET`, `IMAGOR_URL`(예: `https://thumb.example.com/thumb`)
+- **크롤러**: `DATA_ROOT=/data`, `CRAWL_OUTPUT_DIR`(선택), `CRAWL_SCRIPT_PATH`(선택), `INSTAGRAM_USERNAME`/`INSTAGRAM_PASSWORD`(세션 생성 시만 사용), `CRAWL_ACCOUNTS` 대신 `/api/admin/targets`로 관리 가능, `CRAWLER_RETRY_*`
+- **캐시**: `REDIS_URL` (미설정 시 Redis 없이 동작)
 
-- Docker & Docker Compose v2
-- Access to an Instagram account whose session can crawl the target profiles
-- A PostgreSQL volume of ~5 GB and persistent storage for downloaded media
-
-## Configuration
-
-1. Copy `.env.sample` to `.env` and customize the values:
-
+## Coolify 배포 절차
+1. Coolify에서 **Docker Compose 애플리케이션**을 새로 만들고 Git 저장소/브랜치를 연결합니다. Compose 파일 경로는 `docker-compose.yml`로 지정합니다.
+2. `Settings > Environment Variables`에 `.env` 값을 입력합니다. 특히 `IMAGOR_SECRET`, `IMAGOR_URL`, `PUBLIC_API_BASE_URL`을 실제 도메인에 맞게 설정합니다.
+3. 호스트 영속 디렉터리를 준비합니다:
    ```bash
-   cp .env.sample .env
+   mkdir -p /mnt/volume1/fromistargram/{data,pg_data,redis,nginx_cache}
    ```
+   다른 경로를 쓰려면 `docker-compose.yml`의 바인드 경로도 함께 수정하고, Coolify 볼륨을 그 경로에 매핑합니다.
+4. 포트/도메인 라우팅:
+   - **API**: 컨테이너 포트 4000(`API_PORT`)을 서비스 포트로 노출하고 API 도메인을 연결합니다.
+   - **썸네일**: `nginx-cache`의 80 포트를 `THUMBNAIL_PORT`(기본 8080)에 노출하고 썸네일 도메인을 연결합니다.
+5. `Deploy`를 실행하면 Coolify가 `backend/Dockerfile`을 빌드해 `api` 이미지를 만들고 나머지 이미지를 풀링해 Compose를 올립니다. 코드 변경 시 `Redeploy`만 누르면 됩니다.
 
-2. Update the following keys:
+## 사용 방법 (주요 API 흐름)
+- 상태 확인: `GET /healthz`
+- 크롤 계정 생성/세션 등록:
+  - `POST /api/admin/accounts`로 로그인 계정 등록
+  - `POST /api/admin/accounts/:id/session`에 Instaloader 세션 ID 등록
+- 크롤 대상 관리: `POST /api/admin/targets`(handle, displayName), `PATCH /api/admin/targets/:id`, `POST /api/admin/targets/reorder`
+- 수동 크롤 실행: `POST /api/admin/runs` `{ "sessionId": "세션ID", "targetId": "<옵션>" }` → 완료 시 인덱서가 자동 실행
+- 피드 조회: `GET /api/posts?limit=20`, `GET /api/accounts`
+- 원본/썸네일:
+  - 원본: `GET /api/media/:account/:filename`
+  - 썸네일: `GET /api/image-proxy/<imagor-path>` 예) `fit-in/640x640/filters:format(webp)/account/file.jpg` → 서명 후 Imagor/Imagorvideo로 리다이렉트
 
-   - `INSTAGRAM_USERNAME` / `INSTAGRAM_PASSWORD`: Credentials for the crawler
-     account. The password is only required the first time; afterwards the
-     session file stored under the `sessions` volume is reused.
-   - `CRAWL_ACCOUNTS`: Comma-separated list of Instagram usernames to index.
-   - `DATABASE_URL`: Prisma/Postgres connection string (defaults to the bundled
-     Postgres service).
-   - `IMGPROXY_KEY` & `IMGPROXY_SALT`: Optional signing secrets for hardened
-     thumbnail URLs. Leave blank to disable signature enforcement.
-   - `API_PORT` / `THUMBNAIL_PORT`: Published ports for the API and thumbnail
-     proxy.
-
-## Running the Stack
-
-> The compose file provisions shared volumes that mirror the production layout:
-> `data_root` (`/data` inside containers) for crawled assets, `sessions` for
-> instaloader sessions, and `pg_data` for PostgreSQL state.
-
-1. Build and start the services:
-
-   ```bash
-   docker compose up --build -d
-   ```
-
-2. Verify the health endpoints:
-
-   ```bash
-   curl http://localhost:4000/healthz
-   curl http://localhost:8080/health
-   ```
-
-3. Inspect crawler logs to ensure accounts are processed sequentially with
-   session reuse and retries applied:
-
-   ```bash
-   docker compose logs -f crawler
-   ```
-
-The crawler schedules runs based on `CRAWL_INTERVAL_MINUTES` (default 180).
-Adjust the value for more frequent synchronisation or pass `--interval` when
-running the container manually.
-
-## Manual Crawler Execution
-
-For one-off executions or smoke tests, you can run the crawler locally:
-
-```bash
-python crawler/main.py \
-  --accounts your_account \
-  --max-posts 5 \
-  --data-root ./sample-data \
-  --session-dir ./sessions
-```
-
-The script validates that every generated file matches the
-`<timestamp>_UTC_{n}.ext` pattern and archives profile images whenever the hash
-changes.
-
-## Monitoring & Performance Targets
-
-- **Feed latency**: The Fastify server logs per-request durations. Use
-  [`autocannon`](https://github.com/mcollina/autocannon) to benchmark the feed
-  endpoints and ensure the 95th percentile stays below 200 ms.
-
-  ```bash
-  npx autocannon http://localhost:4000/api/feed?limit=24
-  ```
-
-- **Thumbnail optimisation**: imgproxy automatically converts and resizes media
-  served from the shared `/data` volume. Tune the `IMGPROXY_` environment
-  variables in `.env` (quality, formats, cache TTL) to meet bandwidth targets.
-
-- **Metrics collection**: Fastify logs include `durationMs`, which can be
-  scraped into systems like Prometheus or Loki. Configure your log shipper to
-  parse the structured JSON logs emitted by the API container. For deeper
-  metrics, add `/metrics` endpoints or integrate with Prometheus Fastify
-  plugins—hooks are already in place to capture per-request timings.
-
-## Backups & Disaster Recovery
-
-- **Media & sessions**: Back up the `data_root` and `sessions` volumes on a
-  nightly basis. They contain the only copies of downloaded Instagram assets and
-  authentication sessions.
-- **Database**: Use `pg_dump` against the `db` container or your external
-  PostgreSQL instance. Schedule dumps alongside the crawler interval to maintain
-  a consistent snapshot.
-
-## Troubleshooting
-
-- **Session expired**: Remove the corresponding `.session` file from the
-  `sessions` volume and restart the crawler. It will log in with the password
-  provided via environment variables and persist a fresh session file.
-- **Rate limiting**: Increase `CRAWL_INTERVAL_MINUTES` or reduce the number of
-  accounts crawled per cycle to stay within Instagram's request budget.
-- **Slow responses**: Use the Fastify logs to identify slow routes and consider
-  enabling caching (`REDIS_URL`) or increasing Postgres resources.
-
-## Next Steps
-
-- Wire up Prometheus scraping and Grafana dashboards for live latency graphs.
-- Implement admin-only APIs once Authentik integration is available.
-- Automate crawler triggers from the admin panel via REST calls to the API
-  service.
+## 운영 팁
+- `/mnt/volume1/fromistargram/data`에는 크롤링 원본과 Imagor 결과물(`result/`)이 함께 저장되므로 최우선 백업 대상으로 지정합니다.
+- `pg_data`, `redis`, `nginx_cache`도 같은 루트 경로에 있으니 동일한 스토리지/백업 정책을 적용합니다.
+- 로그 확인: Coolify 콘솔에서 `api`/`imagor`/`nginx-cache` 로그를 보거나 필요 시 `docker compose logs -f <service>`로 조사합니다.
