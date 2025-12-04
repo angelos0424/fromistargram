@@ -83,8 +83,9 @@ export function buildImagorUrl(source: string, options?: ImagorOptions): string 
     return null;
   }
 
-  const { plain: plainPath, encoded: encodedPath } = buildTransformationPath(source, options);
-  const signature = signPath(plainPath);
+  const { encoded: encodedPath } = buildTransformationPath(source, options);
+  // Use the encoded path for signature generation because Imagor verifies the signature against the received URL, which is encoded.
+  const signature = signPath(encodedPath);
   const normalizedBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 
   // Determine prefix based on file extension
