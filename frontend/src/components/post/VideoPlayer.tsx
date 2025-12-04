@@ -116,10 +116,10 @@ const VideoPlayer = ({ media, className }: VideoPlayerProps) => {
   const progress = duration ? Math.min(100, (currentTime / duration) * 100) : 0;
 
   return (
-    <div className={`relative flex h-full w-full flex-col ${className ?? ''}`}>
+    <div className={`group relative flex h-full w-full items-center justify-center bg-black ${className ?? ''}`}>
       <video
         ref={videoRef}
-        className="h-full w-full flex-1 rounded-2xl bg-black object-contain"
+        className="h-full w-full object-contain"
         src={media.mediaUrl}
         poster={media.thumbnailUrl}
         preload="metadata"
@@ -128,8 +128,18 @@ const VideoPlayer = ({ media, className }: VideoPlayerProps) => {
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         crossOrigin="anonymous"
+        onClick={handlePlayPause}
       />
-      <div className="mt-3 flex items-center gap-3 rounded-full border border-white/10 bg-black/50 px-4 py-2 text-xs text-slate-100">
+      
+      {!isPlaying && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/10">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm">
+            <span className="ml-1 text-3xl">►</span>
+          </div>
+        </div>
+      )}
+
+      <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center gap-3 rounded-full border border-white/10 bg-black/60 px-4 py-2 text-xs text-slate-100 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 data-[playing=false]:opacity-100" data-playing={isPlaying}>
         <button
           type="button"
           onClick={handlePlayPause}
