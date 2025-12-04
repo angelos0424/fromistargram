@@ -34,7 +34,9 @@ export function signPath(path: string): string | null {
 
 function buildTransformationPath(source: string, options?: ImagorOptions): string {
   // Strip local:/// prefix
-  const imagePath = source.replace(/^local:\/\/\//, '');
+  const rawPath = source.replace(/^local:\/\/\//, '');
+  // Encode path segments to safely handle spaces, Hangul, and special characters in the URL
+  const imagePath = rawPath.split('/').map(encodeURIComponent).join('/');
 
   const resize = options?.resize ?? {};
   const width = resize.width ?? defaultResizeWidth;
