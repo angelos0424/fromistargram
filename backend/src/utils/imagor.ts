@@ -27,12 +27,6 @@ export function signPath(path: string): string | null {
   console.log('signPath...', secret, baseUrl);
 
   const hmac = createHmac('sha1', secret).update(path).digest('base64').replace(/\+/g, '-').replace(/\//g, '_');
-  if (path.toLowerCase().endsWith('.mp4')) {
-    const pathToSign = path.startsWith('/') ? path : '/' + path;
-    const videoHmac = createHmac('sha1', secret).update(pathToSign).digest('base64url');
-    console.log('video - ', pathToSign, videoHmac)
-    return videoHmac;
-  }
   console.log('hmac = ', hmac);
   console.log('path = ', path);
   return hmac;
