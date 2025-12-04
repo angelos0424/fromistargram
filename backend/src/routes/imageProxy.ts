@@ -52,7 +52,8 @@ export async function registerImageProxyRoutes(app: FastifyInstance) {
             .replace(/%28/g, '(')
             .replace(/%29/g, ')');
 
-        const signedUrl = `${normalizedBase}/${signature}/${encodedPath}`;
+        const prefix = isVideo ? '/thumb/videos' : '/thumb/images';
+        const signedUrl = `${normalizedBase}${prefix}/${signature}/${encodedPath}`;
 
         return reply.redirect(signedUrl);
 

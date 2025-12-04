@@ -81,10 +81,16 @@ export function buildImagorUrl(source: string, options?: ImagorOptions): string 
   const signature = signPath(transformationPath);
   const normalizedBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 
+  // Determine prefix based on file extension
+  // We check the source string because transformationPath might not have the extension if manipulated, 
+  // though usually it does. Checking source is safer for type detection.
+  const isVideo = source.toLowerCase().endsWith('.mp4');
+  const prefix = isVideo ? '/thumb/videos' : '/thumb/images';
+
   if (!signature) {
     // Unsafe URL if secret not set
-    return `${normalizedBase}/unsafe/${transformationPath}`;
+    return `${normalizedBase}${prefix}/unsafe/${transformationPath}`;
   }
 
-  return `${normalizedBase}/${signature}/${transformationPath}`;
+  return `${normalizedBase}${prefix}/${signature}/${transformationPath}`;
 }
