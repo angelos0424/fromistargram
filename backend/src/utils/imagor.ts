@@ -27,7 +27,7 @@ export function signPath(path: string): string | null {
   console.log('signPath...', secret, baseUrl);
 
   const hmac = createHmac('sha1', secret).update(path).digest('base64').replace(/\+/g, '-').replace(/\//g, '_');
-  if (path.endsWith('.mp4')) {
+  if (path.toLowerCase().endsWith('.mp4')) {
     const pathToSign = path.startsWith('/') ? path : '/' + path;
     const videoHmac = createHmac('sha1', secret).update(pathToSign).digest('base64url');
     console.log('video - ', pathToSign, videoHmac)
@@ -46,7 +46,11 @@ function buildTransformationPath(source: string, options?: ImagorOptions): strin
   const width = resize.width ?? defaultResizeWidth;
   const height = resize.height ?? defaultResizeHeight;
   const quality = options?.quality ?? defaultQuality;
-  const format = options?.format ?? defaultFormat;
+  let format = options?.format ?? defaultFormat;
+
+  if (source.toLowerCase().endsWith('.mp4')) {
+    format = 'jpeg';
+  }
 
   const parts: string[] = [];
 
