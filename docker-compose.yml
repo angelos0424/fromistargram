@@ -46,8 +46,12 @@ services:
       IMAGOR_SECRET: ${IMAGOR_SECRET}
       FILE_LOADER_BASE_DIR: '/data'
       FILE_STORAGE_BASE_DIR: '/data'
-      DEBUG: 1
+      FILE_STORAGE_MKDIR_PERMISSION: 0755 # optional
+      FILE_STORAGE_WRITE_PERMISSION: 0666 # optional
+      DEBUG: 0
       FILE_RESULT_STORAGE_BASE_DIR: '/data/result'
+      FILE_RESULT_STORAGE_MKDIR_PERMISSION: 0755 # optional
+      FILE_RESULT_STORAGE_WRITE_PERMISSION: 0666 # optional
       HTTP_LOADER_ALLOWED_SOURCES: 'https://fromistargram.ddunddun.shop'
       PORT: 8000
       IMAGOR_UNSAFE: 0
@@ -63,8 +67,12 @@ services:
       IMAGOR_SECRET: ${IMAGOR_SECRET}
       FILE_LOADER_BASE_DIR: '/data'
       FILE_STORAGE_BASE_DIR: '/data'
-      DEBUG: 1
+      FILE_STORAGE_MKDIR_PERMISSION: 0755 # optional
+      FILE_STORAGE_WRITE_PERMISSION: 0666 # optional
+      DEBUG: 0
       FILE_RESULT_STORAGE_BASE_DIR: '/data/result'
+      FILE_RESULT_STORAGE_MKDIR_PERMISSION: 0755 # optional
+      FILE_RESULT_STORAGE_WRITE_PERMISSION: 0666 # optional
       HTTP_LOADER_ALLOWED_SOURCES: 'https://fromistargram.ddunddun.shop'
       PORT: 8000
       IMAGOR_UNSAFE: 0
