@@ -51,7 +51,6 @@ services:
       HTTP_LOADER_ALLOWED_SOURCES: 'https://fromistargram.ddunddun.shop'
       PORT: 8000
       IMAGOR_UNSAFE: 0
-      SERVER_PATH_PREFIX: '/thumb/images'
       IMAGOR_BASE_DIR: '/data'
       IMAGOR_USE_ETAG: 'true'
     volumes:
@@ -69,7 +68,6 @@ services:
       HTTP_LOADER_ALLOWED_SOURCES: 'https://fromistargram.ddunddun.shop'
       PORT: 8000
       IMAGOR_UNSAFE: 0
-      SERVER_PATH_PREFIX: '/thumb/images'
       IMAGOR_BASE_DIR: '/data'
       IMAGOR_USE_ETAG: 'true'
     volumes:
