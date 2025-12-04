@@ -35,8 +35,9 @@ export function signPath(path: string): string | null {
 function buildTransformationPath(source: string, options?: ImagorOptions): { plain: string; encoded: string } {
   // Strip local:/// prefix
   const rawPath = source.replace(/^local:\/\/\//, '');
-  // Encode path segments to safely handle spaces, Hangul, and special characters in the URL
-  const encodedPath = rawPath.split('/').map(encodeURIComponent).join('/');
+  
+  // Normalize to NFC (Standard for Linux/Ubuntu/Web) to ensure Hangul filenames match the filesystem
+  const encodedPath = rawPath.normalize('NFC').split('/').map(encodeURIComponent).join('/');
 
   const resize = options?.resize ?? {};
   const width = resize.width ?? defaultResizeWidth;
