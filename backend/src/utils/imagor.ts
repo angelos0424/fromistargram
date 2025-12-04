@@ -32,11 +32,11 @@ export function signPath(path: string): string | null {
   return hmac;
 }
 
-function buildTransformationPath(source: string, options?: ImagorOptions): string {
+function buildTransformationPath(source: string, options?: ImagorOptions): { plain: string; encoded: string } {
   // Strip local:/// prefix
   const rawPath = source.replace(/^local:\/\/\//, '');
   // Encode path segments to safely handle spaces, Hangul, and special characters in the URL
-  const imagePath = rawPath.split('/').map(encodeURIComponent).join('/');
+  const encodedPath = rawPath.split('/').map(encodeURIComponent).join('/');
 
   const resize = options?.resize ?? {};
   const width = resize.width ?? defaultResizeWidth;
@@ -69,9 +69,12 @@ function buildTransformationPath(source: string, options?: ImagorOptions): strin
     parts.push(`filters:${filters.join(':')}`);
   }
 
-  parts.push(imagePath);
+  const prefix = parts.length > 0 ? parts.join('/') + '/' : '';
 
-  return parts.join('/');
+  return {
+    plain: prefix + rawPath,
+    encoded: prefix + encodedPath,
+  };
 }
 
 export function buildImagorUrl(source: string, options?: ImagorOptions): string | null {
@@ -79,8 +82,8 @@ export function buildImagorUrl(source: string, options?: ImagorOptions): string 
     return null;
   }
 
-  const transformationPath = buildTransformationPath(source, options);
-  const signature = signPath(transformationPath);
+  const { plain: plainPath, encoded: encodedPath } = buildTransformationPath(source, options);
+  const signature = signPath(plainPath);
   const normalizedBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 
   // Determine prefix based on file extension
@@ -91,8 +94,8 @@ export function buildImagorUrl(source: string, options?: ImagorOptions): string 
 
   if (!signature) {
     // Unsafe URL if secret not set
-    return `${normalizedBase}${prefix}/unsafe/${transformationPath}`;
+    return `${normalizedBase}${prefix}/unsafe/${encodedPath}`;
   }
 
-  return `${normalizedBase}${prefix}/${signature}/${transformationPath}`;
+  return `${normalizedBase}${prefix}/${signature}/${encodedPath}`;
 }
