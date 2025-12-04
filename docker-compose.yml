@@ -51,20 +51,27 @@ services:
       HTTP_LOADER_ALLOWED_SOURCES: 'https://fromistargram.ddunddun.shop'
       PORT: 8000
       IMAGOR_UNSAFE: 0
-      SERVER_PATH_PREFIX: '/thumb'
+      SERVER_PATH_PREFIX: '/thumb/images'
       IMAGOR_BASE_DIR: '/data'
-      IMAGOR_VIDEO_URL: 'grpc://imagorvideo:50051'
       IMAGOR_USE_ETAG: 'true'
     volumes:
       - /mnt/volume1/fromistargram/data:/data
-    depends_on:
-      - imagorvideo
 
   imagorvideo:
     image: shumc/imagorvideo:latest
     container_name: fromistargram_imagorvideo
     environment:
       IMAGOR_SECRET: ${IMAGOR_SECRET}
+      FILE_LOADER_BASE_DIR: '/data'
+      FILE_STORAGE_BASE_DIR: '/data'
+      DEBUG: 1
+      FILE_RESULT_STORAGE_BASE_DIR: '/data/result'
+      HTTP_LOADER_ALLOWED_SOURCES: 'https://fromistargram.ddunddun.shop'
+      PORT: 8000
+      IMAGOR_UNSAFE: 0
+      SERVER_PATH_PREFIX: '/thumb/images'
+      IMAGOR_BASE_DIR: '/data'
+      IMAGOR_USE_ETAG: 'true'
     volumes:
       - /mnt/volume1/fromistargram/data:/data
 
