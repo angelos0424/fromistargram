@@ -57,6 +57,8 @@ services:
       IMAGOR_UNSAFE: 0
       IMAGOR_BASE_DIR: '/data'
       IMAGOR_USE_ETAG: 'true'
+      PUID: 1001
+      PGID: 1001
     volumes:
       - /mnt/volume1/fromistargram/data:/data
 
@@ -78,6 +80,8 @@ services:
       IMAGOR_UNSAFE: 0
       IMAGOR_BASE_DIR: '/data'
       IMAGOR_USE_ETAG: 'true'
+      PUID: 1001
+      PGID: 1001
     volumes:
       - /mnt/volume1/fromistargram/data:/data
 
