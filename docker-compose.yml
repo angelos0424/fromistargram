@@ -34,7 +34,7 @@ services:
       DATA_ROOT: /data
       REDIS_URL: redis://redis:6379
     volumes:
-      - /mnt/volume1/fromistargram/data:/data
+      - /mnt/volume1/fromistargram/data/source:/data:ro
     ports:
       - '${API_PORT:-4000}:4000'
     command: ['node', 'dist/server.js']
@@ -46,10 +46,8 @@ services:
       IMAGOR_SECRET: ${IMAGOR_SECRET}
       FILE_LOADER_BASE_DIR: '/data'
       FILE_STORAGE_BASE_DIR: '/data'
-      FILE_STORAGE_MKDIR_PERMISSION: 0755 # optional
-      FILE_STORAGE_WRITE_PERMISSION: 0666 # optional
       DEBUG: 0
-      FILE_RESULT_STORAGE_BASE_DIR: '/data/result'
+      FILE_RESULT_STORAGE_BASE_DIR: '/result'
       FILE_RESULT_STORAGE_MKDIR_PERMISSION: 0755 # optional
       FILE_RESULT_STORAGE_WRITE_PERMISSION: 0666 # optional
       HTTP_LOADER_ALLOWED_SOURCES: 'https://fromistargram.ddunddun.shop'
@@ -57,10 +55,9 @@ services:
       IMAGOR_UNSAFE: 0
       IMAGOR_BASE_DIR: '/data'
       IMAGOR_USE_ETAG: 'true'
-      PUID: 1001
-      PGID: 1001
     volumes:
-      - /mnt/volume1/fromistargram/data:/data
+      - /mnt/volume1/fromistargram/data/source:/data:ro
+      - /mnt/volume1/fromistargram/data/result:/result
 
   imagorvideo:
     image: shumc/imagorvideo:latest
@@ -69,10 +66,8 @@ services:
       IMAGOR_SECRET: ${IMAGOR_SECRET}
       FILE_LOADER_BASE_DIR: '/data'
       FILE_STORAGE_BASE_DIR: '/data'
-      FILE_STORAGE_MKDIR_PERMISSION: 0755 # optional
-      FILE_STORAGE_WRITE_PERMISSION: 0666 # optional
       DEBUG: 0
-      FILE_RESULT_STORAGE_BASE_DIR: '/data/result'
+      FILE_RESULT_STORAGE_BASE_DIR: '/result'
       FILE_RESULT_STORAGE_MKDIR_PERMISSION: 0755 # optional
       FILE_RESULT_STORAGE_WRITE_PERMISSION: 0666 # optional
       HTTP_LOADER_ALLOWED_SOURCES: 'https://fromistargram.ddunddun.shop'
@@ -80,10 +75,9 @@ services:
       IMAGOR_UNSAFE: 0
       IMAGOR_BASE_DIR: '/data'
       IMAGOR_USE_ETAG: 'true'
-      PUID: 1001
-      PGID: 1001
     volumes:
-      - /mnt/volume1/fromistargram/data:/data
+      - /mnt/volume1/fromistargram/data/source:/data:ro
+      - /mnt/volume1/fromistargram/data/result:/result
 
   nginx-cache:
     build:
