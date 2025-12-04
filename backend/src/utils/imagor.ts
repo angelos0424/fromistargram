@@ -34,10 +34,10 @@ export function signPath(path: string): string | null {
 
 function buildTransformationPath(source: string, options?: ImagorOptions): { plain: string; encoded: string } {
   // Strip local:/// prefix
-  const rawPath = source.replace(/^local:\/\/\//, '');
-  
   // Normalize to NFC (Standard for Linux/Ubuntu/Web) to ensure Hangul filenames match the filesystem
-  const encodedPath = rawPath.normalize('NFC').split('/').map(encodeURIComponent).join('/');
+  const rawPath = source.replace(/^local:\/\/\//, '').normalize('NFC');
+
+  const encodedPath = rawPath.split('/').map(encodeURIComponent).join('/');
 
   const resize = options?.resize ?? {};
   const width = resize.width ?? defaultResizeWidth;
@@ -83,9 +83,9 @@ export function buildImagorUrl(source: string, options?: ImagorOptions): string 
     return null;
   }
 
-  const { encoded: encodedPath } = buildTransformationPath(source, options);
-  // Use the encoded path for signature generation because Imagor verifies the signature against the received URL, which is encoded.
-  const signature = signPath(encodedPath);
+  const { plain, encoded: encodedPath } = buildTransformationPath(source, options);
+  // Use the plain path for signature generation because Imagor verifies the signature against the decoded path.
+  const signature = signPath(plain);
   const normalizedBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 
   // Determine prefix based on file extension
