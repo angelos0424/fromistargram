@@ -85,7 +85,7 @@ export function buildImagorUrl(source: string, options?: ImagorOptions): string 
   // We check the source string because transformationPath might not have the extension if manipulated, 
   // though usually it does. Checking source is safer for type detection.
   const isVideo = source.toLowerCase().endsWith('.mp4');
-  const prefix = isVideo ? '/thumb/videos' : '/thumb/images';
+  const prefix = isVideo ? '/videos' : '/images';
 
   if (!signature) {
     // Unsafe URL if secret not set
