@@ -41,7 +41,6 @@ log
 **/.env.sample
 **/.env
 **/*.md
-**/*.json
 **/*.test.ts
 **/*.test.tsx
 **/*.test.tsx.snap
