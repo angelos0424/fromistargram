@@ -72,6 +72,7 @@ const HighlightList = ({ accountId }: HighlightListProps) => {
             {selectedHighlight && ReactDOM.createPortal(
                 <HighlightViewer
                     highlight={selectedHighlight}
+                    accountId={accountId}
                     onClose={() => setSelectedHighlight(null)}
                 />,
                 document.body

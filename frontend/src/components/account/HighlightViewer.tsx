@@ -3,10 +3,11 @@ import type { Highlight } from '../../lib/api/types';
 
 interface HighlightViewerProps {
     highlight: Highlight;
+    accountId: string;
     onClose: () => void;
 }
 
-const HighlightViewer = ({ highlight, onClose }: HighlightViewerProps) => {
+const HighlightViewer = ({ highlight, accountId, onClose }: HighlightViewerProps) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const currentMedia = highlight.media[currentIndex];
 
@@ -67,7 +68,7 @@ const HighlightViewer = ({ highlight, onClose }: HighlightViewerProps) => {
                 <div className="flex h-full items-center justify-center">
                     {currentMedia.mime.startsWith('video') ? (
                         <video
-                            src={`/api/media/${currentMedia.filename}`}
+                            src={`/api/media/${accountId}/${currentMedia.filename}`}
                             className="max-h-full max-w-full object-contain"
                             autoPlay
                             controls
