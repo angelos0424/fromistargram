@@ -53,7 +53,7 @@ const HighlightList = ({ accountId }: HighlightListProps) => {
                             {highlight.coverMedia?.url ? (
                                 <div className="h-full w-full overflow-hidden rounded-full">
                                     <img
-                                        src={highlight.coverMedia.url}
+                                        src={highlight.coverUrl}
                                         alt={highlight.title}
                                         className="h-full w-full object-cover"
                                     />

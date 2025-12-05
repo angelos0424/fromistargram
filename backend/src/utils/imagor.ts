@@ -24,11 +24,9 @@ export function signPath(path: string): string | null {
   if (!secret) {
     return null;
   }
-  console.log('signPath...', secret, baseUrl);
 
   const hmac = createHmac('sha1', secret).update(path).digest('base64').replace(/\+/g, '-').replace(/\//g, '_');
-  console.log('hmac = ', hmac);
-  console.log('path = ', path);
+
   return hmac;
 }
 

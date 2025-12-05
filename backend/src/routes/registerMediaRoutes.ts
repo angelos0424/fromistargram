@@ -53,7 +53,7 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
   const dataRoot = process.env.DATA_ROOT ?? '/root';
 
   app.get(
-    '/api/media/:account/:filename',
+    '/api/media/:account/*',
     {
       schema: {
         tags: ['Media'],
@@ -62,9 +62,9 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
           type: 'object',
           properties: {
             account: { type: 'string' },
-            filename: { type: 'string' }
+            '*': { type: 'string' }
           },
-          required: ['account', 'filename'],
+          required: ['account', '*'],
           additionalProperties: false
         },
         response: {
@@ -84,10 +84,9 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
       }
     },
     async (request, reply) => {
-      const { account, filename } = paramsSchema.parse(request.params);
+      const { account } = paramsSchema.pick({ account: true }).parse(request.params);
+      const filename = (request.params as any)['*'];
       const filePath = path.join(dataRoot, account, filename);
-
-      console.log('filePath....', filePath, dataRoot, account, filename)
 
       try {
         await access(filePath, constants.R_OK);
@@ -106,7 +105,7 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.get(
-    '/api/media/by-filename/:filename',
+    '/api/media/by-filename/*',
     {
       schema: {
         tags: ['Media'],
@@ -114,9 +113,9 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
         params: {
           type: 'object',
           properties: {
-            filename: { type: 'string' }
+            '*': { type: 'string' }
           },
-          required: ['filename'],
+          required: ['*'],
           additionalProperties: false
         },
         response: {
@@ -144,7 +143,7 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
       }
     },
     async (request, reply) => {
-      const { filename } = filenameOnlySchema.parse(request.params);
+      const filename = (request.params as any)['*'];
 
       const resolution = await resolveAccountForFilename(filename);
       if (!resolution) {
