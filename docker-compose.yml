@@ -55,6 +55,7 @@ services:
       IMAGOR_UNSAFE: 0
       IMAGOR_BASE_DIR: '/data'
       IMAGOR_USE_ETAG: 'true'
+      FILE_SAFE_CHARS: '--'
     volumes:
       - /mnt/volume1/fromistargram/data/source:/data:ro
       - /mnt/volume1/fromistargram/data/result:/result
@@ -75,6 +76,7 @@ services:
       IMAGOR_UNSAFE: 0
       IMAGOR_BASE_DIR: '/data'
       IMAGOR_USE_ETAG: 'true'
+      FILE_SAFE_CHARS: '--'
     volumes:
       - /mnt/volume1/fromistargram/data/source:/data:ro
       - /mnt/volume1/fromistargram/data/result:/result

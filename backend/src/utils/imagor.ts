@@ -37,7 +37,9 @@ function buildTransformationPath(source: string, options?: ImagorOptions): { pla
   // Normalize to NFC (Standard for Linux/Ubuntu/Web) to ensure Hangul filenames match the filesystem
   const rawPath = source.replace(/^local:\/\/\//, '').normalize('NFC');
 
-  const encodedPath = rawPath.split('/').map(encodeURIComponent).join('/');
+  // Use b64: encoding for the path to handle special characters (spaces, etc.) safely
+  // Base64 encode the path, make it URL-safe (replace + with -, / with _), and remove padding =
+  const b64Path = 'b64:' + Buffer.from(rawPath).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
   const resize = options?.resize ?? {};
   const width = resize.width ?? defaultResizeWidth;
@@ -72,9 +74,13 @@ function buildTransformationPath(source: string, options?: ImagorOptions): { pla
 
   const prefix = parts.length > 0 ? parts.join('/') + '/' : '';
 
+  // When using b64:, the "plain" path used for signing includes the b64: prefix and the encoded string.
+  // There is no separate "encoded" path in the sense of URL encoding individual segments.
+  const fullPath = prefix + b64Path;
+
   return {
-    plain: prefix + rawPath,
-    encoded: prefix + encodedPath,
+    plain: fullPath,
+    encoded: fullPath,
   };
 }
 
