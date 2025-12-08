@@ -12,7 +12,8 @@ const navItems: NavItem[] = [
   { to: '/admin', label: '대시보드', end: true },
   { to: '/admin/targets', label: '크롤링 대상' },
   { to: '/admin/accounts', label: '로그인 계정' },
-  { to: '/admin/runs', label: '실행 이력' }
+  { to: '/admin/runs', label: '실행 이력' },
+  { to: '/admin/db', label: 'DB 내용' }
 ];
 
 interface AdminLayoutProps {
