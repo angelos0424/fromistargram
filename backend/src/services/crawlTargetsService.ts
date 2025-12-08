@@ -3,6 +3,8 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { prisma } from '../db/client.js';
 import { scheduleIndexerRun } from './indexerService.js';
+import { InstagramScraper } from '@aduptive/instagram-scraper';
+import {InstagramPost} from "@aduptive/instagram-scraper/dist/types.js";
 
 export type AdminCrawlTarget = {
   id: string;
@@ -338,6 +340,40 @@ async function updateRunStatus(
   });
 }
 
+async function scrapeMultipleProfiles(usernames: string[]) {
+  const scraper = new InstagramScraper({
+    maxRetries: 3,
+    minDelay: 2000,
+    maxDelay: 5000,
+    timeout: 10000,
+    rateLimitPerMinute: 20
+  });
+
+  const result: { name : string, posts: InstagramPost[]}[] = [];
+
+  for (const username of usernames) {
+    try {
+      await new Promise(resolve =>
+        setTimeout(resolve, 2000 + Math.random() * 3000)
+      );
+
+      const results = await scraper.getPosts(username, 20);
+
+      if (results.success) {
+        console.log(`${username}: ${results.posts?.length} posts collected`);
+        if (results.posts) {
+          result.push({name: username, posts: results.posts});
+        }
+      } else {
+        console.log(`${username}: ${results.error}`);
+      }
+    } catch (error) {
+      console.error(`Error collecting ${username}:`, error);
+    }
+  }
+  return result;
+}
+
 function launchManualCrawler(
   runId: string,
   handles: string[],
@@ -347,6 +383,7 @@ function launchManualCrawler(
   const scriptPath = resolveCrawlerScriptPath();
   console.log(`Run status: ${runId} || handles: ${handles.join(', ')}`);
   const args = [scriptPath, '--profiles', ...handles, '--session-id', sessionId, '-f', '-s', '-hl', '-r'];
+  scrapeMultipleProfiles(handles).then(r => console.log("scrapeMultipleProfiles result :: " + r))
 
   if (credentials) {
     args.push('-l', credentials.username, '-p', credentials.password);
