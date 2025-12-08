@@ -44,6 +44,7 @@ export interface CrawlTargetPayload {
 }
 
 export interface CrawlTargetPatch {
+  handle?: string;
   displayName?: string;
   isActive?: boolean;
   isFeatured?: boolean;
