@@ -363,7 +363,7 @@ async function scrapeMultipleProfiles(usernames: string[]) {
         console.log(`${username}: ${results.posts?.length} posts collected`);
         if (results.posts) {
           result.push({name: username, posts: results.posts});
-          console.log('result.posts[0] ::' + JSON.stringify(result[0].posts[0]))
+          results.posts.forEach(post => console.log('result.posts ::' + JSON.stringify(post)));
         }
       } else {
         console.log(`${username}: ${results.error}`);
