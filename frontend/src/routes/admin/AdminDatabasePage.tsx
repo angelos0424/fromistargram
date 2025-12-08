@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import AdminSectionCard from '../../components/admin/AdminSectionCard';
 import { ADMIN_KEY } from '../../lib/api/admin/consts';
-import { fetchDatabaseOverview } from '../../lib/api/admin/database';
+import { deleteDatabaseAccount, fetchDatabaseOverview } from '../../lib/api/admin/database';
 import type { TablePreview } from '../../lib/api/admin/types';
 
 const formatValue = (value: unknown) => {
@@ -34,6 +34,15 @@ const formatValue = (value: unknown) => {
 };
 
 const TablePreviewCard = ({ table }: { table: TablePreview }) => {
+  const queryClient = useQueryClient();
+
+  const { mutate: deleteAccount } = useMutation({
+    mutationFn: deleteDatabaseAccount,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'database', 'overview'] });
+    }
+  });
+
   const columns = useMemo(() => {
     const keys = new Set<string>();
     table.latestRows.forEach((row) => {
@@ -41,6 +50,13 @@ const TablePreviewCard = ({ table }: { table: TablePreview }) => {
     });
     return Array.from(keys);
   }, [table.latestRows]);
+
+  const handleDelete = (id: unknown) => {
+    if (typeof id !== 'string') return;
+    if (window.confirm('정말 이 계정을 삭제하시겠습니까? (관련된 모든 데이터가 삭제됩니다)')) {
+      deleteAccount(id);
+    }
+  };
 
   return (
     <AdminSectionCard
@@ -62,6 +78,11 @@ const TablePreviewCard = ({ table }: { table: TablePreview }) => {
                     {column}
                   </th>
                 ))}
+                {table.key === 'accounts' && (
+                  <th className="px-3 py-2 text-left font-semibold uppercase tracking-wide text-slate-400">
+                    관리
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -72,6 +93,16 @@ const TablePreviewCard = ({ table }: { table: TablePreview }) => {
                       {formatValue((row as Record<string, unknown>)[column])}
                     </td>
                   ))}
+                  {table.key === 'accounts' && (
+                    <td className="px-3 py-2 align-top text-slate-100">
+                      <button
+                        onClick={() => handleDelete((row as Record<string, unknown>).id)}
+                        className="rounded bg-red-900/50 px-2 py-1 text-xs text-red-200 hover:bg-red-900 hover:text-white"
+                      >
+                        삭제
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

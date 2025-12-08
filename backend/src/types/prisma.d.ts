@@ -171,6 +171,7 @@ declare module '@prisma/client' {
       count(...args: any[]): Promise<number>;
       groupBy(...args: any[]): Promise<any[]>;
       aggregate(...args: any[]): Promise<any>;
+      deleteMany(...args: any[]): Promise<any>;
     };
     media: {
       deleteMany(...args: any[]): Promise<any>;
@@ -193,13 +194,17 @@ declare module '@prisma/client' {
     };
     postText: {
       upsert(...args: any[]): Promise<PostText>;
+      deleteMany(...args: any[]): Promise<any>;
     };
     highlight: {
       findMany(...args: any[]): Promise<Highlight[]>;
       findUnique(...args: any[]): Promise<Highlight | null>;
       upsert(...args: any[]): Promise<Highlight>;
       update(...args: any[]): Promise<Highlight>;
+      updateMany(...args: any[]): Promise<Highlight[]>;
+      delete(...args: any[]): Promise<Highlight>;
       count(...args: any[]): Promise<number>;
+      deleteMany(...args: any[]): Promise<any>;
     };
     highlightMedia: {
       deleteMany(...args: any[]): Promise<any>;

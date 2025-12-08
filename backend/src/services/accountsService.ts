@@ -267,6 +267,79 @@ export async function deleteCrawlerAccount(id: string): Promise<boolean> {
   return true;
 }
 
+export async function deleteAccount(id: string): Promise<boolean> {
+  const account = await prisma.account.findUnique({ where: { id } });
+  if (!account) {
+    return false;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Get all post IDs
+    const posts = await tx.post.findMany({
+      where: { accountId: id },
+      select: { id: true }
+    });
+    const postIds = posts.map((p) => p.id);
+
+    // 2. Delete Post relations
+    if (postIds.length > 0) {
+      await tx.media.deleteMany({
+        where: { postId: { in: postIds } }
+      });
+      await tx.postText.deleteMany({
+        where: { postId: { in: postIds } }
+      });
+      await tx.postTag.deleteMany({
+        where: { postId: { in: postIds } }
+      });
+    }
+
+    // 3. Delete Posts
+    await tx.post.deleteMany({
+      where: { accountId: id }
+    });
+
+    // 4. Delete ProfilePics
+    await tx.profilePic.deleteMany({
+      where: { accountId: id }
+    });
+
+    // 5. Get Highlight IDs
+    const highlights = await tx.highlight.findMany({
+      where: { accountId: id },
+      select: { id: true }
+    });
+    const highlightIds = highlights.map((h) => h.id);
+
+    // 6. Delete Highlight relations
+    if (highlightIds.length > 0) {
+      // First, we need to unset any coverMedia relations to avoid circular dependency issues if any
+      // Actually, HighlightMedia depends on Highlight. Highlight depends on HighlightMedia (coverMedia).
+      // We should set coverMediaId to null first.
+      await tx.highlight.updateMany({
+        where: { accountId: id },
+        data: { coverMediaId: null }
+      });
+
+      await tx.highlightMedia.deleteMany({
+        where: { highlightId: { in: highlightIds } }
+      });
+    }
+
+    // 7. Delete Highlights
+    await tx.highlight.deleteMany({
+      where: { accountId: id }
+    });
+
+    // 8. Delete Account
+    await tx.account.delete({
+      where: { id }
+    });
+  });
+
+  return true;
+}
+
 export async function registerCrawlerSession(
   id: string,
   _sessionId: string

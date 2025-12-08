@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { fetchDatabaseOverview } from '../services/databaseInspectService.js';
+import { deleteAccount } from '../services/accountsService.js';
 
 const tablePreviewSchema = {
   type: 'object',
@@ -56,6 +57,44 @@ export async function registerAdminDatabaseRoutes(app: FastifyInstance): Promise
       } catch (error) {
         request.log.error(error, 'Failed to fetch database overview');
         return reply.code(500).send({ message: 'Failed to load database overview' });
+      }
+    }
+  );
+
+  app.delete(
+    '/api/admin/db/accounts/:id',
+    {
+      schema: {
+        tags: ['AdminDatabase'],
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' }
+          },
+          required: ['id']
+        },
+        response: {
+          204: { type: 'null' },
+          404: {
+            type: 'object',
+            properties: {
+              message: { type: 'string' }
+            }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      try {
+        const deleted = await deleteAccount(id);
+        if (!deleted) {
+          return reply.code(404).send({ message: 'Account not found' });
+        }
+        return reply.code(204).send();
+      } catch (error) {
+        request.log.error(error, 'Failed to delete account');
+        return reply.code(500).send({ message: 'Failed to delete account' });
       }
     }
   );
