@@ -146,6 +146,7 @@ declare module '@prisma/client' {
       create(...args: any[]): Promise<CrawlAccount>;
       update(...args: any[]): Promise<CrawlAccount>;
       delete(...args: any[]): Promise<CrawlAccount>;
+      count(...args: any[]): Promise<number>;
     };
     crawlTarget: {
       findMany(...args: any[]): Promise<CrawlTarget[]>;
@@ -155,11 +156,13 @@ declare module '@prisma/client' {
       delete(...args: any[]): Promise<CrawlTarget>;
       aggregate(...args: any[]): Promise<any>;
       groupBy(...args: any[]): Promise<any[]>;
+      count(...args: any[]): Promise<number>;
     };
     crawlRun: {
       findMany(...args: any[]): Promise<CrawlRun[]>;
       create(...args: any[]): Promise<CrawlRun>;
       update(...args: any[]): Promise<CrawlRun>;
+      count(...args: any[]): Promise<number>;
     };
     post: {
       findMany(...args: any[]): Promise<Post[]>;
@@ -180,7 +183,9 @@ declare module '@prisma/client' {
       findMany(...args: any[]): Promise<ProfilePic[]>;
     };
     tag: {
+      findMany(...args: any[]): Promise<Tag[]>;
       upsert(...args: any[]): Promise<Tag>;
+      count(...args: any[]): Promise<number>;
     };
     postTag: {
       deleteMany(...args: any[]): Promise<any>;
@@ -194,6 +199,7 @@ declare module '@prisma/client' {
       findUnique(...args: any[]): Promise<Highlight | null>;
       upsert(...args: any[]): Promise<Highlight>;
       update(...args: any[]): Promise<Highlight>;
+      count(...args: any[]): Promise<number>;
     };
     highlightMedia: {
       deleteMany(...args: any[]): Promise<any>;

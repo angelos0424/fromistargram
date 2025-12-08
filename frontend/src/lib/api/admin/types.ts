@@ -86,6 +86,17 @@ export interface IndexerStatus {
   lastError: string | null;
 }
 
+export interface TablePreview {
+  key: string;
+  label: string;
+  count: number;
+  latestRows: Record<string, unknown>[];
+}
+
+export interface DatabaseOverview {
+  tables: TablePreview[];
+}
+
 export interface AdminApiClient {
   listTargets(): Promise<CrawlTarget[]>;
   createTarget(payload: CrawlTargetPayload): Promise<CrawlTarget>;

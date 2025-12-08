@@ -5,3 +5,4 @@ export const ADMIN_TARGETS_PATH = '/admin/targets';
 export const ADMIN_RUNS_PATH = '/admin/runs';
 export const ADMIN_FEED_STATISTICS_PATH = '/admin/feed-statistics';
 export const ADMIN_INDEXER_PATH = '/admin/indexer';
+export const ADMIN_DB_OVERVIEW_PATH = '/admin/db-overview';

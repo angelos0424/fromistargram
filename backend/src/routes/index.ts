@@ -7,6 +7,7 @@ import { registerAdminTargetRoutes } from './registerAdminTargetRoutes.js';
 import { registerAdminRunRoutes } from './registerAdminRunRoutes.js';
 import { registerAdminMetricsRoutes } from './registerAdminMetricsRoutes.js';
 import { registerAdminIndexerRoutes } from './registerAdminIndexerRoutes.js';
+import { registerAdminDatabaseRoutes } from './registerAdminDatabaseRoutes.js';
 import { registerHighlightRoutes } from './highlights.js';
 import { registerImageProxyRoutes } from './imageProxy.js';
 
@@ -19,6 +20,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   await app.register(registerAdminRunRoutes);
   await app.register(registerAdminMetricsRoutes);
   await app.register(registerAdminIndexerRoutes);
+  await app.register(registerAdminDatabaseRoutes);
   await app.register(registerHighlightRoutes);
   await app.register(registerImageProxyRoutes);
 
