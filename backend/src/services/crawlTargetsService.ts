@@ -363,6 +363,7 @@ async function scrapeMultipleProfiles(usernames: string[]) {
         console.log(`${username}: ${results.posts?.length} posts collected`);
         if (results.posts) {
           result.push({name: username, posts: results.posts});
+          console.log('result.posts[0] ::' + JSON.stringify(result[0].posts[0]))
         }
       } else {
         console.log(`${username}: ${results.error}`);
@@ -383,91 +384,93 @@ function launchManualCrawler(
   const scriptPath = resolveCrawlerScriptPath();
   console.log(`Run status: ${runId} || handles: ${handles.join(', ')}`);
   const args = [scriptPath, '--profiles', ...handles, '--session-id', sessionId, '-f', '-s', '-hl', '-r'];
-  scrapeMultipleProfiles(handles).then(r => console.log("scrapeMultipleProfiles result :: " + r))
+  void scrapeMultipleProfiles(handles)
 
-  if (credentials) {
-    args.push('-l', credentials.username, '-p', credentials.password);
-  }
+  return ;
 
-  let child: ReturnType<typeof spawn>;
-  let stdoutBuffer = '';
-  let stderrBuffer = '';
-  try {
-    child = spawn(pythonExecutable(), args, {
-      stdio: ['inherit', 'pipe', 'pipe']
-    });
-  } catch (error) {
-    console.error('Failed to spawn crawler process', {
-      runId,
-      handles,
-      scriptPath,
-      args,
-      error
-    });
-    updateRunStatus(runId, 'failure', error instanceof Error ? error.message : 'Unknown spawn error').catch((err) => {
-      console.error('Failed to update run failure status after spawn error', err);
-    });
-    return;
-  }
-
-  child.stdout?.on('data', (chunk) => {
-    const text = chunk.toString();
-    stdoutBuffer += text;
-    process.stdout.write(chunk);
-  });
-
-  child.stderr?.on('data', (chunk) => {
-    const text = chunk.toString();
-    stderrBuffer += text;
-    process.stderr.write(chunk);
-  });
-
-  const buildFailureMessage = (code: number | null): string => {
-    const combined = `${stderrBuffer}\n${stdoutBuffer}`.trim();
-    if (combined) {
-      const lines = combined.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-      const lastLine = lines[lines.length - 1];
-      if (lastLine) {
-        return lastLine.slice(-500);
-      }
-    }
-    return `Process exited with code ${code ?? 'unknown'}`;
-  };
-
-  child.once('spawn', () => {
-    updateRunStatus(runId, 'running').catch((error) => {
-      console.error('Failed to mark run running', error);
-    });
-  });
-
-  child.on('error', (error) => {
-    console.error('Failed to execute crawler script', {
-      runId,
-      handles,
-      scriptPath,
-      args,
-      error
-    });
-    updateRunStatus(runId, 'failure', error.message).catch((err) => {
-      console.error('Failed to update run failure status', err);
-    });
-  });
-
-  child.on('close', (code) => {
-    const status: CrawlRunStatus = code === 0 ? 'success' : 'failure';
-    const message = code === 0 ? null : buildFailureMessage(code);
-    if (status === 'failure') {
-      console.error('Crawler process finished with failure', {
-        runId,
-        handles,
-        scriptPath,
-        exitCode: code
-      });
-    } else {
-      scheduleIndexerRun(`run:${runId}`);
-    }
-    updateRunStatus(runId, status, message).catch((error) => {
-      console.error('Failed to finalize run status', error);
-    });
-  });
+  // if (credentials) {
+  //   args.push('-l', credentials.username, '-p', credentials.password);
+  // }
+  //
+  // let child: ReturnType<typeof spawn>;
+  // let stdoutBuffer = '';
+  // let stderrBuffer = '';
+  // try {
+  //   child = spawn(pythonExecutable(), args, {
+  //     stdio: ['inherit', 'pipe', 'pipe']
+  //   });
+  // } catch (error) {
+  //   console.error('Failed to spawn crawler process', {
+  //     runId,
+  //     handles,
+  //     scriptPath,
+  //     args,
+  //     error
+  //   });
+  //   updateRunStatus(runId, 'failure', error instanceof Error ? error.message : 'Unknown spawn error').catch((err) => {
+  //     console.error('Failed to update run failure status after spawn error', err);
+  //   });
+  //   return;
+  // }
+  //
+  // child.stdout?.on('data', (chunk) => {
+  //   const text = chunk.toString();
+  //   stdoutBuffer += text;
+  //   process.stdout.write(chunk);
+  // });
+  //
+  // child.stderr?.on('data', (chunk) => {
+  //   const text = chunk.toString();
+  //   stderrBuffer += text;
+  //   process.stderr.write(chunk);
+  // });
+  //
+  // const buildFailureMessage = (code: number | null): string => {
+  //   const combined = `${stderrBuffer}\n${stdoutBuffer}`.trim();
+  //   if (combined) {
+  //     const lines = combined.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  //     const lastLine = lines[lines.length - 1];
+  //     if (lastLine) {
+  //       return lastLine.slice(-500);
+  //     }
+  //   }
+  //   return `Process exited with code ${code ?? 'unknown'}`;
+  // };
+  //
+  // child.once('spawn', () => {
+  //   updateRunStatus(runId, 'running').catch((error) => {
+  //     console.error('Failed to mark run running', error);
+  //   });
+  // });
+  //
+  // child.on('error', (error) => {
+  //   console.error('Failed to execute crawler script', {
+  //     runId,
+  //     handles,
+  //     scriptPath,
+  //     args,
+  //     error
+  //   });
+  //   updateRunStatus(runId, 'failure', error.message).catch((err) => {
+  //     console.error('Failed to update run failure status', err);
+  //   });
+  // });
+  //
+  // child.on('close', (code) => {
+  //   const status: CrawlRunStatus = code === 0 ? 'success' : 'failure';
+  //   const message = code === 0 ? null : buildFailureMessage(code);
+  //   if (status === 'failure') {
+  //     console.error('Crawler process finished with failure', {
+  //       runId,
+  //       handles,
+  //       scriptPath,
+  //       exitCode: code
+  //     });
+  //   } else {
+  //     scheduleIndexerRun(`run:${runId}`);
+  //   }
+  //   updateRunStatus(runId, status, message).catch((error) => {
+  //     console.error('Failed to finalize run status', error);
+  //   });
+  // });
 }
