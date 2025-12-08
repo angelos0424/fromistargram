@@ -23,6 +23,7 @@ export type CreateCrawlTargetInput = {
 };
 
 export type UpdateCrawlTargetInput = {
+  handle?: string;
   displayName?: string;
   isActive?: boolean;
   isFeatured?: boolean;
@@ -152,9 +153,15 @@ export async function updateCrawlTarget(
     return null;
   }
 
+  const nextHandle = patch.handle?.trim();
+  if (nextHandle && nextHandle !== existing.handle) {
+    await ensureAccountExists(nextHandle);
+  }
+
   const target = (await prisma.crawlTarget.update({
     where: { id },
     data: {
+      handle: nextHandle ?? existing.handle,
       displayName: patch.displayName ?? existing.displayName,
       isActive: patch.isActive ?? existing.isActive,
       isFeatured: patch.isFeatured ?? existing.isFeatured

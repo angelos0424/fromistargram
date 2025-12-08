@@ -72,6 +72,7 @@ const AdminTargetsPage = () => {
       updateMutate({
         id: editingId,
         patch: {
+          handle: form.handle,
           displayName: form.displayName,
           isFeatured: form.isFeatured,
           isActive: form.isActive

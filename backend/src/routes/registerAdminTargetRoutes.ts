@@ -74,6 +74,7 @@ const createBodyJsonSchema = {
 
 const updateBodySchema = z
   .object({
+    handle: z.string().min(1).optional(),
     displayName: z.string().min(1).optional(),
     isActive: z.boolean().optional(),
     isFeatured: z.boolean().optional()
@@ -85,6 +86,7 @@ const updateBodySchema = z
 const updateBodyJsonSchema = {
   type: 'object',
   properties: {
+    handle: { type: 'string', minLength: 1 },
     displayName: { type: 'string', minLength: 1 },
     isActive: { type: 'boolean' },
     isFeatured: { type: 'boolean' }
