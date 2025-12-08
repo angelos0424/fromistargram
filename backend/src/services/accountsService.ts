@@ -61,7 +61,7 @@ export async function getAccount(id: string): Promise<Account | null> {
       if (!account) {
         return null;
       }
-
+      
       let profileUrl = account.latestProfilePicUrl;
       if (profileUrl) {
         const source = `local:///${account.id}/${profileUrl}`;
@@ -73,7 +73,7 @@ export async function getAccount(id: string): Promise<Account | null> {
         }
       }
 
-      const profilePictures = account.profilePics.map((pic) => {
+      const profilePictures = account.profilePics?.map((pic) => {
         const source = `local:///${account.id}/${pic.filename}`;
         const signed = buildImagorUrl(source, {
           resize: { width: 150, height: 150, type: 'fill' }
@@ -93,10 +93,10 @@ export async function getAccount(id: string): Promise<Account | null> {
         lastIndexedAt: account.lastIndexedAt
           ? account.lastIndexedAt.toISOString()
           : null,
-        postCount: account._count.posts,
-        username: account.id, // Using ID as username for now as per schema
-        displayName: account.id, // Using ID as display name for now
-        profilePictures
+        postCount: account.posts?.length ?? 0,
+        username: account.id,
+        displayName: account.id,
+        profilePictures: profilePictures ?? []
       };
     },
     cacheTtlSeconds()
@@ -132,7 +132,7 @@ export async function listAccounts(): Promise<Account[]> {
           }
         }
 
-        const profilePictures = account.profilePics.map((pic) => {
+        const profilePictures = account.profilePics?.map((pic) => {
           const source = `local:///${account.id}/${pic.filename}`;
           const signed = buildImagorUrl(source, {
             resize: { width: 150, height: 150, type: 'fill' }
@@ -152,10 +152,10 @@ export async function listAccounts(): Promise<Account[]> {
           lastIndexedAt: account.lastIndexedAt
             ? account.lastIndexedAt.toISOString()
             : null,
-          postCount: account._count.posts,
+          postCount: account.posts?.length ?? 0,
           username: account.id,
           displayName: account.id,
-          profilePictures
+          profilePictures: profilePictures ?? []
         };
       });
     },

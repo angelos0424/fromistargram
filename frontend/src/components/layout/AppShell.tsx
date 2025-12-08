@@ -51,7 +51,7 @@ const Header = ({
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6 lg:gap-6 lg:py-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-white">Fromistargram Viewer</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-white">Fromistargram</h1>
           <p className="text-sm text-slate-400">
             Instaloader로 수집한 데이터를 기반으로 여러 계정의 활동을 한눈에 확인하세요.
           </p>
