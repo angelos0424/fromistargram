@@ -31,35 +31,131 @@ export type AdminAccount = {
   updatedAt: string;
 };
 
-export async function listAccounts(): Promise<AccountSummary[]> {
+export type Account = AccountSummary & {
+  username?: string;
+  displayName?: string;
+  profilePictures: {
+    id: string;
+    url: string;
+    takenAt: string;
+  }[];
+};
+
+export async function getAccount(id: string): Promise<Account | null> {
+  const key = cacheKey(['accounts', id]);
+  return withCache(
+    key,
+    async () => {
+      const account = await prisma.account.findUnique({
+        where: { id },
+        include: {
+          profilePics: {
+            orderBy: { takenAt: 'desc' }
+          },
+          _count: {
+            select: { posts: true }
+          }
+        }
+      });
+
+      if (!account) {
+        return null;
+      }
+
+      let profileUrl = account.latestProfilePicUrl;
+      if (profileUrl) {
+        const source = `local:///${account.id}/${profileUrl}`;
+        const signed = buildImagorUrl(source, {
+          resize: { width: 300, height: 300, type: 'fill' }
+        });
+        if (signed) {
+          profileUrl = signed;
+        }
+      }
+
+      const profilePictures = account.profilePics.map((pic) => {
+        const source = `local:///${account.id}/${pic.filename}`;
+        const signed = buildImagorUrl(source, {
+          resize: { width: 150, height: 150, type: 'fill' }
+        });
+        return {
+          id: pic.id,
+          url: signed ?? '',
+          takenAt: pic.takenAt.toISOString()
+        };
+      });
+
+      return {
+        id: account.id,
+        latestProfilePicUrl: profileUrl,
+        createdAt: account.createdAt.toISOString(),
+        updatedAt: account.updatedAt.toISOString(),
+        lastIndexedAt: account.lastIndexedAt
+          ? account.lastIndexedAt.toISOString()
+          : null,
+        postCount: account._count.posts,
+        username: account.id, // Using ID as username for now as per schema
+        displayName: account.id, // Using ID as display name for now
+        profilePictures
+      };
+    },
+    cacheTtlSeconds()
+  );
+}
+
+export async function listAccounts(): Promise<Account[]> {
   const key = cacheKey(['accounts', 'list']);
   return withCache(
     key,
     async () => {
       const accounts = await prisma.account.findMany({
         orderBy: { id: 'asc' },
-        include: { _count: { select: { posts: true } } }
-      }) as AccountRow[];
+        include: {
+          profilePics: {
+            orderBy: { takenAt: 'desc' }
+          },
+          _count: {
+            select: { posts: true }
+          }
+        }
+      });
 
-      return accounts.map((account: AccountRow) => {
+      return accounts.map((account) => {
         let profileUrl = account.latestProfilePicUrl;
         if (profileUrl) {
           const source = `local:///${account.id}/${profileUrl}`;
           const signed = buildImagorUrl(source, {
-            resize: { width: 300, height: 300, type: 'fill' } // Reasonable default for profile pics
+            resize: { width: 300, height: 300, type: 'fill' }
           });
           if (signed) {
             profileUrl = signed;
           }
         }
 
+        const profilePictures = account.profilePics.map((pic) => {
+          const source = `local:///${account.id}/${pic.filename}`;
+          const signed = buildImagorUrl(source, {
+            resize: { width: 150, height: 150, type: 'fill' }
+          });
+          return {
+            id: pic.id,
+            url: signed ?? '',
+            takenAt: pic.takenAt.toISOString()
+          };
+        });
+
         return {
           id: account.id,
           latestProfilePicUrl: profileUrl,
           createdAt: account.createdAt.toISOString(),
           updatedAt: account.updatedAt.toISOString(),
-          lastIndexedAt: account.lastIndexedAt ? account.lastIndexedAt.toISOString() : null,
-          postCount: account._count.posts
+          lastIndexedAt: account.lastIndexedAt
+            ? account.lastIndexedAt.toISOString()
+            : null,
+          postCount: account._count.posts,
+          username: account.id,
+          displayName: account.id,
+          profilePictures
         };
       });
     },

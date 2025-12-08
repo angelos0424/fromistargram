@@ -27,7 +27,11 @@ export interface Account extends AccountSummary {
 }
 
 export interface AccountsResponse {
-  data: AccountSummary[];
+  data: Account[];
+}
+
+export interface AccountResponse {
+  data: Account;
 }
 
 export interface MediaItem {

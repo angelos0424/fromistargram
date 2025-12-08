@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import { listAccounts } from '../services/accountsService.js';
-import { AccountSummarySchema } from './schemas.js';
+import { listAccounts, getAccount } from '../services/accountsService.js';
+import { AccountSummarySchema, AccountSchema } from './schemas.js';
 
 export async function registerAccountRoutes(app: FastifyInstance): Promise<void> {
   app.get(
@@ -15,7 +15,7 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
             properties: {
               data: {
                 type: 'array',
-                items: AccountSummarySchema
+                items: AccountSchema
               }
             },
             required: ['data'],
@@ -27,6 +27,49 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
     async () => {
       const accounts = await listAccounts();
       return { data: accounts };
+    }
+  );
+
+  app.get(
+    '/api/accounts/:id',
+    {
+      schema: {
+        tags: ['Accounts'],
+        summary: 'Get account details',
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' }
+          },
+          required: ['id']
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              data: AccountSchema
+            },
+            required: ['data'],
+            additionalProperties: false
+          },
+          404: {
+            type: 'object',
+            properties: {
+              message: { type: 'string' }
+            }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const account = await getAccount(id);
+
+      if (!account) {
+        return reply.status(404).send({ message: 'Account not found' });
+      }
+
+      return { data: account };
     }
   );
 }

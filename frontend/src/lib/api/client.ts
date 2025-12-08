@@ -1,6 +1,7 @@
 import { fetchApi } from '../queryClient';
 import {
   type AccountsResponse,
+  type AccountResponse,
   type Post,
   type PostResponse,
   type PostsRequest,
@@ -11,6 +12,8 @@ import {
 export const CLIENT_KEY = 'client';
 
 export const listAccount = () => fetchApi.get<AccountsResponse>('/accounts').then((res) => res.data);
+
+export const getAccount = (id: string) => fetchApi.get<AccountResponse>(`/accounts/${id}`).then((res) => res.data);
 
 export const listPost = async (params: PostsRequest) => {
   const search = new URLSearchParams();

@@ -26,6 +26,7 @@ const FeedPage = () => {
     queryFn: () => listAccount().then(res => res.data),
     queryKey: [CLIENT_KEY, 'accounts']
   });
+
   const location = useLocation();
   const navigate = useNavigate();
   const { postId: routePostId } = useParams<{ postId?: string }>();
@@ -120,8 +121,6 @@ const FeedPage = () => {
     queryFn: () => listPost(query),
     queryKey: [CLIENT_KEY, 'feed', query]
   });
-
-
 
   const { data: modalPost, isLoading: modalLoading } = useQuery({
     queryFn: () => detailPost(activePostId!).then((res) => res.data),

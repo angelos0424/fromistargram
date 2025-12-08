@@ -12,7 +12,34 @@ export const AccountSummarySchema = {
   additionalProperties: false
 } as const;
 
+export const AccountProfilePictureSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    url: { type: 'string' },
+    takenAt: { type: 'string', format: 'date-time' }
+  },
+  required: ['id', 'url', 'takenAt'],
+  additionalProperties: false
+} as const;
+
+export const AccountSchema = {
+  type: 'object',
+  properties: {
+    ...AccountSummarySchema.properties,
+    username: { type: 'string' },
+    displayName: { type: 'string' },
+    profilePictures: {
+      type: 'array',
+      items: AccountProfilePictureSchema
+    }
+  },
+  required: [...AccountSummarySchema.required, 'profilePictures'],
+  additionalProperties: false
+} as const;
+
 export const MediaItemSchema = {
+
   type: 'object',
   properties: {
     id: { type: 'string' },
