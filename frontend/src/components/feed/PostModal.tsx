@@ -34,6 +34,8 @@ const PostModal = ({
   const [isCaptionExpanded, setCaptionExpanded] = useState(false);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
 
+  const [isProfileHistoryOpen, setProfileHistoryOpen] = useState(false);
+
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const lastFocusedElementRef = useRef<Element | null>(null);
 
@@ -187,159 +189,184 @@ const PostModal = ({
   const postDetail = hasContent ? post : null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 px-3 py-4 backdrop-blur sm:items-center sm:px-6 sm:py-8"
-      onMouseDown={handleBackdropClick}
-    >
+    <>
       <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="post-detail-title"
-        className="flex w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/60 focus:outline-none sm:h-[90vh]"
-        tabIndex={-1}
-        onMouseDown={(event) => event.stopPropagation()}
-        onClick={(event) => event.stopPropagation()}
+        className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 px-3 py-4 backdrop-blur sm:items-center sm:px-6 sm:py-8"
+        onMouseDown={handleBackdropClick}
       >
-        <header className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div className="flex flex-col gap-1">
-            <h3 id="post-detail-title" className="text-lg font-semibold text-white">
-              게시물 상세
-            </h3>
-            {post ? (
-              <p className="text-xs text-slate-400">
-                {new Date(post.postedAt).toLocaleString('ko-KR')}
-              </p>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="self-end rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-slate-100 transition hover:border-brand-400 hover:bg-brand-400/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 sm:self-auto"
-            aria-label="게시물 상세 닫기"
-          >
-            닫기
-          </button>
-        </header>
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-5 sm:p-6 lg:flex-row">
-          <div className="flex flex-1 flex-col gap-5">
-            <PostMediaCarousel
-              media={post?.media ?? []}
-              accountId={post?.accountId ?? ''}
-              activeIndex={activeIndex}
-              onActiveIndexChange={setActiveIndex}
-              isLoading={isLoading}
-            />
-          </div>
-          <aside className="flex w-full flex-col gap-5 rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6 lg:max-w-sm">
-            {isLoading ? (
-              <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
-                게시물 정보를 불러오는 중입니다.
-              </div>
-            ) : postDetail ? (
-              <>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-black/40 text-base text-white">
-                      {account?.displayName?.[0] ?? postDetail.accountId[0] ?? '계'}
-                    </span>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-white">
-                        {account?.displayName ?? postDetail.accountId}
-                      </span>
-                      <span className="text-xs text-slate-400">
-                        @{account?.username ?? postDetail.accountId}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-semibold text-white">본문</h4>
-                    <div
-                      className={`whitespace-pre-wrap text-sm leading-relaxed text-slate-100 ${isCaptionExpanded
-                          ? ''
-                          : 'overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:6] [-webkit-box-orient:vertical]'
-                        }`}
-                    >
-                      {captionSegments.length
-                        ? captionSegments.map((segment, index) => {
-                          if (segment.type === 'text') {
-                            return <span key={`caption-text-${index}`}>{segment.value}</span>;
-                          }
-
-                          const href = getCaptionLink(segment);
-                          return (
-                            <a
-                              key={`caption-link-${index}`}
-                              href={href ?? '#'}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="font-semibold text-brand-300 underline decoration-dotted underline-offset-4 hover:text-brand-200"
-                            >
-                              {segment.value}
-                            </a>
-                          );
-                        })
-                        : postDetail.caption ?? '본문이 없습니다.'}
-                    </div>
-                    {(postDetail.caption?.length ?? 0) > 160 ? (
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="post-detail-title"
+          className="flex w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/60 focus:outline-none sm:h-[90vh]"
+          tabIndex={-1}
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <header className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="flex flex-col gap-1">
+              <h3 id="post-detail-title" className="text-lg font-semibold text-white">
+                게시물 상세
+              </h3>
+              {post ? (
+                <p className="text-xs text-slate-400">
+                  {new Date(post.postedAt).toLocaleString('ko-KR')}
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="self-end rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-slate-100 transition hover:border-brand-400 hover:bg-brand-400/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 sm:self-auto"
+              aria-label="게시물 상세 닫기"
+            >
+              닫기
+            </button>
+          </header>
+          <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-5 sm:p-6 lg:flex-row">
+            <div className="flex flex-1 flex-col gap-5">
+              <PostMediaCarousel
+                media={post?.media ?? []}
+                accountId={post?.accountId ?? ''}
+                activeIndex={activeIndex}
+                onActiveIndexChange={setActiveIndex}
+                isLoading={isLoading}
+              />
+            </div>
+            <aside className="flex w-full flex-col gap-5 rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6 lg:max-w-sm">
+              {isLoading ? (
+                <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
+                  게시물 정보를 불러오는 중입니다.
+                </div>
+              ) : postDetail ? (
+                <>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
                       <button
                         type="button"
-                        className="text-xs text-brand-200 underline underline-offset-4 hover:text-brand-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-                        onClick={() => setCaptionExpanded((prev) => !prev)}
+                        onClick={() => setProfileHistoryOpen(true)}
+                        className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-black/40 text-base text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+                        aria-label="프로필 히스토리 보기"
                       >
-                        {isCaptionExpanded ? '접기' : '더보기'}
+                        <img
+                          src={account?.latestProfilePicUrl ?? ''}
+                          alt={account?.displayName}
+                          className="h-full w-full object-cover"
+                        />
                       </button>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-white">
+                          {account?.displayName ?? postDetail.accountId}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          @{account?.username ?? postDetail.accountId}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-white">본문</h4>
+                      <div
+                        className={`whitespace-pre-wrap text-sm leading-relaxed text-slate-100 ${isCaptionExpanded
+                            ? ''
+                            : 'overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:6] [-webkit-box-orient:vertical]'
+                          }`}
+                      >
+                        {captionSegments.length
+                          ? captionSegments.map((segment, index) => {
+                            if (segment.type === 'text') {
+                              return <span key={`caption-text-${index}`}>{segment.value}</span>;
+                            }
+
+                            const href = getCaptionLink(segment);
+                            return (
+                              <a
+                                key={`caption-link-${index}`}
+                                href={href ?? '#'}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="font-semibold text-brand-300 underline decoration-dotted underline-offset-4 hover:text-brand-200"
+                              >
+                                {segment.value}
+                              </a>
+                            );
+                          })
+                          : postDetail.caption ?? '본문이 없습니다.'}
+                      </div>
+                      {(postDetail.caption?.length ?? 0) > 160 ? (
+                        <button
+                          type="button"
+                          className="text-xs text-brand-200 underline underline-offset-4 hover:text-brand-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+                          onClick={() => setCaptionExpanded((prev) => !prev)}
+                        >
+                          {isCaptionExpanded ? '접기' : '더보기'}
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-white">공유</h4>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={handleShare}
+                        className="flex-1 rounded-full border border-brand-400 bg-brand-400/20 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+                      >
+                        공유하기
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCopy}
+                        className="flex-1 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-slate-100 transition hover:border-brand-300 hover:text-brand-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+                      >
+                        링크 복사
+                      </button>
+                    </div>
+                    {shareFeedback ? (
+                      <p className="text-xs text-brand-200" aria-live="polite">
+                        {shareFeedback}
+                      </p>
                     ) : null}
                   </div>
+                </>
+              ) : (
+                <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
+                  게시물을 찾을 수 없습니다.
                 </div>
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-white">공유</h4>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={handleShare}
-                      className="flex-1 rounded-full border border-brand-400 bg-brand-400/20 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-                    >
-                      공유하기
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCopy}
-                      className="flex-1 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-slate-100 transition hover:border-brand-300 hover:text-brand-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-                    >
-                      링크 복사
-                    </button>
-                  </div>
-                  {shareFeedback ? (
-                    <p className="text-xs text-brand-200" aria-live="polite">
-                      {shareFeedback}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-white">프로필 히스토리</h4>
-                  <ProfileHistoryTimeline
-                    pictures={account?.profilePictures ?? []}
-                    selectedId={selectedProfileId}
-                    onSelect={setSelectedProfileId}
-                  />
-                </div>
-                <div className="mt-auto space-y-2 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-xs text-slate-300">
-                  <p>
-                    게시물 ID: <span className="font-mono text-slate-200">{postDetail.id}</span>
-                  </p>
-                  <p>미디어 수: {postDetail.media.length}</p>
-                </div>
-              </>
-            ) : (
-              <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
-                게시물을 찾을 수 없습니다.
-              </div>
-            )}
-          </aside>
+              )}
+            </aside>
+          </div>
         </div>
       </div>
-    </div>
+
+      {isProfileHistoryOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm"
+          onClick={() => setProfileHistoryOpen(false)}
+        >
+          <div
+            className="w-full max-w-md space-y-4 rounded-3xl border border-white/10 bg-slate-900 p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">프로필 히스토리</h3>
+              <button
+                type="button"
+                onClick={() => setProfileHistoryOpen(false)}
+                className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300 transition hover:bg-white/20 hover:text-white"
+              >
+                닫기
+              </button>
+            </div>
+            <ProfileHistoryTimeline
+              pictures={account?.profilePictures ?? []}
+              selectedId={selectedProfileId}
+              onSelect={setSelectedProfileId}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

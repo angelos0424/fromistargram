@@ -157,7 +157,7 @@ const PostMediaCarousel = ({
       </div>
       {media.length > 1 ? (
         <div
-          className="flex items-center justify-center gap-2"
+          className="flex items-center justify-start gap-2 overflow-x-auto p-1"
           role="tablist"
           aria-label="미디어 썸네일"
         >
@@ -168,10 +168,9 @@ const PostMediaCarousel = ({
               role="tab"
               aria-selected={activeIndex === index}
               aria-label={`${index + 1}번째 미디어`}
-              className={`flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ${activeIndex === index
-                ? 'border-brand-400'
-                : 'border-white/10 opacity-70 hover:opacity-100'
-                }`}
+              className={`flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ${
+                activeIndex === index ? 'border-brand-400' : 'border-white/10 opacity-70 hover:opacity-100'
+              }`}
               onClick={() => handleSelect(index)}
             >
               {item.type === 'video' ? (

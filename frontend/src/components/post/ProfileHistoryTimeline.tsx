@@ -55,9 +55,6 @@ const ProfileHistoryTimeline = ({
               className="h-16 w-16 rounded-full border border-white/20 object-cover"
             />
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-white">
-                최근 프로필 이미지
-              </span>
               <span className="text-xs text-slate-400">
                 {new Intl.DateTimeFormat('ko', {
                   year: 'numeric',
