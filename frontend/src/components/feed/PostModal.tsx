@@ -51,12 +51,7 @@ const PostModal = ({
     lastFocusedElementRef.current = document.activeElement;
     document.body.style.overflow = 'hidden';
 
-    const frame = requestAnimationFrame(() => {
-      dialogRef.current?.focus();
-    });
-
     return () => {
-      cancelAnimationFrame(frame);
       document.body.style.overflow = '';
     };
   }, [isOpen]);

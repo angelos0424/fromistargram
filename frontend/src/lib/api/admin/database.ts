@@ -6,4 +6,4 @@ export const fetchDatabaseOverview = () =>
   fetchApi.get<ApiResponse<DatabaseOverview>>(ADMIN_DB_OVERVIEW_PATH).then((res) => res.data);
 
 export const deleteDatabaseAccount = (id: string) =>
-  fetchApi.delete(`/api/admin/db/accounts/${id}`);
+  fetchApi.delete(`/admin/db/accounts/${id}`);
