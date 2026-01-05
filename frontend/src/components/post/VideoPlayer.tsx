@@ -119,7 +119,7 @@ const VideoPlayer = ({ media, className }: VideoPlayerProps) => {
     <div className={`group relative flex h-full w-full items-center justify-center bg-black ${className ?? ''}`}>
       <video
         ref={videoRef}
-        className="h-full w-full object-contain"
+        className="max-h-full w-full object-contain"
         src={media.mediaUrl}
         poster={media.thumbnailUrl}
         preload="metadata"
