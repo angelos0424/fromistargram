@@ -95,7 +95,7 @@ const PostMediaCarousel = ({
     <div className="flex flex-col gap-3">
       <div
         ref={containerRef}
-        className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+        className="relative flex w-full max-h-[70vh] min-h-[280px] items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
         tabIndex={0}
         role="group"
         aria-roledescription="carousel"
@@ -118,7 +118,7 @@ const PostMediaCarousel = ({
               key={activeMedia.id}
               {...getResponsiveImageProps(accountId, activeMedia.filename, [600, 1080])}
               alt="게시물 이미지"
-              className="h-full w-full object-contain"
+              className="max-h-full w-full object-contain"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 60vw"
             />
           )
