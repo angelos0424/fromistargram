@@ -19,6 +19,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { CLIENT_KEY, detailPost, listAccount, listPost } from '../lib/api/client';
 import type { AccountSummary } from '../lib/api/types';
+import SeoHead from '../components/common/SeoHead';
 
 const FeedPage = () => {
 
@@ -202,6 +203,33 @@ const FeedPage = () => {
   const activeAccount =
     accounts.find((account) => account.id === selectedAccountId) ?? null;
 
+  const seoTitle = useMemo(() => {
+    if (modalPost) {
+      const date = new Date(modalPost.postedAt).toLocaleDateString('ko-KR');
+      return `${modalAccount?.username || 'Member'} - ${date}`;
+    }
+    if (activeAccount) {
+      return `${activeAccount.username} Feed`;
+    }
+    return undefined;
+  }, [modalPost, modalAccount, activeAccount]);
+
+  const seoDescription = useMemo(() => {
+    if (modalPost) {
+      return modalPost.caption || 'No caption';
+    }
+    if (activeAccount) {
+      return `${activeAccount.username}의 인스타그램 게시물을 확인하세요.`;
+    }
+    return undefined;
+  }, [modalPost, activeAccount]);
+
+  const seoImage = modalPost?.media?.[0]?.mediaUrl;
+
+  const seoUrl = useMemo(() => {
+    return window.location.href;
+  }, [location.pathname, location.search]);
+
   return (
     <AppShell
       accountStrip={
@@ -224,6 +252,12 @@ const FeedPage = () => {
         />
       }
     >
+      <SeoHead
+        title={seoTitle}
+        description={seoDescription}
+        image={seoImage}
+        url={seoUrl}
+      />
       <div className="flex flex-col gap-6">
         <div className="flex gap-4 border-b border-white/10 pb-4">
           <button

@@ -194,7 +194,7 @@ const PostModal = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="post-detail-title"
-          className="flex w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/60 focus:outline-none sm:h-[90vh]"
+          className="flex w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/60 focus:outline-none sm:h-[90vh] sm:max-h-[95vh]"
           tabIndex={-1}
           onMouseDown={(event) => event.stopPropagation()}
           onClick={(event) => event.stopPropagation()}
@@ -220,7 +220,7 @@ const PostModal = ({
             </button>
           </header>
           <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-5 sm:p-6 lg:flex-row">
-            <div className="flex flex-1 flex-col gap-5">
+            <div className="flex flex-1 min-h-0 min-w-0 flex-col gap-5">
               <PostMediaCarousel
                 media={post?.media ?? []}
                 accountId={post?.accountId ?? ''}
