@@ -73,36 +73,36 @@ const AdminDashboard = () => {
       >
         {statistics ? (
           <dl className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-gradient-to-br from-white/90 via-[#eef5ff]/85 to-[#ffeef8]/85 p-4 shadow-[0_10px_28px_rgba(124,180,255,0.22),0_4px_12px_rgba(255,184,212,0.18)] backdrop-blur-lg">
-              <dt className="text-xs uppercase tracking-wide text-slate-600">전체 계정</dt>
-              <dd className="mt-2 text-3xl font-semibold text-[#7ec8ff]">
+            <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+              <dt className="text-xs uppercase tracking-wide text-slate-400">전체 계정</dt>
+              <dd className="mt-2 text-2xl font-semibold text-brand-200">
                 {statistics.totalTargets}
               </dd>
             </div>
-            <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-gradient-to-br from-white/90 via-[#eef5ff]/85 to-[#ffeef8]/85 p-4 shadow-[0_10px_28px_rgba(124,180,255,0.22),0_4px_12px_rgba(255,184,212,0.18)] backdrop-blur-lg">
-              <dt className="text-xs uppercase tracking-wide text-slate-600">활성 계정</dt>
-              <dd className="mt-2 text-3xl font-semibold text-[#8ce8d0]">
+            <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+              <dt className="text-xs uppercase tracking-wide text-slate-400">활성 계정</dt>
+              <dd className="mt-2 text-2xl font-semibold text-brand-200">
                 {statistics.activeTargets}
               </dd>
             </div>
-            <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-gradient-to-br from-white/90 via-[#eef5ff]/85 to-[#ffeef8]/85 p-4 shadow-[0_10px_28px_rgba(124,180,255,0.22),0_4px_12px_rgba(255,184,212,0.18)] backdrop-blur-lg">
-              <dt className="text-xs uppercase tracking-wide text-slate-600">피쳐드 계정</dt>
-              <dd className="mt-2 text-3xl font-semibold text-[#b8a4f0]">
+            <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+              <dt className="text-xs uppercase tracking-wide text-slate-400">피쳐드 계정</dt>
+              <dd className="mt-2 text-2xl font-semibold text-brand-200">
                 {statistics.featuredTargets.toLocaleString()}
               </dd>
             </div>
-            <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-gradient-to-br from-white/90 via-[#eef5ff]/85 to-[#ffeef8]/85 p-4 shadow-[0_10px_28px_rgba(124,180,255,0.22),0_4px_12px_rgba(255,184,212,0.18)] backdrop-blur-lg">
-              <dt className="text-xs uppercase tracking-wide text-slate-600">총 게시물 수</dt>
-              <dd className="mt-2 text-3xl font-semibold text-[#ffb8d4]">
+            <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+              <dt className="text-xs uppercase tracking-wide text-slate-400">총 게시물 수</dt>
+              <dd className="mt-2 text-2xl font-semibold text-brand-200">
                 {statistics.totalPosts.toLocaleString()}
               </dd>
-              <p className="mt-1 text-xs text-slate-600">
+              <p className="mt-1 text-xs text-slate-400">
                 마지막 동기화: {statistics.lastIndexedAt ? new Date(statistics.lastIndexedAt).toLocaleString() : '기록 없음'}
               </p>
             </div>
           </dl>
         ) : (
-          <p className="text-sm text-slate-600">통계 데이터를 불러오는 중입니다…</p>
+          <p className="text-sm text-slate-400">통계 데이터를 불러오는 중입니다…</p>
         )}
       </AdminSectionCard>
 
@@ -114,7 +114,7 @@ const AdminDashboard = () => {
             <button
               type="button"
               onClick={resetOrder}
-              className="rounded-xl border border-white/70 bg-white/60 px-3 py-1 text-slate-600 shadow-[0_6px_16px_rgba(168,216,255,0.22)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(168,216,255,0.32)] disabled:opacity-60 disabled:shadow-none"
+              className="rounded border border-slate-700 px-3 py-1 transition hover:border-slate-500"
               disabled={!localOrder}
             >
               되돌리기
@@ -122,7 +122,7 @@ const AdminDashboard = () => {
             <button
               type="button"
               onClick={applyOrder}
-              className="rounded-xl bg-[linear-gradient(135deg,#7EC8FF_0%,#B8A4F0_50%,#8CE8D0_100%)] px-3 py-1 font-semibold text-slate-900 shadow-[0_10px_28px_rgba(126,200,255,0.35),0_4px_12px_rgba(140,232,208,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(126,200,255,0.45),0_6px_16px_rgba(140,232,208,0.35)] disabled:opacity-60"
+              className="rounded bg-brand-500/80 px-3 py-1 font-semibold text-slate-950 transition hover:bg-brand-400"
               disabled={isPending}
             >
               순서 저장
@@ -134,26 +134,26 @@ const AdminDashboard = () => {
           {orderedTargets.map((target, index) => (
             <li
               key={target.id}
-              className="flex items-center justify-between rounded-2xl border border-white/70 bg-gradient-to-r from-white/90 via-[#f5f0ff]/85 to-[#e8f9f3]/85 px-4 py-3 shadow-[0_10px_26px_rgba(126,200,255,0.2),0_4px_10px_rgba(255,184,212,0.16)] backdrop-blur-lg"
+              className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/80 px-4 py-3"
             >
               <div>
-                <p className="text-sm font-semibold text-slate-700">
+                <p className="text-sm font-semibold text-slate-100">
                   #{index + 1} — {target.displayName}
                 </p>
-                <p className="text-xs text-slate-600">@{target.handle}</p>
+                <p className="text-xs text-slate-400">@{target.handle}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => moveItem(target.id, -1)}
-                  className="rounded-xl border border-white/70 bg-white/70 px-2 py-1 text-xs text-slate-600 shadow-[0_6px_16px_rgba(184,164,240,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_22px_rgba(184,164,240,0.32)]"
+                  className="rounded border border-slate-700 px-2 py-1 text-xs hover:border-slate-500"
                 >
                   위로
                 </button>
                 <button
                   type="button"
                   onClick={() => moveItem(target.id, 1)}
-                  className="rounded-xl border border-white/70 bg-white/70 px-2 py-1 text-xs text-slate-600 shadow-[0_6px_16px_rgba(255,184,212,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_22px_rgba(255,184,212,0.3)]"
+                  className="rounded border border-slate-700 px-2 py-1 text-xs hover:border-slate-500"
                 >
                   아래로
                 </button>
