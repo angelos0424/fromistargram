@@ -220,7 +220,7 @@ const PostModal = ({
             </button>
           </header>
           <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-5 sm:p-6 lg:flex-row">
-            <div className="flex flex-1 min-h-0 flex-col gap-5">
+            <div className="flex flex-1 min-h-0 min-w-0 flex-col gap-5">
               <PostMediaCarousel
                 media={post?.media ?? []}
                 accountId={post?.accountId ?? ''}
