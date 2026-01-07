@@ -38,7 +38,7 @@ const FiltersPanel = ({
 
   return (
     <div className="flex h-full flex-col gap-8">
-      <section className="space-y-4 rounded-[20px] border border-white/80 bg-white/95 p-5 shadow-[0_4px_16px_rgba(0,0,0,0.1)] backdrop-blur-[8px] dark:border-white/5 dark:bg-transparent dark:p-0 dark:shadow-none">
+      <section className="space-y-4 rounded-[20px] border border-white/80 bg-white/95 p-5 shadow-[0_4px_16px_rgba(0,0,0,0.1)] backdrop-blur-[8px] dark:rounded-2xl dark:border-white/5 dark:bg-transparent dark:shadow-none">
         <header className="space-y-1">
           <h2 className="text-lg font-semibold text-[#2D3748] dark:text-white">필터</h2>
           <p className="text-xs text-[#7B8794] dark:text-slate-400">
@@ -58,7 +58,7 @@ const FiltersPanel = ({
                     to: dateRange.to
                   })
                 }
-                className="rounded-xl border border-white/60 bg-white/90 px-3 py-2 text-sm text-[#2D3748] outline-none transition focus:border-[#7EC8FF] focus:shadow-[0_0_12px_rgba(126,200,255,0.3)] backdrop-blur-[8px] dark:rounded-lg dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:border-brand-400 dark:focus:bg-white/10"
+                className="rounded-xl border-2 border-white/90 bg-white/98 px-3 py-2.5 text-sm text-[#2D3748] outline-none shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition focus:border-[#7EC8FF] focus:shadow-[0_0_12px_rgba(126,200,255,0.3)] backdrop-blur-[8px] placeholder:text-[#9CA3AF] dark:rounded-lg dark:border-white/10 dark:bg-white/5 dark:text-white dark:shadow-none dark:focus:border-brand-400 dark:focus:bg-white/10 dark:placeholder:text-slate-500"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
@@ -72,7 +72,7 @@ const FiltersPanel = ({
                     to: event.target.value || null
                   })
                 }
-                className="rounded-xl border border-white/60 bg-white/90 px-3 py-2 text-sm text-[#2D3748] outline-none transition focus:border-[#7EC8FF] focus:shadow-[0_0_12px_rgba(126,200,255,0.3)] backdrop-blur-[8px] dark:rounded-lg dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:border-brand-400 dark:focus:bg-white/10"
+                className="rounded-xl border-2 border-white/90 bg-white/98 px-3 py-2.5 text-sm text-[#2D3748] outline-none shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition focus:border-[#7EC8FF] focus:shadow-[0_0_12px_rgba(126,200,255,0.3)] backdrop-blur-[8px] placeholder:text-[#9CA3AF] dark:rounded-lg dark:border-white/10 dark:bg-white/5 dark:text-white dark:shadow-none dark:focus:border-brand-400 dark:focus:bg-white/10 dark:placeholder:text-slate-500"
               />
             </label>
           </div>
@@ -90,7 +90,7 @@ const FiltersPanel = ({
           </div>
         </div>
       </section>
-      <section className="space-y-4 rounded-[20px] border border-white/80 bg-white/95 p-5 shadow-[0_4px_16px_rgba(0,0,0,0.1)] backdrop-blur-[8px] dark:border-white/5 dark:bg-transparent dark:p-0 dark:shadow-none">
+      <section className="space-y-4 rounded-[20px] border border-white/80 bg-white/95 p-5 shadow-[0_4px_16px_rgba(0,0,0,0.1)] backdrop-blur-[8px] dark:rounded-2xl dark:border-white/5 dark:bg-transparent dark:shadow-none">
         <header className="space-y-1">
           <h2 className="text-lg font-semibold text-[#2D3748] dark:text-white">프로필 히스토리</h2>
           <p className="text-xs text-[#7B8794] dark:text-slate-400">

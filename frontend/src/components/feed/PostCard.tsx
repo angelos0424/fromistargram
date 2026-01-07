@@ -63,7 +63,7 @@ const PostCard = ({ post, onOpen }: PostCardProps) => {
             }).format(new Date(post.postedAt))}
           </span>
           {post.media.length > 1 ? (
-            <span className="absolute right-3 top-3 rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] px-2 py-1 text-xs font-semibold text-white shadow-[0_0_8px_rgba(126,200,255,0.4)] backdrop-blur-[8px] dark:border-0 dark:bg-black/60 dark:shadow-none">
+            <span className="absolute right-3 top-3 rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] px-2 py-1 text-xs font-semibold text-white shadow-[0_0_8px_rgba(126,200,255,0.4)] backdrop-blur-[8px] dark:border-0 dark:bg-black/60 dark:shadow-none dark:backdrop-blur">
               +{post.media.length - 1}
             </span>
           ) : null}

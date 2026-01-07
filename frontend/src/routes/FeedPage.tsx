@@ -259,17 +259,17 @@ const FeedPage = () => {
         url={seoUrl}
       />
       <div className="flex flex-col gap-6">
-        <div className="flex gap-4 border-b border-white/10 pb-4">
+        <div className="flex gap-4 border-b border-white/60 pb-4 dark:border-white/10">
           <button
             onClick={() => setType('Post')}
-            className={`text-lg font-semibold transition ${type === 'Post' ? 'text-white' : 'text-white/40 hover:text-white/70'
+            className={`text-lg font-semibold transition ${type === 'Post' ? 'text-[#2D3748] dark:text-white' : 'text-[#7B8794] hover:text-[#2D3748] dark:text-white/40 dark:hover:text-white/70 [text-shadow:_0_0_1px_rgb(255_255_255_/_20%)] dark:[text-shadow:_0_0_1px_rgb(0_0_0_/_40%)]'
               }`}
           >
             Posts
           </button>
           <button
             onClick={() => setType('Story')}
-            className={`text-lg font-semibold transition ${type === 'Story' ? 'text-white' : 'text-white/40 hover:text-white/70'
+            className={`text-lg font-semibold transition ${type === 'Story' ? 'text-[#2D3748] dark:text-white' : 'text-[#7B8794] hover:text-[#2D3748] dark:text-white/40 dark:hover:text-white/70 [text-shadow:_0_0_1px_rgb(255_255_255_/_20%)] dark:[text-shadow:_0_0_1px_rgb(0_0_0_/_40%)]'
               }`}
           >
             Stories

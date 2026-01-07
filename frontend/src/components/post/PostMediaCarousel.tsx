@@ -157,7 +157,7 @@ const PostMediaCarousel = ({
       </div>
       {media.length > 1 ? (
         <div
-          className="flex items-center justify-start gap-2 overflow-x-auto p-1"
+          className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20 hover:scrollbar-thumb-white/30 dark:scrollbar-thumb-white/10 dark:hover:scrollbar-thumb-white/20"
           role="tablist"
           aria-label="미디어 썸네일"
         >
