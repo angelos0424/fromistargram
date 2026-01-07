@@ -2,6 +2,7 @@ import type { Config } from 'tailwindcss';
 
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx,js,jsx}'],
+  darkMode: 'media', // Follows system preference (prefers-color-scheme)
   theme: {
     extend: {
       colors: {

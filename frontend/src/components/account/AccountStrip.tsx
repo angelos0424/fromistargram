@@ -23,11 +23,11 @@ const AccountChip = ({
       type="button"
       onClick={onClick}
       className={`group relative flex min-w-[180px] items-center gap-3 rounded-[20px] border py-2 pl-2 pr-5 text-left transition-all duration-300 ${isActive
-        ? 'border-white/60 bg-gradient-to-br from-[rgba(126,200,255,0.15)] to-[rgba(184,164,240,0.1)] shadow-[0_8px_24px_rgba(126,200,255,0.15)] backdrop-blur-[8px]'
-        : 'border-white/60 bg-white/85 hover:shadow-[0_0_16px_rgba(126,200,255,0.3)] backdrop-blur-[8px]'
+        ? 'border-white/60 bg-gradient-to-br from-[rgba(126,200,255,0.15)] to-[rgba(184,164,240,0.1)] shadow-[0_8px_24px_rgba(126,200,255,0.15)] backdrop-blur-[8px] dark:border-brand-400/50 dark:bg-gradient-to-br dark:from-brand-500/10 dark:to-brand-500/5 dark:shadow-lg dark:shadow-brand-500/10 dark:ring-1 dark:ring-brand-500/20'
+        : 'border-white/60 bg-white/85 hover:shadow-[0_0_16px_rgba(126,200,255,0.3)] backdrop-blur-[8px] dark:border-white/5 dark:bg-white/5 dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:shadow-md dark:hover:shadow-black/20'
         }`}
     >
-      <div className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 shadow-sm transition-colors ${isActive ? 'border-[#7EC8FF] shadow-[0_0_8px_rgba(126,200,255,0.4)]' : 'border-white/40 group-hover:border-[#7EC8FF]'
+      <div className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 shadow-sm transition-colors ${isActive ? 'border-[#7EC8FF] shadow-[0_0_8px_rgba(126,200,255,0.4)] dark:border-brand-400' : 'border-white/40 group-hover:border-[#7EC8FF] dark:border-white/10 dark:group-hover:border-white/20'
         }`}>
         {account.latestProfilePicUrl ? (
           <img
@@ -37,23 +37,23 @@ const AccountChip = ({
             loading="lazy"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[#B8A4F0] to-[#8CE8D0]">
-            <span className="text-sm font-bold text-white">
+          <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[#B8A4F0] to-[#8CE8D0] dark:bg-slate-800">
+            <span className="text-sm font-bold text-white dark:text-slate-400">
               {account.displayName?.[0]?.toUpperCase() ?? account.username?.[0]?.toUpperCase() ?? 'A'}
             </span>
           </div>
         )}
       </div>
       <div className="flex flex-col overflow-hidden">
-        <span className={`truncate text-sm font-bold transition-colors ${isActive ? 'text-[#2D3748]' : 'text-[#7B8794]'}`}>
+        <span className={`truncate text-sm font-bold transition-colors ${isActive ? 'text-[#2D3748] dark:text-white' : 'text-[#7B8794] dark:text-slate-200 dark:group-hover:text-white'}`}>
           {account.displayName}
         </span>
-        <span className={`truncate text-xs ${isActive ? 'text-[#7EC8FF]' : 'text-[#9CA3AF]'}`}>
+        <span className={`truncate text-xs ${isActive ? 'text-[#7EC8FF] dark:text-brand-200' : 'text-[#9CA3AF] dark:text-slate-500 dark:group-hover:text-slate-400'}`}>
           @{account.username}
         </span>
       </div>
       {isActive && (
-        <div className="absolute inset-0 rounded-[20px] ring-1 ring-inset ring-[#7EC8FF]/30" />
+        <div className="absolute inset-0 rounded-[20px] ring-1 ring-inset ring-[#7EC8FF]/30 dark:ring-brand-400/20" />
       )}
     </button>
   );
@@ -70,8 +70,8 @@ const AllAccountsButton = ({
     type="button"
     onClick={onClick}
     className={`group relative flex h-[58px] min-w-[100px] items-center justify-center rounded-[20px] border transition-all duration-300 ${isActive
-      ? 'border-white/60 bg-gradient-to-br from-[rgba(126,200,255,0.15)] to-[rgba(184,164,240,0.1)] text-[#2D3748] shadow-[0_8px_24px_rgba(126,200,255,0.15)] backdrop-blur-[8px]'
-      : 'border-white/60 bg-white/85 text-[#7B8794] hover:shadow-[0_0_16px_rgba(126,200,255,0.3)] backdrop-blur-[8px]'
+      ? 'border-white/60 bg-gradient-to-br from-[rgba(126,200,255,0.15)] to-[rgba(184,164,240,0.1)] text-[#2D3748] shadow-[0_8px_24px_rgba(126,200,255,0.15)] backdrop-blur-[8px] dark:border-brand-400/50 dark:bg-gradient-to-br dark:from-brand-500/10 dark:to-brand-500/5 dark:text-white dark:shadow-lg dark:shadow-brand-500/10 dark:ring-1 dark:ring-brand-500/20'
+      : 'border-white/60 bg-white/85 text-[#7B8794] hover:shadow-[0_0_16px_rgba(126,200,255,0.3)] backdrop-blur-[8px] dark:border-white/5 dark:bg-white/5 dark:text-slate-400 dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:text-slate-200 dark:hover:shadow-md dark:hover:shadow-black/20'
       }`}
   >
     <span className="text-sm font-bold">전체 보기</span>
@@ -129,7 +129,7 @@ const AccountStrip = ({
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={`account-skeleton-${index}`}
-            className="h-[58px] w-[180px] shrink-0 animate-pulse rounded-[20px] bg-gradient-to-r from-white/60 via-[rgba(126,200,255,0.2)] to-white/60 backdrop-blur-[8px]"
+            className="h-[58px] w-[180px] shrink-0 animate-pulse rounded-[20px] bg-gradient-to-r from-white/60 via-[rgba(126,200,255,0.2)] to-white/60 backdrop-blur-[8px] dark:rounded-2xl dark:bg-white/5"
           />
         ))}
       </div>
@@ -138,8 +138,8 @@ const AccountStrip = ({
 
   if (accounts.length === 0) {
     return (
-      <div className="flex w-full items-center justify-center rounded-[20px] border border-dashed border-white/60 bg-white/85 px-6 py-8 text-center backdrop-blur-[8px]">
-        <p className="text-sm text-[#7B8794]">
+      <div className="flex w-full items-center justify-center rounded-[20px] border border-dashed border-white/60 bg-white/85 px-6 py-8 text-center backdrop-blur-[8px] dark:rounded-2xl dark:border-white/10 dark:bg-white/5">
+        <p className="text-sm text-[#7B8794] dark:text-slate-400">
           연결된 Instagram 계정이 없습니다.<br />
           크롤러를 실행해 데이터를 수집해 주세요.
         </p>

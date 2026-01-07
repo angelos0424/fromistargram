@@ -10,10 +10,10 @@ const AppShell = ({ accountStrip, filters, children }: AppShellProps) => {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#FFD4E5] via-[#D4E4FF] via-[#FFE4D4] to-[#E4D4FF] text-[#2D3748]">
+    <div className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#FFD4E5] via-[#D4E4FF] via-[#FFE4D4] to-[#E4D4FF] text-[#2D3748] dark:bg-slate-950 dark:text-slate-100">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_25%,rgba(126,200,255,0.12),transparent_35%),radial-gradient(circle_at_85%_15%,rgba(184,164,240,0.1),transparent_30%),radial-gradient(circle_at_50%_80%,rgba(140,232,208,0.08),transparent_40%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_25%,rgba(126,200,255,0.12),transparent_35%),radial-gradient(circle_at_85%_15%,rgba(184,164,240,0.1),transparent_30%),radial-gradient(circle_at_50%_80%,rgba(140,232,208,0.08),transparent_40%)] dark:bg-[radial-gradient(circle_at_10%_20%,rgba(251,178,68,0.08),transparent_30%),radial-gradient(circle_at_90%_10%,rgba(46,196,182,0.06),transparent_25%),linear-gradient(to_bottom,#0b1224,transparent_40%)]"
       />
       <div className="relative flex min-h-screen flex-col">
         <Header
@@ -22,7 +22,7 @@ const AppShell = ({ accountStrip, filters, children }: AppShellProps) => {
         />
         <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:flex-row lg:py-10">
           <aside className="hidden w-full shrink-0 lg:block lg:w-80">
-            <div className="sticky top-8 rounded-3xl border border-white/60 bg-white/85 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04)] backdrop-blur-[8px]">
+            <div className="sticky top-8 rounded-3xl border border-white/60 bg-white/85 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04)] backdrop-blur-[8px] dark:rounded-2xl dark:border-white/5 dark:bg-slate-900/70 dark:shadow-lg dark:shadow-slate-950/40 dark:backdrop-blur">
               {filters}
             </div>
           </aside>
@@ -47,27 +47,26 @@ const Header = ({
   accountStrip: ReactNode;
   onOpenFilters: () => void;
 }) => (
-  <header className="sticky top-0 z-30 border-b border-white/40 bg-white/85 backdrop-blur-[8px]">
+  <header className="sticky top-0 z-30 border-b border-white/40 bg-white/85 backdrop-blur-[8px] dark:border-white/5 dark:bg-slate-900/70 dark:backdrop-blur">
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-5 sm:px-6 lg:gap-6 lg:py-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#2D3748]">Fromistargram</h1>
-          <p className="text-sm text-[#7B8794]">
-            Instaloader로 수집한 데이터를 기반으로 여러 계정의 활동을 한눈에 확인하세요.
+          <h1 className="text-2xl font-semibold tracking-tight text-[#2D3748] dark:text-white">Fromistargram</h1>
+          <p className="text-sm text-[#7B8794] dark:text-slate-400">
           </p>
         </div>
         <div className="flex items-center gap-2 sm:justify-end">
           <button
             type="button"
             onClick={onOpenFilters}
-            className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#8CE8D0] px-4 py-2 text-sm font-medium text-white shadow-[0_4px_16px_rgba(126,200,255,0.35)] transition hover:shadow-[0_6px_20px_rgba(126,200,255,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] lg:hidden"
+            className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#8CE8D0] px-4 py-2 text-sm font-medium text-white shadow-[0_4px_16px_rgba(126,200,255,0.35)] transition hover:shadow-[0_6px_20px_rgba(126,200,255,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] lg:hidden dark:border-white/10 dark:bg-white/10 dark:shadow-sm dark:hover:border-brand-400 dark:hover:bg-brand-400/10"
           >
-            <span className="h-2 w-2 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.6)]" aria-hidden />
+            <span className="h-2 w-2 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.6)] dark:bg-brand-400 dark:shadow-brand-500/40" aria-hidden />
             필터 열기
           </button>
         </div>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-white/5 bg-slate-900/60 p-3 shadow-lg shadow-slate-950/40">
+      <div className="overflow-hidden rounded-3xl border border-white/60 bg-white/85 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04)] backdrop-blur-[8px] dark:rounded-2xl dark:border-white/5 dark:bg-slate-900/60 dark:shadow-lg dark:shadow-slate-950/40">
         {accountStrip}
       </div>
     </div>
@@ -94,18 +93,18 @@ const MobileFilters = ({
       onClick={onClose}
     >
       <div
-        className="mx-auto w-full max-w-6xl rounded-t-3xl border border-white/60 bg-white/95 p-5 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] backdrop-blur-[8px]"
+        className="mx-auto w-full max-w-6xl rounded-t-3xl border border-white/60 bg-white/95 p-5 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] backdrop-blur-[8px] dark:border-white/10 dark:bg-slate-900/95 dark:shadow-2xl dark:shadow-black/60"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.08em] text-[#9CA3AF]">Filters</p>
-            <h2 className="text-lg font-semibold text-[#2D3748]">조건 설정</h2>
+            <p className="text-xs uppercase tracking-[0.08em] text-[#9CA3AF] dark:text-slate-400">Filters</p>
+            <h2 className="text-lg font-semibold text-[#2D3748] dark:text-white">조건 설정</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] px-3 py-1 text-sm text-white shadow-[0_0_8px_rgba(126,200,255,0.3)] transition hover:shadow-[0_0_12px_rgba(126,200,255,0.5)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF]"
+            className="rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] px-3 py-1 text-sm text-white shadow-[0_0_8px_rgba(126,200,255,0.3)] transition hover:shadow-[0_0_12px_rgba(126,200,255,0.5)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/10 dark:bg-white/10 dark:shadow-none dark:hover:border-brand-400 dark:hover:bg-brand-400/10"
           >
             닫기
           </button>

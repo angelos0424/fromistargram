@@ -35,9 +35,9 @@ const ProfileHistoryTimeline = ({
 
   if (!sortedPictures.length) {
     return (
-      <div className="flex flex-col gap-3 rounded-[20px] border border-dashed border-white/60 bg-white/85 p-4 text-sm text-[#7B8794] backdrop-blur-[8px]">
+      <div className="flex flex-col gap-3 rounded-[20px] border border-dashed border-white/60 bg-white/85 p-4 text-sm text-[#7B8794] backdrop-blur-[8px] dark:rounded-2xl dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
         <p>기록된 프로필 이미지가 없습니다.</p>
-        <p className="text-xs text-[#9CA3AF]">
+        <p className="text-xs text-[#9CA3AF] dark:text-slate-500">
           새로운 크롤링이 실행되면 자동으로 히스토리가 채워집니다.
         </p>
       </div>
@@ -46,16 +46,16 @@ const ProfileHistoryTimeline = ({
 
   return (
     <section aria-label="프로필 이미지 히스토리" className="flex flex-col gap-4">
-      <div className="flex items-center gap-4 rounded-[20px] border border-white/60 bg-white/85 p-4 backdrop-blur-[8px] shadow-[0_4px_16px_rgba(0,0,0,0.06)]">
+      <div className="flex items-center gap-4 rounded-[20px] border border-white/60 bg-white/85 p-4 backdrop-blur-[8px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:rounded-2xl dark:border-white/10 dark:bg-white/5">
         {activePicture ? (
           <>
             <img
               src={activePicture.url}
               alt="선택된 프로필 이미지"
-              className="h-16 w-16 rounded-full border border-white/60 object-cover shadow-[0_4px_16px_rgba(0,0,0,0.08)]"
+              className="h-16 w-16 rounded-full border border-white/60 object-cover shadow-[0_4px_16px_rgba(0,0,0,0.08)] dark:border-white/20"
             />
             <div className="flex flex-col">
-              <span className="text-xs text-[#7B8794]">
+              <span className="text-xs text-[#7B8794] dark:text-slate-400">
                 {new Intl.DateTimeFormat('ko', {
                   year: 'numeric',
                   month: 'short',
@@ -82,16 +82,16 @@ const ProfileHistoryTimeline = ({
               aria-selected={isActive}
               onClick={() => onSelect(picture.id)}
               className={`flex flex-col items-center gap-2 rounded-[20px] border px-3 py-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] ${isActive
-                  ? 'border-white/60 bg-gradient-to-br from-[rgba(126,200,255,0.2)] to-[rgba(184,164,240,0.15)] text-[#2D3748] shadow-[0_0_12px_rgba(126,200,255,0.3)] backdrop-blur-[8px]'
-                  : 'border-white/60 bg-white/85 text-[#7B8794] hover:shadow-[0_0_16px_rgba(126,200,255,0.2)] backdrop-blur-[8px]'
+                  ? 'border-white/60 bg-gradient-to-br from-[rgba(126,200,255,0.2)] to-[rgba(184,164,240,0.15)] text-[#2D3748] shadow-[0_0_12px_rgba(126,200,255,0.3)] backdrop-blur-[8px] dark:border-brand-400 dark:bg-brand-400/20 dark:text-white dark:shadow-none'
+                  : 'border-white/60 bg-white/85 text-[#7B8794] hover:shadow-[0_0_16px_rgba(126,200,255,0.2)] backdrop-blur-[8px] dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-white/10'
                 }`}
             >
               <img
                 src={picture.url}
                 alt={`${new Date(picture.takenAt).toLocaleDateString('ko-KR')}에 촬영된 프로필 이미지`}
-                className="h-14 w-14 rounded-full border border-white/60 object-cover shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                className="h-14 w-14 rounded-full border border-white/60 object-cover shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:border-white/10"
               />
-              <span className="text-[0.65rem] text-[#9CA3AF]">
+              <span className="text-[0.65rem] text-[#9CA3AF] dark:text-slate-400">
                 {new Intl.DateTimeFormat('ko', {
                   month: 'short',
                   day: '2-digit'

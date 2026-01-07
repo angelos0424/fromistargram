@@ -95,7 +95,7 @@ const PostMediaCarousel = ({
     <div className="flex flex-col gap-3">
       <div
         ref={containerRef}
-        className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-[20px] border border-white/60 bg-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] backdrop-blur-[8px] shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
+        className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-[20px] border border-white/60 bg-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] backdrop-blur-[8px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:rounded-2xl dark:border-white/10 dark:bg-black/40 dark:focus-visible:ring-brand-400"
         tabIndex={0}
         role="group"
         aria-roledescription="carousel"
@@ -103,7 +103,7 @@ const PostMediaCarousel = ({
         aria-live="polite"
       >
         {isLoading ? (
-          <div className="flex h-full w-full items-center justify-center text-sm text-[#7B8794]">
+          <div className="flex h-full w-full items-center justify-center text-sm text-[#7B8794] dark:text-slate-400">
             미디어를 불러오는 중입니다...
           </div>
         ) : activeMedia ? (
@@ -123,10 +123,10 @@ const PostMediaCarousel = ({
             />
           )
         ) : (
-          <div className="text-sm text-[#7B8794]">표시할 미디어가 없습니다.</div>
+          <div className="text-sm text-[#7B8794] dark:text-slate-400">표시할 미디어가 없습니다.</div>
         )}
         {media.length > 1 ? (
-          <div className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/60 bg-white/90 px-3 py-1 text-xs font-medium text-[#2D3748] shadow-[0_4px_12px_rgba(0,0,0,0.08)] backdrop-blur-[8px]">
+          <div className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/60 bg-white/90 px-3 py-1 text-xs font-medium text-[#2D3748] shadow-[0_4px_12px_rgba(0,0,0,0.08)] backdrop-blur-[8px] dark:border-white/10 dark:bg-black/60 dark:text-white dark:shadow-lg dark:shadow-black/40">
             {slideLabel}
           </div>
         ) : null}
@@ -134,7 +134,7 @@ const PostMediaCarousel = ({
           <>
             <button
               type="button"
-              className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] text-lg text-white shadow-[0_4px_16px_rgba(126,200,255,0.35)] transition hover:shadow-[0_6px_20px_rgba(126,200,255,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF]"
+              className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] text-lg text-white shadow-[0_4px_16px_rgba(126,200,255,0.35)] transition hover:shadow-[0_6px_20px_rgba(126,200,255,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/20 dark:bg-black/40 dark:shadow-none dark:hover:border-brand-400 dark:hover:text-brand-200 dark:focus-visible:ring-brand-400"
               onClick={() => onActiveIndexChange(Math.max(0, activeIndex - 1))}
               disabled={activeIndex === 0}
               aria-label="이전 미디어"
@@ -143,7 +143,7 @@ const PostMediaCarousel = ({
             </button>
             <button
               type="button"
-              className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] text-lg text-white shadow-[0_4px_16px_rgba(126,200,255,0.35)] transition hover:shadow-[0_6px_20px_rgba(126,200,255,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF]"
+              className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] text-lg text-white shadow-[0_4px_16px_rgba(126,200,255,0.35)] transition hover:shadow-[0_6px_20px_rgba(126,200,255,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/20 dark:bg-black/40 dark:shadow-none dark:hover:border-brand-400 dark:hover:text-brand-200 dark:focus-visible:ring-brand-400"
               onClick={() =>
                 onActiveIndexChange(Math.min(media.length - 1, activeIndex + 1))
               }
@@ -168,7 +168,7 @@ const PostMediaCarousel = ({
               role="tab"
               aria-selected={activeIndex === index}
               aria-label={`${index + 1}번째 미디어`}
-              className={`flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] ${activeIndex === index ? 'border-[#7EC8FF] shadow-[0_0_12px_rgba(126,200,255,0.4)]' : 'border-white/60 opacity-70 hover:opacity-100'
+              className={`flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] ${activeIndex === index ? 'border-[#7EC8FF] shadow-[0_0_12px_rgba(126,200,255,0.4)] dark:border-brand-400' : 'border-white/60 opacity-70 hover:opacity-100 dark:border-white/10'
                 }`}
               onClick={() => handleSelect(index)}
             >

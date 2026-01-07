@@ -43,14 +43,14 @@ const HighlightViewer = ({ highlight, accountId, onClose }: HighlightViewerProps
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[rgba(255,212,229,0.4)] via-[rgba(212,228,255,0.4)] to-[rgba(228,212,255,0.4)] backdrop-blur-[12px]" onClick={onClose}>
-            <div className="relative h-full w-full max-w-3xl bg-gradient-to-br from-[rgba(255,255,255,0.05)] to-[rgba(255,255,255,0.02)]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[rgba(255,212,229,0.4)] via-[rgba(212,228,255,0.4)] to-[rgba(228,212,255,0.4)] backdrop-blur-[12px] dark:bg-black" onClick={onClose}>
+            <div className="relative h-full w-full max-w-3xl bg-gradient-to-br from-[rgba(255,255,255,0.05)] to-[rgba(255,255,255,0.02)] dark:bg-black" onClick={(e) => e.stopPropagation()}>
                 {/* Progress Bar */}
                 <div className="absolute top-4 left-0 right-0 z-10 flex gap-1 px-2">
                     {highlight.media.map((_, idx) => (
                         <div
                             key={idx}
-                            className={`h-1 flex-1 rounded-full transition-colors ${idx <= currentIndex ? 'bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] shadow-[0_0_8px_rgba(126,200,255,0.4)]' : 'bg-white/30'
+                            className={`h-1 flex-1 rounded-full transition-colors ${idx <= currentIndex ? 'bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] shadow-[0_0_8px_rgba(126,200,255,0.4)] dark:bg-white' : 'bg-white/30'
                                 }`}
                         />
                     ))}
@@ -58,8 +58,8 @@ const HighlightViewer = ({ highlight, accountId, onClose }: HighlightViewerProps
 
                 {/* Header */}
                 <div className="absolute top-8 left-0 right-0 z-10 flex items-center justify-between px-4">
-                    <span className="text-sm font-semibold text-[#2D3748] drop-shadow-md">{highlight.title}</span>
-                    <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-gradient-to-r from-[#FFB8D4] to-[#D4C4FF] text-white shadow-[0_4px_16px_rgba(255,184,212,0.35)] transition hover:shadow-[0_6px_20px_rgba(255,184,212,0.45)]">
+                    <span className="text-sm font-semibold text-[#2D3748] drop-shadow-md dark:text-white">{highlight.title}</span>
+                    <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-gradient-to-r from-[#FFB8D4] to-[#D4C4FF] text-white shadow-[0_4px_16px_rgba(255,184,212,0.35)] transition hover:shadow-[0_6px_20px_rgba(255,184,212,0.45)] dark:border-0 dark:bg-transparent dark:shadow-none dark:drop-shadow-md">
                         ✕
                     </button>
                 </div>
