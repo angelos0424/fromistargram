@@ -28,10 +28,10 @@ const FiltersPanel = ({
     () =>
       activeAccount?.profilePictures
         ? [...activeAccount.profilePictures].sort(
-            (a, b) =>
-              new Date(b.takenAt).getTime() -
-              new Date(a.takenAt).getTime()
-          )
+          (a, b) =>
+            new Date(b.takenAt).getTime() -
+            new Date(a.takenAt).getTime()
+        )
         : [],
     [activeAccount]
   );
@@ -40,15 +40,15 @@ const FiltersPanel = ({
     <div className="flex h-full flex-col gap-8">
       <section className="space-y-4">
         <header className="space-y-1">
-          <h2 className="text-lg font-semibold text-white">필터</h2>
-          <p className="text-xs text-slate-400">
+          <h2 className="text-lg font-semibold text-[#2D3748]">필터</h2>
+          <p className="text-xs text-[#7B8794]">
             날짜 범위 필터를 적용해 특정 기간의 활동만 조회할 수 있습니다.
           </p>
         </header>
         <div className="space-y-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-xs text-slate-400">시작일</span>
+              <span className="text-xs text-[#7B8794]">시작일</span>
               <input
                 type="date"
                 value={dateRange.from ?? ''}
@@ -58,11 +58,11 @@ const FiltersPanel = ({
                     to: dateRange.to
                   })
                 }
-                className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-brand-400 focus:bg-white/10"
+                className="rounded-xl border border-white/60 bg-white/90 px-3 py-2 text-sm text-[#2D3748] outline-none transition focus:border-[#7EC8FF] focus:shadow-[0_0_12px_rgba(126,200,255,0.3)] backdrop-blur-[8px]"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-xs text-slate-400">종료일</span>
+              <span className="text-xs text-[#7B8794]">종료일</span>
               <input
                 type="date"
                 value={dateRange.to ?? ''}
@@ -72,7 +72,7 @@ const FiltersPanel = ({
                     to: event.target.value || null
                   })
                 }
-                className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-brand-400 focus:bg-white/10"
+                className="rounded-xl border border-white/60 bg-white/90 px-3 py-2 text-sm text-[#2D3748] outline-none transition focus:border-[#7EC8FF] focus:shadow-[0_0_12px_rgba(126,200,255,0.3)] backdrop-blur-[8px]"
               />
             </label>
           </div>
@@ -80,11 +80,11 @@ const FiltersPanel = ({
             <button
               type="button"
               onClick={onReset}
-              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 transition hover:border-brand-400 hover:bg-brand-400/10 hover:text-white"
+              className="flex-1 rounded-xl border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#8CE8D0] px-3 py-2 text-sm font-medium text-white shadow-[0_4px_16px_rgba(126,200,255,0.35)] transition hover:shadow-[0_6px_20px_rgba(126,200,255,0.45)]"
             >
               필터 초기화
             </button>
-            <div className="flex-1 rounded-lg border border-dashed border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-400">
+            <div className="flex-1 rounded-xl border border-dashed border-white/60 bg-white/85 px-3 py-2 text-xs text-[#7B8794] backdrop-blur-[8px]">
               선택된 필터가 자동으로 피드에 반영됩니다.
             </div>
           </div>
@@ -92,8 +92,8 @@ const FiltersPanel = ({
       </section>
       <section className="space-y-4">
         <header className="space-y-1">
-          <h2 className="text-lg font-semibold text-white">프로필 히스토리</h2>
-          <p className="text-xs text-slate-400">
+          <h2 className="text-lg font-semibold text-[#2D3748]">프로필 히스토리</h2>
+          <p className="text-xs text-[#7B8794]">
             선택된 계정의 프로필 이미지 변경 이력을 확인할 수 있습니다.
           </p>
         </header>
@@ -103,27 +103,27 @@ const FiltersPanel = ({
               {profileHistory.map((item) => (
                 <li
                   key={item.id}
-                  className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/5 p-3"
+                  className="flex items-center gap-3 rounded-[18px] border border-white/60 bg-white/85 p-3 backdrop-blur-[8px]"
                 >
                   <img
                     src={item.url}
                     alt={`${activeAccount.displayName} 프로필`}
-                    className="h-12 w-12 rounded-full border border-white/10 object-cover"
+                    className="h-12 w-12 rounded-full border border-white/60 object-cover shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
                     loading="lazy"
                   />
-                  <span className="text-xs text-slate-300">
+                  <span className="text-xs text-[#7B8794]">
                     {formatDate(item.takenAt)}
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <div className="rounded-xl border border-dashed border-white/10 px-4 py-6 text-sm text-slate-400">
+            <div className="rounded-[18px] border border-dashed border-white/60 bg-white/85 px-4 py-6 text-sm text-[#7B8794] backdrop-blur-[8px]">
               아직 프로필 히스토리 데이터가 없습니다.
             </div>
           )
         ) : (
-          <div className="rounded-xl border border-dashed border-white/10 px-4 py-6 text-sm text-slate-400">
+          <div className="rounded-[18px] border border-dashed border-white/60 bg-white/85 px-4 py-6 text-sm text-[#7B8794] backdrop-blur-[8px]">
             계정을 선택하면 프로필 히스토리가 표시됩니다.
           </div>
         )}

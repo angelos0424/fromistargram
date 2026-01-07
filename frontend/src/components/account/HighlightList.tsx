@@ -32,7 +32,7 @@ const HighlightList = ({ accountId }: HighlightListProps) => {
     }, [accountId]);
 
     if (isLoading) {
-        return <div className="h-24 w-full animate-pulse bg-white/5" />;
+        return <div className="h-24 w-full animate-pulse rounded-[18px] bg-gradient-to-r from-white/60 via-[rgba(126,200,255,0.2)] to-white/60 backdrop-blur-[8px]" />;
     }
 
     if (highlights.length === 0) {
@@ -49,7 +49,7 @@ const HighlightList = ({ accountId }: HighlightListProps) => {
                         onClick={() => setSelectedHighlight(highlight)}
                         className="flex flex-col items-center gap-2"
                     >
-                        <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/20 bg-white/5 p-1 transition hover:border-white/40">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/60 bg-white/85 p-1 transition hover:border-[#7EC8FF] hover:shadow-[0_0_12px_rgba(126,200,255,0.4)] backdrop-blur-[8px]">
                             {highlight.coverMedia?.url ? (
                                 <div className="h-full w-full overflow-hidden rounded-full">
                                     <img
@@ -62,7 +62,7 @@ const HighlightList = ({ accountId }: HighlightListProps) => {
                                 <div className="h-full w-full rounded-full bg-white/10" />
                             )}
                         </div>
-                        <span className="text-xs font-medium text-white truncate max-w-[5rem]">
+                        <span className="text-xs font-medium text-[#2D3748] truncate max-w-[5rem]">
                             {highlight.title}
                         </span>
                     </button>

@@ -10,7 +10,7 @@ const PostCard = ({ post, onOpen }: PostCardProps) => {
   const firstMedia = post.media[0];
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-white/5 bg-slate-900/70 shadow-lg shadow-slate-950/40 transition hover:-translate-y-1 hover:border-brand-400/60 hover:shadow-xl hover:shadow-brand-400/20">
+    <article className="group relative overflow-hidden rounded-[20px] border border-white/60 bg-white/85 shadow-[0_8px_32px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04)] backdrop-blur-[8px] transition hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(126,200,255,0.2)]">
       <button
         type="button"
         onClick={() => onOpen(post.id)}
@@ -56,20 +56,20 @@ const PostCard = ({ post, onOpen }: PostCardProps) => {
               미디어 없음
             </div>
           )}
-          <span className="absolute left-3 top-3 rounded-full bg-black/60 px-2 py-1 text-xs font-medium text-white backdrop-blur">
+          <span className="absolute left-3 top-3 rounded-full border border-white/60 bg-white/90 px-2 py-1 text-xs font-medium text-[#7B8794] backdrop-blur-[8px]">
             {new Intl.DateTimeFormat('ko', {
               month: '2-digit',
               day: '2-digit'
             }).format(new Date(post.postedAt))}
           </span>
           {post.media.length > 1 ? (
-            <span className="absolute right-3 top-3 rounded-full bg-black/60 px-2 py-1 text-xs font-semibold text-white backdrop-blur">
+            <span className="absolute right-3 top-3 rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] px-2 py-1 text-xs font-semibold text-white shadow-[0_0_8px_rgba(126,200,255,0.4)] backdrop-blur-[8px]">
               +{post.media.length - 1}
             </span>
           ) : null}
         </div>
         <div className="flex flex-1 flex-col gap-2 px-4 py-3">
-          <p className="line-clamp-2 text-sm text-slate-200">
+          <p className="line-clamp-2 text-sm text-[#2D3748]">
             {post.caption || '설명 없음'}
           </p>
           {post.tags?.length ? (
@@ -77,7 +77,7 @@ const PostCard = ({ post, onOpen }: PostCardProps) => {
               {post.tags.map((tag) => (
                 <span
                   key={`${post.id}-${tag}`}
-                  className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-brand-200"
+                  className="rounded-full bg-gradient-to-r from-[rgba(126,200,255,0.15)] to-[rgba(184,164,240,0.1)] border border-white/60 px-2 py-0.5 text-xs text-[#7EC8FF]"
                 >
                   #{tag}
                 </span>

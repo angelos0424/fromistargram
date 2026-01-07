@@ -18,7 +18,7 @@ const PostGrid = ({
         {Array.from({ length: 6 }).map((_, index) => (
           <div
             key={`post-skeleton-${index}`}
-            className="aspect-square animate-pulse rounded-2xl bg-white/5"
+            className="aspect-square animate-pulse rounded-[20px] bg-gradient-to-r from-white/60 via-[rgba(126,200,255,0.2)] to-white/60 backdrop-blur-[8px]"
           />
         ))}
       </div>
@@ -27,11 +27,11 @@ const PostGrid = ({
 
   if (posts.length === 0) {
     return (
-      <div className="flex min-h-[320px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/10 bg-white/5 p-10 text-center">
-        <h3 className="text-lg font-semibold text-white">
+      <div className="flex min-h-[320px] flex-col items-center justify-center gap-2 rounded-[20px] border border-dashed border-white/60 bg-white/85 p-10 text-center backdrop-blur-[8px]">
+        <h3 className="text-lg font-semibold text-[#2D3748]">
           표시할 게시물이 없습니다.
         </h3>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-[#7B8794]">
           다른 계정이나 날짜 범위로 다시 시도해 보세요.
         </p>
       </div>
