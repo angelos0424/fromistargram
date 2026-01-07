@@ -24,7 +24,7 @@ const AccountChip = ({
       onClick={onClick}
       className={`group relative flex min-w-[180px] items-center gap-3 rounded-[20px] border py-2 pl-2 pr-5 text-left transition-all duration-300 ${isActive
         ? 'border-white/60 bg-gradient-to-br from-[rgba(126,200,255,0.15)] to-[rgba(184,164,240,0.1)] shadow-[0_8px_24px_rgba(126,200,255,0.15)] backdrop-blur-[8px] dark:border-brand-400/50 dark:bg-gradient-to-br dark:from-brand-500/10 dark:to-brand-500/5 dark:shadow-lg dark:shadow-brand-500/10 dark:ring-1 dark:ring-brand-500/20'
-        : 'border-white/60 bg-white/85 hover:shadow-[0_0_16px_rgba(126,200,255,0.3)] backdrop-blur-[8px] dark:border-white/5 dark:bg-white/5 dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:shadow-md dark:hover:shadow-black/20'
+        : 'border-white/80 bg-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.12)] hover:shadow-[0_6px_20px_rgba(126,200,255,0.25)] backdrop-blur-[8px] dark:border-white/5 dark:bg-white/5 dark:shadow-none dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:shadow-md dark:hover:shadow-black/20'
         }`}
     >
       <div className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 shadow-sm transition-colors ${isActive ? 'border-[#7EC8FF] shadow-[0_0_8px_rgba(126,200,255,0.4)] dark:border-brand-400' : 'border-white/40 group-hover:border-[#7EC8FF] dark:border-white/10 dark:group-hover:border-white/20'
@@ -71,7 +71,7 @@ const AllAccountsButton = ({
     onClick={onClick}
     className={`group relative flex h-[58px] min-w-[100px] items-center justify-center rounded-[20px] border transition-all duration-300 ${isActive
       ? 'border-white/60 bg-gradient-to-br from-[rgba(126,200,255,0.15)] to-[rgba(184,164,240,0.1)] text-[#2D3748] shadow-[0_8px_24px_rgba(126,200,255,0.15)] backdrop-blur-[8px] dark:border-brand-400/50 dark:bg-gradient-to-br dark:from-brand-500/10 dark:to-brand-500/5 dark:text-white dark:shadow-lg dark:shadow-brand-500/10 dark:ring-1 dark:ring-brand-500/20'
-      : 'border-white/60 bg-white/85 text-[#7B8794] hover:shadow-[0_0_16px_rgba(126,200,255,0.3)] backdrop-blur-[8px] dark:border-white/5 dark:bg-white/5 dark:text-slate-400 dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:text-slate-200 dark:hover:shadow-md dark:hover:shadow-black/20'
+      : 'border-white/80 bg-white/90 text-[#7B8794] shadow-[0_4px_16px_rgba(0,0,0,0.12)] hover:shadow-[0_6px_20px_rgba(126,200,255,0.25)] backdrop-blur-[8px] dark:border-white/5 dark:bg-white/5 dark:text-slate-400 dark:shadow-none dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:text-slate-200 dark:hover:shadow-md dark:hover:shadow-black/20'
       }`}
   >
     <span className="text-sm font-bold">전체 보기</span>

@@ -50,7 +50,7 @@ const HighlightViewer = ({ highlight, accountId, onClose }: HighlightViewerProps
                     {highlight.media.map((_, idx) => (
                         <div
                             key={idx}
-                            className={`h-1 flex-1 rounded-full transition-colors ${idx <= currentIndex ? 'bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] shadow-[0_0_8px_rgba(126,200,255,0.4)] dark:bg-white' : 'bg-white/30'
+                            className={`h-1 flex-1 rounded-full transition-colors ${idx <= currentIndex ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.6)] dark:bg-white' : 'bg-white/30'
                                 }`}
                         />
                     ))}
@@ -59,7 +59,7 @@ const HighlightViewer = ({ highlight, accountId, onClose }: HighlightViewerProps
                 {/* Header */}
                 <div className="absolute top-8 left-0 right-0 z-10 flex items-center justify-between px-4">
                     <span className="text-sm font-semibold text-[#2D3748] drop-shadow-md dark:text-white">{highlight.title}</span>
-                    <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-gradient-to-r from-[#FFB8D4] to-[#D4C4FF] text-white shadow-[0_4px_16px_rgba(255,184,212,0.35)] transition hover:shadow-[0_6px_20px_rgba(255,184,212,0.45)] dark:border-0 dark:bg-transparent dark:shadow-none dark:drop-shadow-md">
+                    <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/95 text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition hover:bg-gradient-to-r hover:from-[#FFB8D4] hover:to-[#D4C4FF] hover:text-white hover:shadow-[0_4px_16px_rgba(255,184,212,0.35)] dark:border-0 dark:bg-transparent dark:text-white dark:shadow-none dark:drop-shadow-md dark:hover:bg-white/10">
                         ✕
                     </button>
                 </div>

@@ -38,7 +38,7 @@ const FiltersPanel = ({
 
   return (
     <div className="flex h-full flex-col gap-8">
-      <section className="space-y-4">
+      <section className="space-y-4 rounded-[20px] border border-white/80 bg-white/95 p-5 shadow-[0_4px_16px_rgba(0,0,0,0.1)] backdrop-blur-[8px] dark:border-white/5 dark:bg-transparent dark:p-0 dark:shadow-none">
         <header className="space-y-1">
           <h2 className="text-lg font-semibold text-[#2D3748] dark:text-white">필터</h2>
           <p className="text-xs text-[#7B8794] dark:text-slate-400">
@@ -80,7 +80,7 @@ const FiltersPanel = ({
             <button
               type="button"
               onClick={onReset}
-              className="flex-1 rounded-xl border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#8CE8D0] px-3 py-2 text-sm font-medium text-white shadow-[0_4px_16px_rgba(126,200,255,0.35)] transition hover:shadow-[0_6px_20px_rgba(126,200,255,0.45)] dark:rounded-lg dark:border-white/10 dark:bg-white/5 dark:shadow-sm dark:hover:border-brand-400 dark:hover:bg-brand-400/10"
+              className="flex-1 rounded-xl border border-white/60 bg-white/95 px-3 py-2 text-sm font-medium text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition hover:border-[#7EC8FF] hover:bg-gradient-to-r hover:from-[#7EC8FF] hover:to-[#8CE8D0] hover:text-white hover:shadow-[0_4px_16px_rgba(126,200,255,0.35)] dark:rounded-lg dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:shadow-sm dark:hover:border-brand-400 dark:hover:bg-brand-400/10 dark:hover:text-white"
             >
               필터 초기화
             </button>
@@ -90,7 +90,7 @@ const FiltersPanel = ({
           </div>
         </div>
       </section>
-      <section className="space-y-4">
+      <section className="space-y-4 rounded-[20px] border border-white/80 bg-white/95 p-5 shadow-[0_4px_16px_rgba(0,0,0,0.1)] backdrop-blur-[8px] dark:border-white/5 dark:bg-transparent dark:p-0 dark:shadow-none">
         <header className="space-y-1">
           <h2 className="text-lg font-semibold text-[#2D3748] dark:text-white">프로필 히스토리</h2>
           <p className="text-xs text-[#7B8794] dark:text-slate-400">

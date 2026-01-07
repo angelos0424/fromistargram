@@ -213,7 +213,7 @@ const PostModal = ({
             <button
               type="button"
               onClick={onClose}
-              className="self-end rounded-full border border-white/60 bg-gradient-to-r from-[#FFB8D4] to-[#D4C4FF] px-4 py-2 text-sm text-white shadow-[0_4px_16px_rgba(255,184,212,0.35)] transition hover:shadow-[0_6px_20px_rgba(255,184,212,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFB8D4] sm:self-auto dark:border-white/10 dark:bg-white/10 dark:shadow-sm dark:hover:border-brand-400 dark:hover:bg-brand-400/20 dark:focus-visible:ring-brand-400"
+              className="self-end rounded-full border border-white/60 bg-white/95 px-4 py-2 text-sm text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition hover:bg-gradient-to-r hover:from-[#FFB8D4] hover:to-[#D4C4FF] hover:text-white hover:shadow-[0_4px_16px_rgba(255,184,212,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFB8D4] sm:self-auto dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:shadow-sm dark:hover:border-brand-400 dark:hover:bg-brand-400/20 dark:hover:text-white dark:focus-visible:ring-brand-400"
               aria-label="게시물 상세 닫기"
             >
               닫기
@@ -305,7 +305,7 @@ const PostModal = ({
                       <button
                         type="button"
                         onClick={handleShare}
-                        className="flex-1 rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#8CE8D0] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(126,200,255,0.35)] transition hover:shadow-[0_6px_20px_rgba(126,200,255,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-brand-400 dark:bg-brand-400/20 dark:shadow-none dark:hover:bg-brand-400/30 dark:focus-visible:ring-brand-400"
+                        className="flex-1 rounded-full border border-white/60 bg-white/95 px-4 py-2 text-sm font-semibold text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition hover:bg-gradient-to-r hover:from-[#7EC8FF] hover:to-[#8CE8D0] hover:text-white hover:shadow-[0_4px_16px_rgba(126,200,255,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-brand-400 dark:bg-brand-400/20 dark:text-white dark:shadow-none dark:hover:bg-brand-400/30 dark:focus-visible:ring-brand-400"
                       >
                         공유하기
                       </button>
@@ -348,7 +348,7 @@ const PostModal = ({
               <button
                 type="button"
                 onClick={() => setProfileHistoryOpen(false)}
-                className="rounded-full border border-white/60 bg-gradient-to-r from-[#FFB8D4] to-[#D4C4FF] px-3 py-1 text-xs text-white shadow-[0_0_8px_rgba(255,184,212,0.3)] transition hover:shadow-[0_0_12px_rgba(255,184,212,0.5)] dark:border-white/10 dark:bg-white/10 dark:shadow-none dark:hover:bg-white/20 dark:hover:text-white"
+                className="rounded-full border border-white/60 bg-white/95 px-3 py-1 text-xs text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition hover:bg-gradient-to-r hover:from-[#FFB8D4] hover:to-[#D4C4FF] hover:text-white hover:shadow-[0_0_8px_rgba(255,184,212,0.3)] dark:border-white/10 dark:bg-white/10 dark:text-slate-300 dark:shadow-none dark:hover:bg-white/20 dark:hover:text-white"
               >
                 닫기
               </button>

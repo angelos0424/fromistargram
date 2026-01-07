@@ -143,7 +143,7 @@ const VideoPlayer = ({ media, className }: VideoPlayerProps) => {
         <button
           type="button"
           onClick={handlePlayPause}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] text-sm text-white shadow-[0_0_8px_rgba(126,200,255,0.3)] transition hover:shadow-[0_0_12px_rgba(126,200,255,0.5)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/10 dark:bg-white/10 dark:shadow-none dark:hover:border-brand-400 dark:hover:text-brand-200 dark:focus-visible:ring-brand-400"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/95 text-sm text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition hover:bg-gradient-to-r hover:from-[#7EC8FF] hover:to-[#B8A4F0] hover:text-white hover:shadow-[0_0_8px_rgba(126,200,255,0.3)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/10 dark:bg-white/10 dark:text-white dark:shadow-none dark:hover:border-brand-400 dark:hover:text-brand-200 dark:focus-visible:ring-brand-400"
           aria-label={isPlaying ? '일시정지' : '재생'}
         >
           {isPlaying ? '❚❚' : '►'}
@@ -151,7 +151,7 @@ const VideoPlayer = ({ media, className }: VideoPlayerProps) => {
         <button
           type="button"
           onClick={handleToggleMute}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] text-base text-white shadow-[0_0_8px_rgba(126,200,255,0.3)] transition hover:shadow-[0_0_12px_rgba(126,200,255,0.5)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/10 dark:bg-white/10 dark:shadow-none dark:hover:border-brand-400 dark:hover:text-brand-200 dark:focus-visible:ring-brand-400"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/95 text-base text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition hover:bg-gradient-to-r hover:from-[#7EC8FF] hover:to-[#B8A4F0] hover:text-white hover:shadow-[0_0_8px_rgba(126,200,255,0.3)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/10 dark:bg-white/10 dark:text-white dark:shadow-none dark:hover:border-brand-400 dark:hover:text-brand-200 dark:focus-visible:ring-brand-400"
           aria-label={isMuted ? '음소거 해제' : '음소거'}
           aria-pressed={!isMuted}
         >

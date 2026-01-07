@@ -134,7 +134,7 @@ const PostMediaCarousel = ({
           <>
             <button
               type="button"
-              className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] text-lg text-white shadow-[0_4px_16px_rgba(126,200,255,0.35)] transition hover:shadow-[0_6px_20px_rgba(126,200,255,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/20 dark:bg-black/40 dark:shadow-none dark:hover:border-brand-400 dark:hover:text-brand-200 dark:focus-visible:ring-brand-400"
+              className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-white/95 text-lg text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition hover:bg-gradient-to-r hover:from-[#7EC8FF] hover:to-[#B8A4F0] hover:text-white hover:shadow-[0_4px_16px_rgba(126,200,255,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/20 dark:bg-black/40 dark:text-white dark:shadow-none dark:hover:border-brand-400 dark:hover:text-brand-200 dark:focus-visible:ring-brand-400"
               onClick={() => onActiveIndexChange(Math.max(0, activeIndex - 1))}
               disabled={activeIndex === 0}
               aria-label="이전 미디어"
@@ -143,7 +143,7 @@ const PostMediaCarousel = ({
             </button>
             <button
               type="button"
-              className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] text-lg text-white shadow-[0_4px_16px_rgba(126,200,255,0.35)] transition hover:shadow-[0_6px_20px_rgba(126,200,255,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/20 dark:bg-black/40 dark:shadow-none dark:hover:border-brand-400 dark:hover:text-brand-200 dark:focus-visible:ring-brand-400"
+              className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-white/95 text-lg text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition hover:bg-gradient-to-r hover:from-[#7EC8FF] hover:to-[#B8A4F0] hover:text-white hover:shadow-[0_4px_16px_rgba(126,200,255,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/20 dark:bg-black/40 dark:text-white dark:shadow-none dark:hover:border-brand-400 dark:hover:text-brand-200 dark:focus-visible:ring-brand-400"
               onClick={() =>
                 onActiveIndexChange(Math.min(media.length - 1, activeIndex + 1))
               }
