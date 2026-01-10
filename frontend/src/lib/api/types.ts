@@ -118,3 +118,39 @@ export interface Highlight {
   coverMedia?: HighlightMedia | null
   media: HighlightMedia[];
 }
+
+export interface SharedMedia {
+  id: string;
+  filename: string;
+  originalName: string;
+  mime: string;
+  size: number;
+  width?: number | null;
+  height?: number | null;
+  duration?: number | null;
+  caption?: string | null;
+  uploadedAt: string;
+  mediaUrl: string;
+  thumbnailUrl?: string;
+}
+
+export interface SharedMediaListRequest {
+  cursor?: string;
+  limit?: number;
+  from?: string;
+  to?: string;
+}
+
+export interface SharedMediaListResponse {
+  data: SharedMedia[];
+  hasMore: boolean;
+  nextCursor: string | null;
+}
+
+export interface SharedMediaUploadResponse {
+  data: SharedMedia[];
+}
+
+export interface SharedMediaResponse {
+  data: SharedMedia;
+}

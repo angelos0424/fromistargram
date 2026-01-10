@@ -10,11 +10,13 @@ import { registerAdminIndexerRoutes } from './registerAdminIndexerRoutes.js';
 import { registerAdminDatabaseRoutes } from './registerAdminDatabaseRoutes.js';
 import { registerHighlightRoutes } from './highlights.js';
 import { registerImageProxyRoutes } from './imageProxy.js';
+import { registerSharedMediaRoutes } from './registerSharedMediaRoutes.js';
 
 export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   await app.register(registerAccountRoutes);
   await app.register(registerPostRoutes);
   await app.register(registerMediaRoutes);
+  await app.register(registerSharedMediaRoutes);
   await app.register(registerAdminAccountRoutes);
   await app.register(registerAdminTargetRoutes);
   await app.register(registerAdminRunRoutes);

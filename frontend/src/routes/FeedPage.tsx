@@ -11,13 +11,14 @@ import AppShell from '../components/layout/AppShell';
 import Pagination from '../components/feed/Pagination';
 import PostGrid from '../components/feed/PostGrid';
 import PostModal from '../components/feed/PostModal';
+import SharedMediaGrid from '../components/shared/SharedMediaGrid';
 import { useFeedUiStore, type DateRange } from '../state/uiStore';
 import {
   mergeFeedSearchParams,
   parseFeedSearchParams
 } from '../lib/url/feedSearchParams';
 import { useQuery } from '@tanstack/react-query';
-import { CLIENT_KEY, detailPost, listAccount, listPost } from '../lib/api/client';
+import { CLIENT_KEY, detailPost, listAccount, listPost, listSharedMedia } from '../lib/api/client';
 import type { AccountSummary } from '../lib/api/types';
 import SeoHead from '../components/common/SeoHead';
 
@@ -127,6 +128,12 @@ const FeedPage = () => {
     queryFn: () => detailPost(activePostId!).then((res) => res.data),
     queryKey: [CLIENT_KEY, 'detailPost', activePostId],
     enabled: !!activePostId
+  });
+
+  const { data: sharedMediaResponse, isLoading: sharedMediaLoading } = useQuery({
+    queryFn: () => listSharedMedia({ limit: pageSize }),
+    queryKey: [CLIENT_KEY, 'sharedMedia', { limit: pageSize }],
+    enabled: type === 'Shared'
   });
 
   const modalAccount = useMemo(
@@ -274,9 +281,25 @@ const FeedPage = () => {
           >
             Stories
           </button>
+          <button
+            onClick={() => setType('Shared')}
+            className={`text-lg font-semibold transition ${type === 'Shared' ? 'text-[#2D3748] dark:text-white' : 'text-[#7B8794] hover:text-[#2D3748] dark:text-white/40 dark:hover:text-white/70 [text-shadow:_0_0_1px_rgb(255_255_255_/_20%)] dark:[text-shadow:_0_0_1px_rgb(0_0_0_/_40%)]'
+              }`}
+          >
+            Shared
+          </button>
         </div>
 
-        {feedError ? (
+        {type === 'Shared' ? (
+          <SharedMediaGrid
+            media={sharedMediaResponse?.data || []}
+            isLoading={sharedMediaLoading}
+            onMediaClick={(media) => {
+              // TODO: Open media viewer modal
+              window.open(media.mediaUrl, '_blank');
+            }}
+          />
+        ) : feedError ? (
           <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-sm text-red-200">
             피드를 불러오는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.
           </div>
@@ -287,12 +310,14 @@ const FeedPage = () => {
             onOpenPost={handleOpenPost}
           />
         )}
-        <Pagination
-          page={page}
-          pageSize={pageSize}
-          total={totalPosts}
-          onChange={setPage}
-        />
+        {type !== 'Shared' && (
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={totalPosts}
+            onChange={setPage}
+          />
+        )}
       </div>
       <PostModal
         post={modalPost ?? null}

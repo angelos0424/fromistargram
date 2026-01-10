@@ -33,3 +33,36 @@ export const listPost = async (params: PostsRequest) => {
 export const detailPost = (postId: string) => fetchApi.get<PostResponse>(`/posts/${postId}`).then((res) => res.data);
 
 export const listHighlights = (accountId: string) => fetchApi.get<Highlight[]>(`/accounts/${accountId}/highlights`).then((res) => res.data);
+
+// Shared Media API
+export const uploadSharedMedia = async (files: File[], caption?: string) => {
+  const formData = new FormData();
+  files.forEach((file) => {
+    formData.append('files', file);
+  });
+  if (caption) {
+    formData.append('caption', caption);
+  }
+
+  const res = await fetchApi.post('/shared/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+  return res.data;
+};
+
+export const listSharedMedia = async (params: import('./types').SharedMediaListRequest) => {
+  const search = new URLSearchParams();
+  if (params.cursor) search.set('cursor', params.cursor);
+  if (params.limit) search.set('limit', String(params.limit));
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+
+  const qs = search.toString() ? `?${search.toString()}` : '';
+  const res = await fetchApi.get<import('./types').SharedMediaListResponse>(`/shared${qs}`);
+  return res.data;
+};
+
+export const getSharedMedia = (id: string) =>
+  fetchApi.get<import('./types').SharedMediaResponse>(`/shared/${id}`).then((res) => res.data);

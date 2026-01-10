@@ -1,6 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Account } from '../../lib/api/types';
 import type { DateRange } from '../../state/uiStore';
+import UploadButton from '../common/UploadButton';
+import UploadModal from '../common/UploadModal';
 
 interface FiltersPanelProps {
   dateRange: DateRange;
@@ -24,6 +26,8 @@ const FiltersPanel = ({
   onReset,
   activeAccount
 }: FiltersPanelProps) => {
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
   const profileHistory = useMemo(
     () =>
       activeAccount?.profilePictures
@@ -127,7 +131,16 @@ const FiltersPanel = ({
             계정을 선택하면 프로필 히스토리가 표시됩니다.
           </div>
         )}
+
+        <div className="pt-2">
+          <UploadButton onClick={() => setIsUploadModalOpen(true)} />
+        </div>
       </section>
+
+      <UploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+      />
     </div>
   );
 };

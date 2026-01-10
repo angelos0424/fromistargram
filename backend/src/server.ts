@@ -1,5 +1,6 @@
 import Fastify, { FastifyInstance, FastifyServerOptions, FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
+import multipart from '@fastify/multipart';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import pino from 'pino';
@@ -15,9 +16,9 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
       level: process.env.LOG_LEVEL ?? 'info',
       transport: options.enablePrettyLogs
         ? {
-            target: 'pino-pretty',
-            options: { translateTime: 'SYS:standard' }
-          }
+          target: 'pino-pretty',
+          options: { translateTime: 'SYS:standard' }
+        }
         : undefined
     });
 
@@ -29,7 +30,13 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
 
   await app.register(cors, {
     origin: true,
-    methods: ['GET', 'POST', 'HEAD', 'OPTIONS']
+    methods: ['GET', 'POST', 'PUT', 'HEAD', 'OPTIONS']
+  });
+
+  await app.register(multipart, {
+    limits: {
+      fileSize: 50 * 1024 * 1024 // 50MB max (for videos)
+    }
   });
 
   const publicApiUrl = process.env.PUBLIC_API_BASE_URL;
@@ -42,15 +49,16 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
       },
       servers: publicApiUrl
         ? [
-            {
-              url: publicApiUrl
-            }
-          ]
+          {
+            url: publicApiUrl
+          }
+        ]
         : undefined,
       tags: [
         { name: 'Accounts', description: 'Account summaries and profile metadata' },
         { name: 'Posts', description: 'Feed browsing and post detail endpoints' },
-        { name: 'Media', description: 'Original media streaming endpoints' }
+        { name: 'Media', description: 'Original media streaming endpoints' },
+        { name: 'Shared Media', description: 'User-uploaded shared media endpoints' }
       ]
     }
   });

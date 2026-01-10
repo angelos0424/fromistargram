@@ -169,3 +169,18 @@ model HighlightMedia {
 
   @@index([highlightId, orderIndex])
 }
+
+model SharedMedia {
+  id           String   @id @default(cuid())
+  filename     String   @unique
+  originalName String
+  mime         String
+  size         Int
+  width        Int?
+  height       Int?
+  duration     Int?
+  caption      String?
+  uploadedAt   DateTime @default(now())
+  
+  @@index([uploadedAt])
+}

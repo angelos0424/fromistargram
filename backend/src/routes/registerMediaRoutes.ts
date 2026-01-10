@@ -173,4 +173,59 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
       });
     }
   );
+
+  // GET /api/media/uploaded/:yyyyMMdd/* - Serve uploaded shared media
+  app.get(
+    '/api/media/uploaded/:date/*',
+    {
+      schema: {
+        tags: ['Media'],
+        summary: 'Stream uploaded shared media file',
+        params: {
+          type: 'object',
+          properties: {
+            date: { type: 'string', pattern: '^\\d{8}$' },
+            '*': { type: 'string' }
+          },
+          required: ['date', '*'],
+          additionalProperties: false
+        },
+        response: {
+          200: {
+            type: 'string',
+            format: 'binary'
+          },
+          404: {
+            type: 'object',
+            properties: {
+              message: { type: 'string' }
+            },
+            required: ['message'],
+            additionalProperties: false
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      const date = (request.params as any).date;
+      const filename = (request.params as any)['*'];
+
+      const resultRoot = process.env.RESULT_ROOT ?? '/result';
+      const filePath = path.join(resultRoot, 'uploaded', date, filename);
+
+      try {
+        await access(filePath, constants.R_OK);
+      } catch (error) {
+        app.log.warn(error, 'Uploaded media not found: %s', filePath);
+        return reply.code(404).send({ message: 'Media not found' });
+      }
+
+      const mimeType = lookup(filename) || 'application/octet-stream';
+      return sendFileWithRange(reply, {
+        filePath,
+        rangeHeader: request.headers.range,
+        mimeType
+      });
+    }
+  );
 }

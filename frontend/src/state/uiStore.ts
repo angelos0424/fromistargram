@@ -10,7 +10,7 @@ interface FeedUIState {
   dateRange: DateRange;
   page: number;
   pageSize: number;
-  type: string;
+  type: string; // 'Post' | 'Story' | 'Shared'
   setSelectedAccountId: (accountId: string | null) => void;
   setDateRange: (range: DateRange) => void;
   setPage: (page: number) => void;
