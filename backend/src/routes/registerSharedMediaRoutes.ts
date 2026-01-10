@@ -66,38 +66,52 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
 			}
 		},
 		async (request, reply) => {
+			app.log.info('=== Upload request received ===');
 			const parts = request.parts();
 			const files: MultipartFile[] = [];
 			let caption: string | undefined;
 
 			try {
+				app.log.info('Processing multipart form data...');
 				for await (const part of parts) {
 					if (part.type === 'file') {
+						app.log.info(`File part received: ${part.filename}, mimetype: ${part.mimetype}`);
 						files.push(part as MultipartFile);
 					} else if (part.type === 'field' && part.fieldname === 'caption') {
 						caption = (part as any).value as string;
+						app.log.info(`Caption field received: ${caption}`);
 					}
 				}
 
+				app.log.info(`Total files received: ${files.length}`);
 				if (files.length === 0) {
+					app.log.warn('No files provided in request');
 					return reply.code(400).send({ message: 'No files provided' });
 				}
 
 				const uploadedMedia = [];
 
 				for (const file of files) {
+					app.log.info(`Processing file: ${file.filename}`);
+
 					// Validate file
 					const fileBuffer = await file.toBuffer();
+					app.log.info(`File buffer size: ${fileBuffer.length} bytes`);
+
 					const validation = validateFileType(file.mimetype, fileBuffer.length);
+					app.log.info(`File validation result: ${JSON.stringify(validation)}`);
 
 					if (!validation.valid) {
+						app.log.error(`File validation failed: ${validation.error}`);
 						return reply.code(400).send({ message: validation.error });
 					}
 
 					// Generate unique filename
 					const uniqueFilename = generateUniqueFilename(file.filename);
+					app.log.info(`Generated unique filename: ${uniqueFilename}`);
 
 					// Save file
+					app.log.info('Saving file to disk...');
 					const { size } = await saveUploadedFile(
 						{
 							...file,
@@ -105,8 +119,10 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
 						} as MultipartFile,
 						uniqueFilename
 					);
+					app.log.info(`File saved successfully, size: ${size} bytes`);
 
 					// Create database record
+					app.log.info('Creating database record...');
 					const media = await createSharedMedia({
 						filename: uniqueFilename,
 						originalName: file.filename,
@@ -114,6 +130,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
 						size,
 						caption: uploadedMedia.length === 0 ? caption : undefined // Only first file gets caption
 					});
+					app.log.info(`Database record created with ID: ${media.id}`);
 
 					// Construct media URL
 					const date = new Date();
@@ -122,6 +139,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
 					const day = String(date.getDate()).padStart(2, '0');
 					const yyyyMMdd = `${year}${month}${day}`;
 					const mediaUrl = `${publicApiUrl}/api/media/uploaded/${yyyyMMdd}/${uniqueFilename}`;
+					app.log.info(`Media URL: ${mediaUrl}`);
 
 					uploadedMedia.push({
 						id: media.id,
@@ -135,9 +153,14 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
 					});
 				}
 
+				app.log.info(`Upload completed successfully. Total files uploaded: ${uploadedMedia.length}`);
 				return { data: uploadedMedia };
 			} catch (error) {
 				app.log.error(error, 'Failed to upload files');
+				app.log.error(`Error details: ${JSON.stringify({
+					message: error instanceof Error ? error.message : 'Unknown error',
+					stack: error instanceof Error ? error.stack : undefined
+				})}`);
 				return reply.code(500).send({ message: 'Failed to upload files' });
 			}
 		}
