@@ -68,7 +68,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
 		async (request, reply) => {
 			app.log.info('=== Upload request received ===');
 			const parts = request.parts();
-			const files: MultipartFile[] = [];
+			const files: Array<{ file: MultipartFile; buffer: Buffer }> = [];
 			let caption: string | undefined;
 
 			try {
@@ -76,7 +76,10 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
 				for await (const part of parts) {
 					if (part.type === 'file') {
 						app.log.info(`File part received: ${part.filename}, mimetype: ${part.mimetype}`);
-						files.push(part as MultipartFile);
+						// Read buffer immediately to consume the stream
+						const buffer = await part.toBuffer();
+						app.log.info(`File buffer read: ${buffer.length} bytes`);
+						files.push({ file: part as MultipartFile, buffer });
 					} else if (part.type === 'field' && part.fieldname === 'caption') {
 						caption = (part as any).value as string;
 						app.log.info(`Caption field received: ${caption}`);
@@ -91,14 +94,13 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
 
 				const uploadedMedia = [];
 
-				for (const file of files) {
+				for (const { file, buffer } of files) {
 					app.log.info(`Processing file: ${file.filename}`);
 
 					// Validate file
-					const fileBuffer = await file.toBuffer();
-					app.log.info(`File buffer size: ${fileBuffer.length} bytes`);
+					app.log.info(`File buffer size: ${buffer.length} bytes`);
 
-					const validation = validateFileType(file.mimetype, fileBuffer.length);
+					const validation = validateFileType(file.mimetype, buffer.length);
 					app.log.info(`File validation result: ${JSON.stringify(validation)}`);
 
 					if (!validation.valid) {
@@ -115,7 +117,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
 					const { size } = await saveUploadedFile(
 						{
 							...file,
-							toBuffer: async () => fileBuffer
+							toBuffer: async () => buffer
 						} as MultipartFile,
 						uniqueFilename
 					);
