@@ -41,6 +41,19 @@ declare module '@prisma/client' {
     post?: Post;
   };
 
+  export type SharedMedia = {
+    id: string;
+    filename: string;
+    originalName: string;
+    mime: string;
+    size: number;
+    width: number | null;
+    height: number | null;
+    duration: number | null;
+    caption: string | null;
+    uploadedAt: Date;
+  }
+
   export type ProfilePic = {
     id: string;
     accountId: string;
@@ -177,6 +190,13 @@ declare module '@prisma/client' {
       deleteMany(...args: any[]): Promise<any>;
       createMany(...args: any[]): Promise<any>;
       findMany(...args: any[]): Promise<Media[]>;
+    };
+    sharedMedia: {
+      create(...args: any[]): Promise<SharedMedia>;
+      findUnique(...args: any[]): Promise<SharedMedia | null>;
+      findMany(...args: any[]): Promise<SharedMedia[]>;
+      deleteMany(...args: any[]): Promise<any>;
+      createMany(...args: any[]): Promise<any>;
     };
     profilePic: {
       deleteMany(...args: any[]): Promise<any>;
