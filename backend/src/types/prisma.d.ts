@@ -51,6 +51,7 @@ declare module '@prisma/client' {
     height: number | null;
     duration: number | null;
     caption: string | null;
+    isDeleted: boolean;
     uploadBatchId: string | null;
     uploadedAt: Date;
   }
@@ -194,6 +195,7 @@ declare module '@prisma/client' {
     };
     sharedMedia: {
       create(...args: any[]): Promise<SharedMedia>;
+      update(...args: any[]): Promise<SharedMedia>;
       findUnique(...args: any[]): Promise<SharedMedia | null>;
       findMany(...args: any[]): Promise<SharedMedia[]>;
       deleteMany(...args: any[]): Promise<any>;

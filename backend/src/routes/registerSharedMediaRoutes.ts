@@ -306,9 +306,10 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
       const params = idParamsSchema.parse(request.params);
       const media = await getSharedMediaById(params.id);
 
-      if (!media) {
-        return reply.code(404).send({ message: 'Shared media not found' });
-      }
+		if (!media || media.isDeleted) {
+			return reply.code(404).send({ message: 'Shared media not found' });
+		}
+
 
       const uploadDate = new Date(media.uploadedAt);
       const year = uploadDate.getFullYear();

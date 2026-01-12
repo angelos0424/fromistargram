@@ -181,6 +181,7 @@ model SharedMedia {
   duration     Int?
   caption       String?
   uploadBatchId String?
+  isDeleted     Boolean  @default(false)
   uploadedAt    DateTime @default(now())
 
   @@index([uploadedAt])

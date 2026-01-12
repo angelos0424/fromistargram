@@ -5,6 +5,7 @@ import FeedPage from './routes/FeedPage';
 import AdminDashboard from './routes/admin/AdminDashboard';
 import AdminGate from './routes/admin/AdminGate';
 import AdminTargetsPage from './routes/admin/AdminTargetsPage';
+import AdminUploadsPage from './routes/admin/AdminUploadsPage';
 import AdminAccountsPage from './routes/admin/AdminAccountsPage';
 import AdminRunsPage from './routes/admin/AdminRunsPage';
 import AdminDatabasePage from './routes/admin/AdminDatabasePage';
@@ -18,6 +19,7 @@ const App = () => (
         <Route path="/admin/*" element={<AdminGate />}>
           <Route index element={<AdminDashboard />} />
           <Route path="targets" element={<AdminTargetsPage />} />
+          <Route path="uploads" element={<AdminUploadsPage />} />
           <Route path="accounts" element={<AdminAccountsPage />} />
           <Route path="runs" element={<AdminRunsPage />} />
           <Route path="db" element={<AdminDatabasePage />} />

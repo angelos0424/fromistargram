@@ -115,3 +115,30 @@ export interface AdminApiClient {
   fetchIndexerStatus(): Promise<IndexerStatus>;
   runIndexer(): Promise<IndexerStatus>;
 }
+
+export interface AdminSharedMedia {
+  id: string;
+  filename: string;
+  originalName: string;
+  mime: string;
+  size: number;
+  width: number | null;
+  height: number | null;
+  duration: number | null;
+  mediaUrl: string;
+  thumbnailUrl: string | null;
+  caption: string | null;
+  uploadBatchId: string | null;
+  isDeleted: boolean;
+  uploadedAt: string;
+}
+
+export interface AdminSharedMediaListResponse {
+  data: AdminSharedMedia[];
+  hasMore: boolean;
+  nextCursor: string | null;
+}
+
+export interface AdminSharedMediaPatch {
+  caption: string | null;
+}

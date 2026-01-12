@@ -1,4 +1,7 @@
+import { unlink } from 'fs/promises';
+import path from 'path';
 import { prisma } from '../db/client.js';
+import { getUploadPath } from '../utils/fileUpload.js';
 
 export interface CreateSharedMediaInput {
   filename: string;
@@ -17,6 +20,7 @@ export interface ListSharedMediaParams {
   limit?: number;
   from?: string;
   to?: string;
+  includeDeleted?: boolean;
 }
 
 export async function createSharedMedia(input: CreateSharedMediaInput) {
@@ -38,6 +42,10 @@ export async function createSharedMedia(input: CreateSharedMediaInput) {
 export async function listSharedMedia(params: ListSharedMediaParams) {
   const limit = params.limit ?? 20;
   const where: any = {};
+
+  if (!params.includeDeleted) {
+    where.isDeleted = false;
+  }
 
   if (params.from || params.to) {
     where.uploadedAt = {};
@@ -74,4 +82,41 @@ export async function getSharedMediaById(id: string) {
   return await prisma.sharedMedia.findUnique({
     where: { id }
   });
+}
+
+export async function updateSharedMediaCaption(id: string, caption: string | null) {
+  return await prisma.sharedMedia.update({
+    where: { id },
+    data: { caption }
+  });
+}
+
+export async function softDeleteSharedMedia(id: string) {
+  const media = await prisma.sharedMedia.findUnique({
+    where: { id }
+  });
+
+  if (!media) {
+    return null;
+  }
+
+  if (!media.isDeleted) {
+    const uploadDir = getUploadPath(media.uploadedAt);
+    const filepath = path.join(uploadDir, media.filename);
+
+    try {
+      await unlink(filepath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error;
+      }
+    }
+
+    return await prisma.sharedMedia.update({
+      where: { id },
+      data: { isDeleted: true }
+    });
+  }
+
+  return media;
 }
