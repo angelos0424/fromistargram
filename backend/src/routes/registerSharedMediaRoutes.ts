@@ -12,6 +12,16 @@ import {
   saveUploadedFile,
   generateUniqueFilename
 } from '../utils/fileUpload.js';
+import { buildImagorUrl } from '../utils/imagor.js';
+
+function buildUploadedMediaUrl(publicApiUrl: string, yyyyMMdd: string, filename: string): string {
+  return `${publicApiUrl}/api/media/uploaded/${yyyyMMdd}/${filename}`;
+}
+
+function buildUploadedThumbnailUrl(yyyyMMdd: string, filename: string, fallbackUrl: string): string {
+  const source = `local:///uploaded/${yyyyMMdd}/${filename}`;
+  return buildImagorUrl(source) ?? fallbackUrl;
+}
 
 const listQuerySchema = z.object({
   cursor: z.string().optional(),
@@ -50,6 +60,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
                     mime: { type: 'string' },
                     size: { type: 'number' },
                     mediaUrl: { type: 'string' },
+                    thumbnailUrl: { type: 'string' },
                     caption: { type: 'string', nullable: true },
                     uploadBatchId: { type: 'string', nullable: true },
                     uploadedAt: { type: 'string', format: 'date-time' }
@@ -79,7 +90,6 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
         for await (const part of parts) {
           if (part.type === 'file') {
             app.log.info(`File part received: ${part.filename}, mimetype: ${part.mimetype}`);
-            // Read buffer immediately to consume the stream
             const buffer = await part.toBuffer();
             app.log.info(`File buffer read: ${buffer.length} bytes`);
             files.push({ file: part as MultipartFile, buffer });
@@ -99,8 +109,6 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
 
         for (const { file, buffer } of files) {
           app.log.info(`Processing file: ${file.filename}`);
-
-          // Validate file
           app.log.info(`File buffer size: ${buffer.length} bytes`);
 
           const validation = validateFileType(file.mimetype, buffer.length);
@@ -111,11 +119,9 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
             return reply.code(400).send({ message: validation.error });
           }
 
-          // Generate unique filename
           const uniqueFilename = generateUniqueFilename(file.filename);
           app.log.info(`Generated unique filename: ${uniqueFilename}`);
 
-          // Save file
           app.log.info('Saving file to disk...');
           const { size } = await saveUploadedFile(
             {
@@ -126,7 +132,6 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
           );
           app.log.info(`File saved successfully, size: ${size} bytes`);
 
-          // Create database record
           app.log.info('Creating database record...');
           const media = await createSharedMedia({
             filename: uniqueFilename,
@@ -138,13 +143,13 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
           });
           app.log.info(`Database record created with ID: ${media.id}`);
 
-          // Construct media URL
           const date = new Date();
           const year = date.getFullYear();
           const month = String(date.getMonth() + 1).padStart(2, '0');
           const day = String(date.getDate()).padStart(2, '0');
           const yyyyMMdd = `${year}${month}${day}`;
-          const mediaUrl = `${publicApiUrl}/api/media/uploaded/${yyyyMMdd}/${uniqueFilename}`;
+          const mediaUrl = buildUploadedMediaUrl(publicApiUrl, yyyyMMdd, uniqueFilename);
+          const thumbnailUrl = buildUploadedThumbnailUrl(yyyyMMdd, uniqueFilename, mediaUrl);
           app.log.info(`Media URL: ${mediaUrl}`);
 
           uploadedMedia.push({
@@ -154,6 +159,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
             mime: media.mime,
             size: media.size,
             mediaUrl,
+            thumbnailUrl,
             caption: media.caption,
             uploadBatchId: media.uploadBatchId,
             uploadedAt: media.uploadedAt.toISOString()
@@ -207,6 +213,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
                     height: { type: 'number', nullable: true },
                     duration: { type: 'number', nullable: true },
                     mediaUrl: { type: 'string' },
+                    thumbnailUrl: { type: 'string' },
                     caption: { type: 'string', nullable: true },
                     uploadBatchId: { type: 'string', nullable: true },
                     uploadedAt: { type: 'string', format: 'date-time' }
@@ -230,7 +237,8 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
         const month = String(uploadDate.getMonth() + 1).padStart(2, '0');
         const day = String(uploadDate.getDate()).padStart(2, '0');
         const yyyyMMdd = `${year}${month}${day}`;
-        const mediaUrl = `${publicApiUrl}/api/media/uploaded/${yyyyMMdd}/${media.filename}`;
+        const mediaUrl = buildUploadedMediaUrl(publicApiUrl, yyyyMMdd, media.filename);
+        const thumbnailUrl = buildUploadedThumbnailUrl(yyyyMMdd, media.filename, mediaUrl);
 
         return {
           id: media.id,
@@ -242,6 +250,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
           height: media.height,
           duration: media.duration,
           mediaUrl,
+          thumbnailUrl,
           caption: media.caption,
           uploadBatchId: media.uploadBatchId,
           uploadedAt: media.uploadedAt.toISOString()
@@ -286,6 +295,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
                   height: { type: 'number', nullable: true },
                   duration: { type: 'number', nullable: true },
                   mediaUrl: { type: 'string' },
+                  thumbnailUrl: { type: 'string' },
                   caption: { type: 'string', nullable: true },
                   uploadBatchId: { type: 'string', nullable: true },
                   uploadedAt: { type: 'string', format: 'date-time' }
@@ -306,17 +316,17 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
       const params = idParamsSchema.parse(request.params);
       const media = await getSharedMediaById(params.id);
 
-		if (!media || media.isDeleted) {
-			return reply.code(404).send({ message: 'Shared media not found' });
-		}
-
+      if (!media || media.isDeleted) {
+        return reply.code(404).send({ message: 'Shared media not found' });
+      }
 
       const uploadDate = new Date(media.uploadedAt);
       const year = uploadDate.getFullYear();
       const month = String(uploadDate.getMonth() + 1).padStart(2, '0');
       const day = String(uploadDate.getDate()).padStart(2, '0');
       const yyyyMMdd = `${year}${month}${day}`;
-      const mediaUrl = `${publicApiUrl}/api/media/uploaded/${yyyyMMdd}/${media.filename}`;
+      const mediaUrl = buildUploadedMediaUrl(publicApiUrl, yyyyMMdd, media.filename);
+      const thumbnailUrl = buildUploadedThumbnailUrl(yyyyMMdd, media.filename, mediaUrl);
 
       return {
         data: {
@@ -329,6 +339,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
           height: media.height,
           duration: media.duration,
           mediaUrl,
+          thumbnailUrl,
           caption: media.caption,
           uploadBatchId: media.uploadBatchId,
           uploadedAt: media.uploadedAt.toISOString()

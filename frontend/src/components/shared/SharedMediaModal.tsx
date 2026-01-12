@@ -117,7 +117,8 @@ const SharedMediaModal = ({
       return;
     }
 
-    await copyToClipboard(activeMedia.mediaUrl);
+    const shareUrl = activeMedia.thumbnailUrl ?? activeMedia.mediaUrl;
+    await copyToClipboard(shareUrl);
     setShareFeedback('링크가 복사되었습니다.');
   };
 
@@ -129,18 +130,24 @@ const SharedMediaModal = ({
 
   const carouselMedia: MediaItem[] = useMemo(() => {
     if (!mediaGroup) return [];
-    return mediaGroup.map((item, index) => ({
-      id: item.id,
-      orderIndex: index,
-      filename: item.mediaUrl,
-      mime: item.mime,
-      width: item.width ?? null,
-      height: item.height ?? null,
-      duration: item.duration ?? null,
-      type: item.mime.startsWith('video/') ? 'video' : 'image',
-      mediaUrl: item.mediaUrl,
-      thumbnailUrl: item.thumbnailUrl ?? item.mediaUrl
-    }));
+    return mediaGroup.map((item, index) => {
+      const isVideo = item.mime.startsWith('video/');
+      const thumbnailUrl = item.thumbnailUrl ?? item.mediaUrl;
+      const mediaUrl = isVideo ? item.mediaUrl : thumbnailUrl;
+
+      return {
+        id: item.id,
+        orderIndex: index,
+        filename: mediaUrl,
+        mime: item.mime,
+        width: item.width ?? null,
+        height: item.height ?? null,
+        duration: item.duration ?? null,
+        type: isVideo ? 'video' : 'image',
+        mediaUrl,
+        thumbnailUrl
+      };
+    });
   }, [mediaGroup]);
 
   if (!isOpen) {

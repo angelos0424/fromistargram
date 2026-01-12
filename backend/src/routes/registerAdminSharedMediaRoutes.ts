@@ -6,6 +6,16 @@ import {
   softDeleteSharedMedia,
   getSharedMediaById
 } from '../services/sharedMediaService.js';
+import { buildImagorUrl } from '../utils/imagor.js';
+
+function buildUploadedMediaUrl(publicApiUrl: string, yyyyMMdd: string, filename: string): string {
+  return `${publicApiUrl}/api/media/uploaded/${yyyyMMdd}/${filename}`;
+}
+
+function buildUploadedThumbnailUrl(yyyyMMdd: string, filename: string, fallbackUrl: string): string {
+  const source = `local:///uploaded/${yyyyMMdd}/${filename}`;
+  return buildImagorUrl(source) ?? fallbackUrl;
+}
 
 const listQuerySchema = z.object({
   cursor: z.string().optional(),
@@ -64,12 +74,13 @@ const sharedMediaSchema = {
     height: { type: ['number', 'null'] },
     duration: { type: ['number', 'null'] },
     mediaUrl: { type: 'string' },
+    thumbnailUrl: { type: 'string' },
     caption: { type: ['string', 'null'] },
     uploadBatchId: { type: ['string', 'null'] },
     isDeleted: { type: 'boolean' },
     uploadedAt: { type: 'string', format: 'date-time' }
   },
-  required: ['id', 'filename', 'originalName', 'mime', 'size', 'mediaUrl', 'isDeleted', 'uploadedAt'],
+  required: ['id', 'filename', 'originalName', 'mime', 'size', 'mediaUrl', 'thumbnailUrl', 'isDeleted', 'uploadedAt'],
   additionalProperties: false
 } as const;
 
@@ -119,24 +130,26 @@ export async function registerAdminSharedMediaRoutes(app: FastifyInstance): Prom
           const year = uploadDate.getFullYear();
           const month = String(uploadDate.getMonth() + 1).padStart(2, '0');
           const day = String(uploadDate.getDate()).padStart(2, '0');
-          const yyyyMMdd = `${year}${month}${day}`;
-          const mediaUrl = `${publicApiUrl}/api/media/uploaded/${yyyyMMdd}/${media.filename}`;
+        const yyyyMMdd = `${year}${month}${day}`;
+        const mediaUrl = buildUploadedMediaUrl(publicApiUrl, yyyyMMdd, media.filename);
+        const thumbnailUrl = buildUploadedThumbnailUrl(yyyyMMdd, media.filename, mediaUrl);
 
-          return {
-            id: media.id,
-            filename: media.filename,
-            originalName: media.originalName,
-            mime: media.mime,
-            size: media.size,
-            width: media.width,
-            height: media.height,
-            duration: media.duration,
-            mediaUrl,
-            caption: media.caption,
-            uploadBatchId: media.uploadBatchId,
-            isDeleted: media.isDeleted,
-            uploadedAt: media.uploadedAt.toISOString()
-          };
+        return {
+          id: media.id,
+          filename: media.filename,
+          originalName: media.originalName,
+          mime: media.mime,
+          size: media.size,
+          width: media.width,
+          height: media.height,
+          duration: media.duration,
+          mediaUrl,
+          thumbnailUrl,
+          caption: media.caption,
+          uploadBatchId: media.uploadBatchId,
+          isDeleted: media.isDeleted,
+          uploadedAt: media.uploadedAt.toISOString()
+        };
         });
 
         return {
@@ -180,7 +193,8 @@ export async function registerAdminSharedMediaRoutes(app: FastifyInstance): Prom
         const month = String(uploadDate.getMonth() + 1).padStart(2, '0');
         const day = String(uploadDate.getDate()).padStart(2, '0');
         const yyyyMMdd = `${year}${month}${day}`;
-        const mediaUrl = `${publicApiUrl}/api/media/uploaded/${yyyyMMdd}/${updated.filename}`;
+        const mediaUrl = buildUploadedMediaUrl(publicApiUrl, yyyyMMdd, updated.filename);
+        const thumbnailUrl = buildUploadedThumbnailUrl(yyyyMMdd, updated.filename, mediaUrl);
 
         return {
           data: {
@@ -193,6 +207,7 @@ export async function registerAdminSharedMediaRoutes(app: FastifyInstance): Prom
             height: updated.height,
             duration: updated.duration,
             mediaUrl,
+            thumbnailUrl,
             caption: updated.caption,
             uploadBatchId: updated.uploadBatchId,
             isDeleted: updated.isDeleted,
