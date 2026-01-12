@@ -6,6 +6,8 @@ import {
   softDeleteSharedMedia,
   getSharedMediaById
 } from '../services/sharedMediaService.js';
+import { buildImagorUrl } from '../utils/imagor.js';
+
 function getApiBaseUrl(request: { headers: Record<string, string | string[] | undefined>; protocol?: string }): string {
   const publicApiUrl = process.env.PUBLIC_API_BASE_URL;
   if (publicApiUrl) {
@@ -27,11 +29,14 @@ function buildUploadedMediaUrl(apiBaseUrl: string, yyyyMMdd: string, filename: s
   return `${apiBaseUrl}/api/media/uploaded/${yyyyMMdd}/${filename}`;
 }
 
-function buildUploadedThumbnailUrl(apiBaseUrl: string, yyyyMMdd: string, filename: string): string {
-  const prefix = `${apiBaseUrl}/api/image-proxy`;
-  const source = `uploaded/${yyyyMMdd}/${filename}`;
-  const path = `fit-in/640x640/filters:format(webp):quality(80)/${source}`;
-  return `${prefix}/${path}`;
+function buildUploadedThumbnailUrl(apiBaseUrl: string, yyyyMMdd: string, filename: string, mediaUrl: string): string {
+  const sourceUrl = `${apiBaseUrl}/api/media/uploaded/${yyyyMMdd}/${filename}`;
+  const signed = buildImagorUrl(sourceUrl);
+  if (signed) {
+    return signed;
+  }
+
+  return mediaUrl;
 }
 
 const listQuerySchema = z.object({
@@ -149,7 +154,7 @@ export async function registerAdminSharedMediaRoutes(app: FastifyInstance): Prom
           const day = String(uploadDate.getDate()).padStart(2, '0');
           const yyyyMMdd = `${year}${month}${day}`;
           const mediaUrl = buildUploadedMediaUrl(apiBaseUrl, yyyyMMdd, media.filename);
-          const thumbnailUrl = buildUploadedThumbnailUrl(apiBaseUrl, yyyyMMdd, media.filename);
+          const thumbnailUrl = buildUploadedThumbnailUrl(apiBaseUrl, yyyyMMdd, media.filename, mediaUrl);
 
           return {
             id: media.id,
@@ -212,7 +217,7 @@ export async function registerAdminSharedMediaRoutes(app: FastifyInstance): Prom
         const day = String(uploadDate.getDate()).padStart(2, '0');
         const yyyyMMdd = `${year}${month}${day}`;
         const mediaUrl = buildUploadedMediaUrl(apiBaseUrl, yyyyMMdd, updated.filename);
-        const thumbnailUrl = buildUploadedThumbnailUrl(apiBaseUrl, yyyyMMdd, updated.filename);
+        const thumbnailUrl = buildUploadedThumbnailUrl(apiBaseUrl, yyyyMMdd, updated.filename, mediaUrl);
 
         return {
           data: {
