@@ -12,15 +12,15 @@ import {
   saveUploadedFile,
   generateUniqueFilename
 } from '../utils/fileUpload.js';
-import { buildImagorUrl } from '../utils/imagor.js';
 
 function buildUploadedMediaUrl(publicApiUrl: string, yyyyMMdd: string, filename: string): string {
   return `${publicApiUrl}/api/media/uploaded/${yyyyMMdd}/${filename}`;
 }
 
-function buildUploadedThumbnailUrl(yyyyMMdd: string, filename: string, fallbackUrl: string): string {
-  const source = `local:///uploaded/${yyyyMMdd}/${filename}`;
-  return buildImagorUrl(source) ?? fallbackUrl;
+function buildUploadedThumbnailUrl(publicApiUrl: string, yyyyMMdd: string, filename: string, fallbackUrl: string): string {
+  const prefix = publicApiUrl ? `${publicApiUrl}/api/image-proxy` : '/api/image-proxy';
+  const path = `fit-in/640x640/filters:format(webp):quality(80)/uploaded/${yyyyMMdd}/${filename}`;
+  return `${prefix}/${path}`;
 }
 
 const listQuerySchema = z.object({
@@ -149,7 +149,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
           const day = String(date.getDate()).padStart(2, '0');
           const yyyyMMdd = `${year}${month}${day}`;
           const mediaUrl = buildUploadedMediaUrl(publicApiUrl, yyyyMMdd, uniqueFilename);
-          const thumbnailUrl = buildUploadedThumbnailUrl(yyyyMMdd, uniqueFilename, mediaUrl);
+          const thumbnailUrl = buildUploadedThumbnailUrl(publicApiUrl, yyyyMMdd, uniqueFilename, mediaUrl);
           app.log.info(`Media URL: ${mediaUrl}`);
 
           uploadedMedia.push({
@@ -238,7 +238,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
         const day = String(uploadDate.getDate()).padStart(2, '0');
         const yyyyMMdd = `${year}${month}${day}`;
         const mediaUrl = buildUploadedMediaUrl(publicApiUrl, yyyyMMdd, media.filename);
-        const thumbnailUrl = buildUploadedThumbnailUrl(yyyyMMdd, media.filename, mediaUrl);
+        const thumbnailUrl = buildUploadedThumbnailUrl(publicApiUrl, yyyyMMdd, media.filename, mediaUrl);
 
         return {
           id: media.id,
@@ -326,7 +326,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
       const day = String(uploadDate.getDate()).padStart(2, '0');
       const yyyyMMdd = `${year}${month}${day}`;
       const mediaUrl = buildUploadedMediaUrl(publicApiUrl, yyyyMMdd, media.filename);
-      const thumbnailUrl = buildUploadedThumbnailUrl(yyyyMMdd, media.filename, mediaUrl);
+      const thumbnailUrl = buildUploadedThumbnailUrl(publicApiUrl, yyyyMMdd, media.filename, mediaUrl);
 
       return {
         data: {

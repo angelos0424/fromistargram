@@ -6,15 +6,14 @@ import {
   softDeleteSharedMedia,
   getSharedMediaById
 } from '../services/sharedMediaService.js';
-import { buildImagorUrl } from '../utils/imagor.js';
-
 function buildUploadedMediaUrl(publicApiUrl: string, yyyyMMdd: string, filename: string): string {
   return `${publicApiUrl}/api/media/uploaded/${yyyyMMdd}/${filename}`;
 }
 
-function buildUploadedThumbnailUrl(yyyyMMdd: string, filename: string, fallbackUrl: string): string {
-  const source = `local:///uploaded/${yyyyMMdd}/${filename}`;
-  return buildImagorUrl(source) ?? fallbackUrl;
+function buildUploadedThumbnailUrl(publicApiUrl: string, yyyyMMdd: string, filename: string, fallbackUrl: string): string {
+  const prefix = publicApiUrl ? `${publicApiUrl}/api/image-proxy` : '/api/image-proxy';
+  const path = `fit-in/640x640/filters:format(webp):quality(80)/uploaded/${yyyyMMdd}/${filename}`;
+  return `${prefix}/${path}`;
 }
 
 const listQuerySchema = z.object({
@@ -132,7 +131,7 @@ export async function registerAdminSharedMediaRoutes(app: FastifyInstance): Prom
           const day = String(uploadDate.getDate()).padStart(2, '0');
         const yyyyMMdd = `${year}${month}${day}`;
         const mediaUrl = buildUploadedMediaUrl(publicApiUrl, yyyyMMdd, media.filename);
-        const thumbnailUrl = buildUploadedThumbnailUrl(yyyyMMdd, media.filename, mediaUrl);
+        const thumbnailUrl = buildUploadedThumbnailUrl(publicApiUrl, yyyyMMdd, media.filename, mediaUrl);
 
         return {
           id: media.id,
@@ -194,7 +193,7 @@ export async function registerAdminSharedMediaRoutes(app: FastifyInstance): Prom
         const day = String(uploadDate.getDate()).padStart(2, '0');
         const yyyyMMdd = `${year}${month}${day}`;
         const mediaUrl = buildUploadedMediaUrl(publicApiUrl, yyyyMMdd, updated.filename);
-        const thumbnailUrl = buildUploadedThumbnailUrl(yyyyMMdd, updated.filename, mediaUrl);
+        const thumbnailUrl = buildUploadedThumbnailUrl(publicApiUrl, yyyyMMdd, updated.filename, mediaUrl);
 
         return {
           data: {
