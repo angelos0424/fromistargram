@@ -34,7 +34,7 @@ const PostMediaCarousel = ({
     preloadTargets.forEach((item) => {
       if (item.type === 'image') {
         const img = new Image();
-        img.src = item.mediaUrl;
+        img.src = item.thumbnailUrl;
       }
     });
   }, [activeIndex, activeMedia, media]);
@@ -175,7 +175,7 @@ const PostMediaCarousel = ({
               {item.type === 'video' ? (
                 <video
                   className="h-full w-full object-cover"
-                  src={item.mediaUrl}
+                  src={item.thumbnailUrl}
                   poster={item.thumbnailUrl}
                   muted
                   preload="metadata"
