@@ -1,13 +1,18 @@
 import type { SharedMedia } from '../../lib/api/types';
+import type { SharedMedia } from '../../lib/api/types';
 
 interface SharedMediaCardProps {
-	media: SharedMedia;
+	mediaGroup: SharedMedia[];
 	onClick: () => void;
 }
 
-const SharedMediaCard = ({ media, onClick }: SharedMediaCardProps) => {
+const SharedMediaCard = ({ mediaGroup, onClick }: SharedMediaCardProps) => {
+	const media = mediaGroup[0];
+	if (!media) return null;
+
 	const isVideo = media.mime.startsWith('video/');
 	const thumbnailUrl = media.thumbnailUrl || media.mediaUrl;
+	const count = mediaGroup.length;
 
 	return (
 		<button
@@ -45,8 +50,15 @@ const SharedMediaCard = ({ media, onClick }: SharedMediaCardProps) => {
 				</div>
 			)}
 
-			<div className="absolute right-2 top-2 rounded-full bg-black/50 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
-				{new Date(media.uploadedAt).toLocaleDateString('ko-KR')}
+			<div className="absolute right-2 top-2 flex flex-col items-end gap-1">
+				<div className="rounded-full bg-black/50 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
+					{new Date(media.uploadedAt).toLocaleDateString('ko-KR')}
+				</div>
+				{count > 1 && (
+					<div className="rounded-full bg-white/90 px-2 py-1 text-xs font-bold text-[#2D3748] shadow-sm backdrop-blur-sm dark:bg-brand-400 dark:text-white">
+						+{count - 1}
+					</div>
+				)}
 			</div>
 		</button>
 	);

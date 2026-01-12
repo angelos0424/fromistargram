@@ -128,10 +128,12 @@ export interface SharedMedia {
   width?: number | null;
   height?: number | null;
   duration?: number | null;
-  caption?: string | null;
-  uploadedAt: string;
-  mediaUrl: string;
-  thumbnailUrl?: string;
+	caption?: string | null;
+	uploadBatchId?: string | null;
+	uploadedAt: string;
+	mediaUrl: string;
+	thumbnailUrl?: string;
+
 }
 
 export interface SharedMediaListRequest {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   useLocation,
   useNavigate,
@@ -12,6 +12,7 @@ import Pagination from '../components/feed/Pagination';
 import PostGrid from '../components/feed/PostGrid';
 import PostModal from '../components/feed/PostModal';
 import SharedMediaGrid from '../components/shared/SharedMediaGrid';
+import SharedMediaModal from '../components/shared/SharedMediaModal';
 import { useFeedUiStore, type DateRange } from '../state/uiStore';
 import {
   mergeFeedSearchParams,
@@ -19,7 +20,7 @@ import {
 } from '../lib/url/feedSearchParams';
 import { useQuery } from '@tanstack/react-query';
 import { CLIENT_KEY, detailPost, listAccount, listPost, listSharedMedia } from '../lib/api/client';
-import type { AccountSummary } from '../lib/api/types';
+import type { AccountSummary, SharedMedia } from '../lib/api/types';
 import SeoHead from '../components/common/SeoHead';
 
 const FeedPage = () => {
@@ -60,6 +61,7 @@ const FeedPage = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activePostId = routePostId ?? null;
+  const [activeMediaGroup, setActiveMediaGroup] = useState<SharedMedia[] | null>(null);
 
   const parsedParams = useMemo(
     () => parseFeedSearchParams(searchParams),
@@ -135,6 +137,21 @@ const FeedPage = () => {
     queryKey: [CLIENT_KEY, 'sharedMedia', { limit: pageSize }],
     enabled: type === 'Shared'
   });
+
+  const groupedSharedMedia = useMemo(() => {
+    const data = sharedMediaResponse?.data || [];
+    const groups = new Map<string, SharedMedia[]>();
+    
+    data.forEach(item => {
+      const key = item.uploadBatchId ?? `legacy-${item.id}`;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(item);
+    });
+
+    return Array.from(groups.values());
+  }, [sharedMediaResponse?.data]);
 
   const modalAccount = useMemo(
     () =>
@@ -292,12 +309,9 @@ const FeedPage = () => {
 
         {type === 'Shared' ? (
           <SharedMediaGrid
-            media={sharedMediaResponse?.data || []}
+            mediaGroups={groupedSharedMedia}
             isLoading={sharedMediaLoading}
-            onMediaClick={(media) => {
-              // TODO: Open media viewer modal
-              window.open(media.mediaUrl, '_blank');
-            }}
+            onGroupClick={setActiveMediaGroup}
           />
         ) : feedError ? (
           <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-sm text-red-200">
@@ -325,6 +339,11 @@ const FeedPage = () => {
         isOpen={Boolean(activePostId)}
         isLoading={modalLoading}
         onClose={handleCloseModal}
+      />
+      <SharedMediaModal
+        mediaGroup={activeMediaGroup}
+        isOpen={Boolean(activeMediaGroup)}
+        onClose={() => setActiveMediaGroup(null)}
       />
     </AppShell>
   );

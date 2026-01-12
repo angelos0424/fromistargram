@@ -51,6 +51,7 @@ declare module '@prisma/client' {
     height: number | null;
     duration: number | null;
     caption: string | null;
+    uploadBatchId: string | null;
     uploadedAt: Date;
   }
 

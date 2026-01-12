@@ -1,13 +1,14 @@
 import type { SharedMedia } from '../../lib/api/types';
+import type { SharedMedia } from '../../lib/api/types';
 import SharedMediaCard from './SharedMediaCard';
 
 interface SharedMediaGridProps {
-	media: SharedMedia[];
+	mediaGroups: SharedMedia[][];
 	isLoading?: boolean;
-	onMediaClick: (media: SharedMedia) => void;
+	onGroupClick: (group: SharedMedia[]) => void;
 }
 
-const SharedMediaGrid = ({ media, isLoading, onMediaClick }: SharedMediaGridProps) => {
+const SharedMediaGrid = ({ mediaGroups, isLoading, onGroupClick }: SharedMediaGridProps) => {
 	if (isLoading) {
 		return (
 			<div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
@@ -21,7 +22,7 @@ const SharedMediaGrid = ({ media, isLoading, onMediaClick }: SharedMediaGridProp
 		);
 	}
 
-	if (media.length === 0) {
+	if (mediaGroups.length === 0) {
 		return (
 			<div className="flex w-full flex-col items-center justify-center rounded-2xl border border-dashed border-white/60 bg-white/85 px-6 py-16 backdrop-blur-[8px] dark:border-white/10 dark:bg-white/5">
 				<svg
@@ -50,11 +51,11 @@ const SharedMediaGrid = ({ media, isLoading, onMediaClick }: SharedMediaGridProp
 
 	return (
 		<div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-			{media.map((item) => (
+			{mediaGroups.map((group) => (
 				<SharedMediaCard
-					key={item.id}
-					media={item}
-					onClick={() => onMediaClick(item)}
+					key={group[0].id}
+					mediaGroup={group}
+					onClick={() => onGroupClick(group)}
 				/>
 			))}
 		</div>

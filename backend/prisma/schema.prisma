@@ -179,8 +179,10 @@ model SharedMedia {
   width        Int?
   height       Int?
   duration     Int?
-  caption      String?
-  uploadedAt   DateTime @default(now())
-  
+  caption       String?
+  uploadBatchId String?
+  uploadedAt    DateTime @default(now())
+
   @@index([uploadedAt])
+  @@index([uploadBatchId])
 }
