@@ -173,13 +173,11 @@ const PostMediaCarousel = ({
               onClick={() => handleSelect(index)}
             >
               {item.type === 'video' ? (
-                <video
-                  className="h-full w-full object-cover"
+                <img
                   src={item.thumbnailUrl}
-                  poster={item.thumbnailUrl}
-                  muted
-                  preload="metadata"
-                  tabIndex={-1}
+                  alt={`${index + 1}번째 미디어 썸네일`}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
                 />
               ) : (
                 <img
