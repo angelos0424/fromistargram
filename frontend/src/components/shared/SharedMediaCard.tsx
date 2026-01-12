@@ -1,5 +1,4 @@
 import type { SharedMedia } from '../../lib/api/types';
-import type { SharedMedia } from '../../lib/api/types';
 
 interface SharedMediaCardProps {
 	mediaGroup: SharedMedia[];
