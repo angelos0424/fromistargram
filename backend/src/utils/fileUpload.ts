@@ -59,6 +59,8 @@ export async function saveUploadedFile(
   await mkdir(uploadDir, { recursive: true });
 
   const filepath = path.join(uploadDir, filename);
+
+  console.log(`Saving file to ${filepath}`);
   const buffer = await file.toBuffer();
 
   await writeFile(filepath, buffer);
