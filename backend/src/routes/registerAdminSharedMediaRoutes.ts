@@ -12,9 +12,7 @@ function buildUploadedMediaUrl(publicApiUrl: string, yyyyMMdd: string, filename:
 
 function buildUploadedThumbnailUrl(publicApiUrl: string, yyyyMMdd: string, filename: string, fallbackUrl: string): string {
   const prefix = publicApiUrl ? `${publicApiUrl}/api/image-proxy` : '/api/image-proxy';
-  const source = /^https?:\/\//iu.test(fallbackUrl)
-    ? fallbackUrl
-    : `uploaded/${yyyyMMdd}/${filename}`;
+  const source = `uploaded/${yyyyMMdd}/${filename}`;
   const path = `fit-in/640x640/filters:format(webp):quality(80)/${source}`;
   return `${prefix}/${path}`;
 }
