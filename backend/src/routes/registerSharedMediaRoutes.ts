@@ -13,12 +13,29 @@ import {
   generateUniqueFilename
 } from '../utils/fileUpload.js';
 
-function buildUploadedMediaUrl(publicApiUrl: string, yyyyMMdd: string, filename: string): string {
-  return `${publicApiUrl}/api/media/uploaded/${yyyyMMdd}/${filename}`;
+function getApiBaseUrl(request: { headers: Record<string, string | string[] | undefined>; protocol?: string }): string {
+  const publicApiUrl = process.env.PUBLIC_API_BASE_URL;
+  if (publicApiUrl) {
+    return publicApiUrl;
+  }
+
+  const forwardedProto = request.headers['x-forwarded-proto'];
+  const forwardedHost = request.headers['x-forwarded-host'];
+  const protocol = Array.isArray(forwardedProto)
+    ? forwardedProto[0]
+    : forwardedProto ?? request.protocol ?? 'http';
+  const host = Array.isArray(forwardedHost)
+    ? forwardedHost[0]
+    : forwardedHost ?? request.headers.host;
+  return host ? `${protocol}://${host}` : '';
 }
 
-function buildUploadedThumbnailUrl(publicApiUrl: string, yyyyMMdd: string, filename: string, fallbackUrl: string): string {
-  const prefix = publicApiUrl ? `${publicApiUrl}/api/image-proxy` : '/api/image-proxy';
+function buildUploadedMediaUrl(apiBaseUrl: string, yyyyMMdd: string, filename: string): string {
+  return `${apiBaseUrl}/api/media/uploaded/${yyyyMMdd}/${filename}`;
+}
+
+function buildUploadedThumbnailUrl(apiBaseUrl: string, yyyyMMdd: string, filename: string): string {
+  const prefix = `${apiBaseUrl}/api/image-proxy`;
   const source = `uploaded/${yyyyMMdd}/${filename}`;
   const path = `fit-in/640x640/filters:format(webp):quality(80)/${source}`;
   return `${prefix}/${path}`;
@@ -36,7 +53,6 @@ const idParamsSchema = z.object({
 });
 
 export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<void> {
-  const publicApiUrl = process.env.PUBLIC_API_BASE_URL || '';
 
   // POST /api/shared/upload - Upload media files
   app.post(
@@ -148,9 +164,10 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
           const year = date.getFullYear();
           const month = String(date.getMonth() + 1).padStart(2, '0');
           const day = String(date.getDate()).padStart(2, '0');
+          const apiBaseUrl = getApiBaseUrl(request);
           const yyyyMMdd = `${year}${month}${day}`;
-          const mediaUrl = buildUploadedMediaUrl(publicApiUrl, yyyyMMdd, uniqueFilename);
-          const thumbnailUrl = buildUploadedThumbnailUrl(publicApiUrl, yyyyMMdd, uniqueFilename, mediaUrl);
+          const mediaUrl = buildUploadedMediaUrl(apiBaseUrl, yyyyMMdd, uniqueFilename);
+          const thumbnailUrl = buildUploadedThumbnailUrl(apiBaseUrl, yyyyMMdd, uniqueFilename);
           app.log.info(`Media URL: ${mediaUrl}`);
 
           uploadedMedia.push({
@@ -231,6 +248,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
     async (request) => {
       const params = listQuerySchema.parse(request.query);
       const result = await listSharedMedia(params);
+      const apiBaseUrl = getApiBaseUrl(request);
 
       const data = result.data.map((media: any) => {
         const uploadDate = new Date(media.uploadedAt);
@@ -238,8 +256,8 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
         const month = String(uploadDate.getMonth() + 1).padStart(2, '0');
         const day = String(uploadDate.getDate()).padStart(2, '0');
         const yyyyMMdd = `${year}${month}${day}`;
-        const mediaUrl = buildUploadedMediaUrl(publicApiUrl, yyyyMMdd, media.filename);
-        const thumbnailUrl = buildUploadedThumbnailUrl(publicApiUrl, yyyyMMdd, media.filename, mediaUrl);
+        const mediaUrl = buildUploadedMediaUrl(apiBaseUrl, yyyyMMdd, media.filename);
+        const thumbnailUrl = buildUploadedThumbnailUrl(apiBaseUrl, yyyyMMdd, media.filename);
 
         return {
           id: media.id,
@@ -321,13 +339,14 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
         return reply.code(404).send({ message: 'Shared media not found' });
       }
 
+      const apiBaseUrl = getApiBaseUrl(request);
       const uploadDate = new Date(media.uploadedAt);
       const year = uploadDate.getFullYear();
       const month = String(uploadDate.getMonth() + 1).padStart(2, '0');
       const day = String(uploadDate.getDate()).padStart(2, '0');
       const yyyyMMdd = `${year}${month}${day}`;
-      const mediaUrl = buildUploadedMediaUrl(publicApiUrl, yyyyMMdd, media.filename);
-      const thumbnailUrl = buildUploadedThumbnailUrl(publicApiUrl, yyyyMMdd, media.filename, mediaUrl);
+      const mediaUrl = buildUploadedMediaUrl(apiBaseUrl, yyyyMMdd, media.filename);
+      const thumbnailUrl = buildUploadedThumbnailUrl(apiBaseUrl, yyyyMMdd, media.filename);
 
       return {
         data: {
