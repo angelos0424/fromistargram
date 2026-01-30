@@ -10,6 +10,8 @@ import { copyToClipboard, sharePost } from '../../lib/share/sharePost';
 import { getCaptionLink, parseCaption } from '../../lib/text/parseCaption';
 import PostMediaCarousel from '../post/PostMediaCarousel';
 import ProfileHistoryTimeline from '../post/ProfileHistoryTimeline';
+import { getResponsiveImageProps } from '../../lib/utils/image';
+import VideoPlayer from '../post/VideoPlayer';
 
 interface PostModalProps {
   post: Post | null;
@@ -35,6 +37,7 @@ const PostModal = ({
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
 
   const [isProfileHistoryOpen, setProfileHistoryOpen] = useState(false);
+  const [isFullScreen, setFullScreen] = useState(false);
 
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const lastFocusedElementRef = useRef<Element | null>(null);
@@ -64,7 +67,11 @@ const PostModal = ({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        onClose();
+        if (isFullScreen) {
+          setFullScreen(false);
+        } else {
+          onClose();
+        }
         return;
       }
 
@@ -97,12 +104,13 @@ const PostModal = ({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isFullScreen]);
 
   useEffect(() => {
     setActiveIndex(0);
     setCaptionExpanded(false);
     setShareFeedback(null);
+    setFullScreen(false);
   }, [post?.id]);
 
   useEffect(() => {
@@ -227,6 +235,7 @@ const PostModal = ({
                 activeIndex={activeIndex}
                 onActiveIndexChange={setActiveIndex}
                 isLoading={isLoading}
+                onMediaClick={() => setFullScreen(true)}
               />
             </div>
             <aside className="flex w-full flex-col gap-5 rounded-[20px] border border-white/60 bg-white/90 p-5 backdrop-blur-[8px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] sm:p-6 lg:max-w-sm dark:rounded-2xl dark:border-white/10 dark:bg-white/5 dark:shadow-none">
@@ -358,6 +367,43 @@ const PostModal = ({
               selectedId={selectedProfileId}
               onSelect={setSelectedProfileId}
             />
+          </div>
+        </div>
+      )}
+
+      {isFullScreen && post?.media[activeIndex] && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-sm"
+          onClick={() => setFullScreen(false)}
+        >
+          <button
+            onClick={() => setFullScreen(false)}
+            className="absolute right-4 top-4 p-2 text-white/80 hover:text-white z-[70]"
+            aria-label="전체화면 닫기"
+          >
+            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          <div
+            className="relative flex h-full w-full items-center justify-center p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {post.media[activeIndex].type === 'video' ? (
+              <div className="h-full w-full max-w-7xl">
+                <VideoPlayer
+                  media={post.media[activeIndex]}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+            ) : (
+              <img
+                src={getResponsiveImageProps(post.accountId, post.media[activeIndex].filename, [1080]).src}
+                alt="전체화면 이미지"
+                className="max-h-full max-w-full object-contain shadow-2xl"
+              />
+            )}
           </div>
         </div>
       )}

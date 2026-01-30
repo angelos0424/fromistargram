@@ -9,6 +9,7 @@ interface PostMediaCarouselProps {
   activeIndex: number;
   onActiveIndexChange: (index: number) => void;
   isLoading?: boolean;
+  onMediaClick?: () => void;
 }
 
 const PostMediaCarousel = ({
@@ -16,7 +17,8 @@ const PostMediaCarousel = ({
   accountId,
   activeIndex,
   onActiveIndexChange,
-  isLoading
+  isLoading,
+  onMediaClick
 }: PostMediaCarouselProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -108,18 +110,24 @@ const PostMediaCarousel = ({
           </div>
         ) : activeMedia ? (
           activeMedia.type === 'video' ? (
-            <VideoPlayer
-              key={activeMedia.id}
-              media={activeMedia}
-              className="h-full w-full object-contain"
-            />
+            <div
+              className={`h-full w-full ${onMediaClick ? 'cursor-pointer' : ''}`}
+              onClick={onMediaClick}
+            >
+              <VideoPlayer
+                key={activeMedia.id}
+                media={activeMedia}
+                className="h-full w-full object-contain"
+              />
+            </div>
           ) : (
             <img
               key={activeMedia.id}
               {...getResponsiveImageProps(accountId, activeMedia.filename, [600, 1080])}
               alt="게시물 이미지"
-              className="max-h-full w-full object-contain"
+              className={`max-h-full w-full object-contain ${onMediaClick ? 'cursor-pointer' : ''}`}
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 60vw"
+              onClick={onMediaClick}
             />
           )
         ) : (
