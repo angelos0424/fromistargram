@@ -60,6 +60,7 @@ services:
     volumes:
       - /mnt/volume1/fromistargram/data/source:/data
       - /mnt/volume1/fromistargram/data/result:/result
+      - /mnt/volume1/fromistargram/data/uploaded:/data/uploaded
 
   imagorvideo:
     image: shumc/imagorvideo:latest
@@ -79,9 +80,9 @@ services:
       IMAGOR_USE_ETAG: 'true'
       FILE_SAFE_CHARS: '--'
     volumes:
-      - /mnt/volume1/fromistargram/data/source:/data
+      - /mnt/volume1/fromistargram/data/source:/data:ro
       - /mnt/volume1/fromistargram/data/result:/result
-
+      - /mnt/volume1/fromistargram/data/uploaded:/data/uploaded
   nginx-cache:
     build:
       context: ./nginx
