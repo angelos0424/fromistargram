@@ -36,7 +36,6 @@ services:
     volumes:
       - /mnt/volume1/fromistargram/data/source:/data:ro
       - /mnt/volume1/fromistargram/data/result:/result
-      - /mnt/volume1/fromistargram/data/uploaded:/data/uploaded
     ports:
       - '${API_PORT:-4000}:4000'
     command: ['node', 'dist/server.js']
