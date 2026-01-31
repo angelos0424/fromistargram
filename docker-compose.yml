@@ -60,7 +60,6 @@ services:
     volumes:
       - /mnt/volume1/fromistargram/data/source:/data:ro
       - /mnt/volume1/fromistargram/data/result:/result
-      - /mnt/volume1/fromistargram/data/uploaded:/data/uploaded:ro
 
   imagorvideo:
     image: shumc/imagorvideo:latest
