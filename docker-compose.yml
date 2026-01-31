@@ -34,7 +34,7 @@ services:
       DATA_ROOT: /data
       REDIS_URL: redis://redis:6379
     volumes:
-      - /mnt/volume1/fromistargram/data/source:/data:ro
+      - /mnt/volume1/fromistargram/data/source:/data
       - /mnt/volume1/fromistargram/data/result:/result
     ports:
       - '${API_PORT:-4000}:4000'
@@ -58,7 +58,7 @@ services:
       IMAGOR_USE_ETAG: 'true'
       FILE_SAFE_CHARS: '--'
     volumes:
-      - /mnt/volume1/fromistargram/data/source:/data:ro
+      - /mnt/volume1/fromistargram/data/source:/data
       - /mnt/volume1/fromistargram/data/result:/result
 
   imagorvideo:
@@ -79,7 +79,7 @@ services:
       IMAGOR_USE_ETAG: 'true'
       FILE_SAFE_CHARS: '--'
     volumes:
-      - /mnt/volume1/fromistargram/data/source:/data:ro
+      - /mnt/volume1/fromistargram/data/source:/data
       - /mnt/volume1/fromistargram/data/result:/result
 
   nginx-cache:
