@@ -36,6 +36,7 @@ services:
     volumes:
       - /mnt/volume1/fromistargram/data/source:/data:ro
       - /mnt/volume1/fromistargram/data/result:/result
+      - /mnt/volume1/fromistargram/data/uploaded:/data/uploaded
     ports:
       - '${API_PORT:-4000}:4000'
     command: ['node', 'dist/server.js']
@@ -45,7 +46,7 @@ services:
     container_name: fromistargram_imagor
     environment:
       IMAGOR_SECRET: ${IMAGOR_SECRET}
-      FILE_LOADER_BASE_DIR: '/data,/result'
+      FILE_LOADER_BASE_DIR: '/data'
       FILE_STORAGE_BASE_DIR: '/data'
       DEBUG: 1
       FILE_RESULT_STORAGE_BASE_DIR: '/result'
@@ -60,13 +61,14 @@ services:
     volumes:
       - /mnt/volume1/fromistargram/data/source:/data:ro
       - /mnt/volume1/fromistargram/data/result:/result
+      - /mnt/volume1/fromistargram/data/uploaded:/data/uploaded:ro
 
   imagorvideo:
     image: shumc/imagorvideo:latest
     container_name: fromistargram_imagorvideo
     environment:
       IMAGOR_SECRET: ${IMAGOR_SECRET}
-      FILE_LOADER_BASE_DIR: '/data,/result'
+      FILE_LOADER_BASE_DIR: '/data'
       FILE_STORAGE_BASE_DIR: '/data'
       DEBUG: 0
       FILE_RESULT_STORAGE_BASE_DIR: '/result'
@@ -81,6 +83,7 @@ services:
     volumes:
       - /mnt/volume1/fromistargram/data/source:/data:ro
       - /mnt/volume1/fromistargram/data/result:/result
+      - /mnt/volume1/fromistargram/data/uploaded:/data/uploaded:ro
 
   nginx-cache:
     build:
