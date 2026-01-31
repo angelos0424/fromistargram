@@ -35,15 +35,7 @@ export async function registerImageProxyRoutes(app: FastifyInstance) {
         }
 
         let normalizedPath = path.normalize('NFC');
-        const uploadedIndex = normalizedPath.indexOf('uploaded/');
-        if (uploadedIndex >= 0) {
-            const before = normalizedPath.slice(0, uploadedIndex);
-            const uploadedPath = normalizedPath.slice(uploadedIndex);
-            const baseUrl = getPublicBaseUrl(request);
-            if (baseUrl) {
-                normalizedPath = `${before}${baseUrl}/api/media/${uploadedPath}`;
-            }
-        }
+        // uploaded/ 경로는 imagor local loader가 직접 접근하므로 변환하지 않음
 
         const isVideo = normalizedPath.toLowerCase().endsWith('.mp4');
         if (isVideo) {

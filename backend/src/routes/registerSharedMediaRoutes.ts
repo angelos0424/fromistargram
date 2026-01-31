@@ -12,8 +12,6 @@ import {
   saveUploadedFile,
   generateUniqueFilename
 } from '../utils/fileUpload.js';
-import { buildImagorUrl } from '../utils/imagor.js';
-
 function getApiBaseUrl(request: { headers: Record<string, string | string[] | undefined>; protocol?: string }): string {
   const publicApiUrl = process.env.PUBLIC_API_BASE_URL;
   if (publicApiUrl) {
@@ -36,15 +34,9 @@ function buildUploadedMediaUrl(apiBaseUrl: string, yyyyMMdd: string, filename: s
 }
 
 function buildUploadedThumbnailUrl(apiBaseUrl: string, yyyyMMdd: string, filename: string, mediaUrl: string): string {
-  // imagor가 로컬 파일 시스템에서 직접 접근하도록 local:/// prefix 사용
-  // imagor의 local loader base path가 /result이므로 uploaded/yyyyMMdd/filename만 사용
-  const localPath = `local:///uploaded/${yyyyMMdd}/${filename}`;
-  const signed = buildImagorUrl(localPath);
-  if (signed) {
-    return signed;
-  }
-
-  return mediaUrl;
+  // image-proxy를 통해 imagor로 접근 (base64 인코딩 없이 직접 경로 사용)
+  // imagor의 local loader가 /result/uploaded/...에서 파일을 읽음
+  return `${apiBaseUrl}/api/image-proxy/fit-in/640x640/filters:format(webp):quality(80)/uploaded/${yyyyMMdd}/${filename}`;
 }
 
 const listQuerySchema = z.object({
