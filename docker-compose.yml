@@ -45,7 +45,7 @@ services:
     container_name: fromistargram_imagor
     environment:
       IMAGOR_SECRET: ${IMAGOR_SECRET}
-      FILE_LOADER_BASE_DIR: '/data'
+      FILE_LOADER_BASE_DIR: '/data,/result'
       FILE_STORAGE_BASE_DIR: '/data'
       DEBUG: 1
       FILE_RESULT_STORAGE_BASE_DIR: '/result'
@@ -66,7 +66,7 @@ services:
     container_name: fromistargram_imagorvideo
     environment:
       IMAGOR_SECRET: ${IMAGOR_SECRET}
-      FILE_LOADER_BASE_DIR: '/data'
+      FILE_LOADER_BASE_DIR: '/data,/result'
       FILE_STORAGE_BASE_DIR: '/data'
       DEBUG: 0
       FILE_RESULT_STORAGE_BASE_DIR: '/result'
