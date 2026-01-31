@@ -81,7 +81,6 @@ services:
     volumes:
       - /mnt/volume1/fromistargram/data/source:/data:ro
       - /mnt/volume1/fromistargram/data/result:/result
-      - /mnt/volume1/fromistargram/data/uploaded:/data/uploaded:ro
 
   nginx-cache:
     build:
