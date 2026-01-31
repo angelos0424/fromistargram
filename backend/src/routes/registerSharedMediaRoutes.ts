@@ -36,8 +36,10 @@ function buildUploadedMediaUrl(apiBaseUrl: string, yyyyMMdd: string, filename: s
 }
 
 function buildUploadedThumbnailUrl(apiBaseUrl: string, yyyyMMdd: string, filename: string, mediaUrl: string): string {
-  const sourceUrl = `${apiBaseUrl}/api/media/uploaded/${yyyyMMdd}/${filename}`;
-  const signed = buildImagorUrl(sourceUrl);
+  // imagor가 로컬 파일 시스템에서 직접 접근하도록 local:/// prefix 사용
+  const resultRoot = process.env.RESULT_ROOT ?? '/result';
+  const localPath = `local:///${resultRoot}/uploaded/${yyyyMMdd}/${filename}`;
+  const signed = buildImagorUrl(localPath);
   if (signed) {
     return signed;
   }
