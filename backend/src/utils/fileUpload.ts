@@ -47,8 +47,8 @@ export function getUploadPath(date: Date = new Date()): string {
   const day = String(date.getDate()).padStart(2, '0');
   const yyyyMMdd = `${year}${month}${day}`;
 
-  const resultRoot = process.env.RESULT_ROOT ?? '/result';
-  return path.join(resultRoot, 'uploaded', yyyyMMdd);
+  // imagor의 FILE_LOADER_BASE_DIR이 /data이므로 /data/uploaded/에 저장
+  return path.join('/data', 'uploaded', yyyyMMdd);
 }
 
 export async function saveUploadedFile(
