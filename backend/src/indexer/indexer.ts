@@ -17,7 +17,12 @@ export type IndexerResult = {
 };
 
 export async function buildSnapshot(options: IndexerOptions = {}): Promise<IndexerSnapshot> {
-  const dataRoot = options.dataRoot ?? process.env.CRAWL_OUTPUT_DIR ?? '/root';
+  const dataRoot = process.env.CRAWL_OUTPUT_DIR ?? process.env.DATA_ROOT ?? '/root';
+
+  if (dataRoot !== '/data/source') {
+    throw new Error('Indexer can only be run on the /data/source directory');
+  }
+
   return scanDataRoot(path.resolve(dataRoot));
 }
 
