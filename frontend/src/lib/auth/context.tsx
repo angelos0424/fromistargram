@@ -13,21 +13,16 @@ import {
   decodeJwt,
   isTokenExpired,
   parseIdToken,
-  type ParsedIdToken
+  type ParsedIdToken,
+  exchangeCodeForTokens,
+  refreshAccessToken
 } from './token';
-
-type TokenResponse = {
-  access_token: string;
-  id_token: string;
-  expires_in?: number;
-  token_type?: string;
-  scope?: string;
-  state?: string;
-};
+import { generateCodeVerifier, generateCodeChallenge, generateState } from './pkce';
 
 type StoredSession = {
   accessToken: string;
   idToken: string;
+  refreshToken?: string;
   expiresAt: number;
   scope?: string;
   tokenType?: string;
@@ -47,49 +42,30 @@ export interface AuthContextValue {
 const STORAGE_KEY = 'fromistargram.auth.session';
 const STATE_KEY = 'fromistargram.auth.state';
 const NONCE_KEY = 'fromistargram.auth.nonce';
+const CODE_VERIFIER_KEY = 'fromistargram.auth.code_verifier';
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const parseHashParams = (hash: string): URLSearchParams => {
-  const trimmed = hash.startsWith('#') ? hash.slice(1) : hash;
-  return new URLSearchParams(trimmed);
+const resolveExpiresAt = (expiresIn: number): number => {
+  return Date.now() + expiresIn * 1000;
 };
 
-const resolveExpiresAt = (token: string, expiresIn?: number): number => {
-  if (typeof expiresIn === 'number' && Number.isFinite(expiresIn)) {
-    return Date.now() + expiresIn * 1000;
-  }
-
-  const payload = decodeJwt(token);
-  if (!payload?.exp) {
-    return Date.now();
-  }
-
-  return payload.exp * 1000;
-};
-
-const tryParseTokenResponse = (hash: string): TokenResponse | null => {
-  if (!hash) {
+const tryParseAuthorizationCode = (
+  search: string
+): { code: string; state?: string } | null => {
+  if (!search) {
     return null;
   }
 
-  const params = parseHashParams(hash);
-  const accessToken = params.get('access_token');
-  const idToken = params.get('id_token');
+  const params = new URLSearchParams(search);
+  const code = params.get('code');
 
-  if (!accessToken || !idToken) {
+  if (!code) {
     return null;
   }
-
-  const expiresInRaw = params.get('expires_in');
-  const expiresIn = expiresInRaw ? Number.parseInt(expiresInRaw, 10) : undefined;
 
   return {
-    access_token: accessToken,
-    id_token: idToken,
-    expires_in: Number.isNaN(expiresIn) ? undefined : expiresIn,
-    token_type: params.get('token_type') ?? undefined,
-    scope: params.get('scope') ?? undefined,
+    code,
     state: params.get('state') ?? undefined
   };
 };
@@ -122,22 +98,21 @@ const persistSession = (session: StoredSession | null) => {
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
 };
 
-const generateState = () => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-
-  return Math.random().toString(36).slice(2, 10);
-};
-
-const buildAuthorizeUrl = (config: AuthentikConfig, state: string, nonce: string) => {
+const buildAuthorizeUrl = (
+  config: AuthentikConfig,
+  state: string,
+  nonce: string,
+  codeChallenge: string
+) => {
   const params = new URLSearchParams({
-    response_type: 'id_token token',
+    response_type: 'code',
     client_id: config.clientId,
     redirect_uri: config.redirectUri,
     scope: config.scope,
     state,
-    nonce
+    nonce,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256'
   });
 
   if (config.audience) {
@@ -193,10 +168,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [config]);
 
   const login = useCallback(
-    (options?: { prompt?: 'login' | 'consent'; force?: boolean }) => {
+    async (options?: { prompt?: 'login' | 'consent'; force?: boolean }) => {
       const stateValue = generateState();
       const nonceValue = generateState();
-      const authorizeUrl = new URL(buildAuthorizeUrl(config, stateValue, nonceValue));
+      const codeVerifier = generateCodeVerifier();
+      const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+      const authorizeUrl = new URL(
+        buildAuthorizeUrl(config, stateValue, nonceValue, codeChallenge)
+      );
 
       if (options?.prompt) {
         authorizeUrl.searchParams.set('prompt', options.prompt);
@@ -208,99 +188,236 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       sessionStorage.setItem(STATE_KEY, stateValue);
       sessionStorage.setItem(NONCE_KEY, nonceValue);
+      sessionStorage.setItem(CODE_VERIFIER_KEY, codeVerifier);
       window.location.assign(authorizeUrl.toString());
     },
     [config]
   );
 
   useEffect(() => {
-    const hashResponse = tryParseTokenResponse(window.location.hash);
+    const handleAuthorizationCode = async () => {
+      const codeResponse = tryParseAuthorizationCode(window.location.search);
 
-    if (hashResponse) {
-      const stateValue = sessionStorage.getItem(STATE_KEY);
-      const nonceValue = sessionStorage.getItem(NONCE_KEY);
-      if (hashResponse.state && hashResponse.state !== stateValue) {
-        setState((prev) => ({
-          ...prev,
-          error: '인증 상태값이 일치하지 않습니다.',
-          isLoading: false
-        }));
-        sessionStorage.removeItem(STATE_KEY);
-        sessionStorage.removeItem(NONCE_KEY);
+      if (codeResponse) {
+        const stateValue = sessionStorage.getItem(STATE_KEY);
+        const nonceValue = sessionStorage.getItem(NONCE_KEY);
+        const codeVerifier = sessionStorage.getItem(CODE_VERIFIER_KEY);
+
+        if (codeResponse.state && codeResponse.state !== stateValue) {
+          setState((prev) => ({
+            ...prev,
+            error: '인증 상태값이 일치하지 않습니다.',
+            isLoading: false
+          }));
+          sessionStorage.removeItem(STATE_KEY);
+          sessionStorage.removeItem(NONCE_KEY);
+          sessionStorage.removeItem(CODE_VERIFIER_KEY);
+          return;
+        }
+
+        if (!codeVerifier) {
+          setState((prev) => ({
+            ...prev,
+            error: 'PKCE code verifier를 찾을 수 없습니다.',
+            isLoading: false
+          }));
+          return;
+        }
+
+        try {
+          const tokenResponse = await exchangeCodeForTokens(
+            config.issuerUrl,
+            config.clientId,
+            config.redirectUri,
+            codeResponse.code,
+            codeVerifier
+          );
+
+          const expiresAt = resolveExpiresAt(tokenResponse.expires_in);
+          const parsed = parseIdToken(tokenResponse.id_token);
+
+          if (!parsed) {
+            persistSession(null);
+            sessionStorage.removeItem(STATE_KEY);
+            sessionStorage.removeItem(NONCE_KEY);
+            sessionStorage.removeItem(CODE_VERIFIER_KEY);
+            setState((prev) => ({
+              ...prev,
+              error: 'ID 토큰을 파싱할 수 없습니다.',
+              isLoading: false
+            }));
+            return;
+          }
+
+          if (nonceValue && parsed.nonce && parsed.nonce !== nonceValue) {
+            persistSession(null);
+            sessionStorage.removeItem(STATE_KEY);
+            sessionStorage.removeItem(NONCE_KEY);
+            sessionStorage.removeItem(CODE_VERIFIER_KEY);
+            setState((prev) => ({
+              ...prev,
+              error: '인증 nonce 값이 일치하지 않습니다.',
+              isLoading: false
+            }));
+            return;
+          }
+
+          const session: StoredSession = {
+            accessToken: tokenResponse.access_token,
+            idToken: tokenResponse.id_token,
+            refreshToken: tokenResponse.refresh_token,
+            expiresAt,
+            scope: tokenResponse.scope,
+            tokenType: tokenResponse.token_type
+          };
+
+          persistSession(session);
+          sessionStorage.removeItem(STATE_KEY);
+          sessionStorage.removeItem(NONCE_KEY);
+          sessionStorage.removeItem(CODE_VERIFIER_KEY);
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname + window.location.search.replace(/[?&]code=[^&]*/, '').replace(/^&/, '?')
+          );
+
+          setState({
+            token: tokenResponse.access_token,
+            idToken: parsed,
+            expiresAt,
+            isLoading: false,
+            error: null
+          });
+        } catch (error) {
+          console.error('Token exchange failed:', error);
+          sessionStorage.removeItem(STATE_KEY);
+          sessionStorage.removeItem(NONCE_KEY);
+          sessionStorage.removeItem(CODE_VERIFIER_KEY);
+          setState((prev) => ({
+            ...prev,
+            error: '토큰 교환에 실패했습니다.',
+            isLoading: false
+          }));
+        }
         return;
       }
 
-      const expiresAt = resolveExpiresAt(hashResponse.id_token, hashResponse.expires_in);
-      const parsed = parseIdToken(hashResponse.id_token);
+      const stored = loadStoredSession();
+
+      if (!stored || stored.expiresAt <= Date.now() || isTokenExpired(stored.idToken)) {
+        // Try to refresh token if refresh token exists
+        if (stored?.refreshToken) {
+          try {
+            const tokenResponse = await refreshAccessToken(
+              config.issuerUrl,
+              config.clientId,
+              stored.refreshToken
+            );
+
+            const expiresAt = resolveExpiresAt(tokenResponse.expires_in);
+            const parsed = parseIdToken(tokenResponse.id_token);
+
+            if (parsed) {
+              const session: StoredSession = {
+                accessToken: tokenResponse.access_token,
+                idToken: tokenResponse.id_token,
+                refreshToken: tokenResponse.refresh_token ?? stored.refreshToken,
+                expiresAt,
+                scope: tokenResponse.scope,
+                tokenType: tokenResponse.token_type
+              };
+
+              persistSession(session);
+              setState({
+                token: tokenResponse.access_token,
+                idToken: parsed,
+                expiresAt,
+                isLoading: false,
+                error: null
+              });
+              return;
+            }
+          } catch (error) {
+            console.error('Token refresh failed:', error);
+          }
+        }
+
+        persistSession(null);
+        setState((prev) => ({ ...prev, isLoading: false }));
+        return;
+      }
+
+      const parsed = parseIdToken(stored.idToken);
       if (!parsed) {
         persistSession(null);
-        sessionStorage.removeItem(STATE_KEY);
-        sessionStorage.removeItem(NONCE_KEY);
-        setState((prev) => ({
-          ...prev,
-          error: 'ID 토큰을 파싱할 수 없습니다.',
-          isLoading: false
-        }));
+        setState((prev) => ({ ...prev, isLoading: false }));
         return;
       }
 
-      if (nonceValue && parsed.nonce && parsed.nonce !== nonceValue) {
-        persistSession(null);
-        sessionStorage.removeItem(STATE_KEY);
-        sessionStorage.removeItem(NONCE_KEY);
-        setState((prev) => ({
-          ...prev,
-          error: '인증 nonce 값이 일치하지 않습니다.',
-          isLoading: false
-        }));
-        return;
-      }
-
-      const session: StoredSession = {
-        accessToken: hashResponse.access_token,
-        idToken: hashResponse.id_token,
-        expiresAt,
-        scope: hashResponse.scope,
-        tokenType: hashResponse.token_type
-      };
-
-      persistSession(session);
-      sessionStorage.removeItem(STATE_KEY);
-      sessionStorage.removeItem(NONCE_KEY);
-      window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
       setState({
-        token: hashResponse.access_token,
+        token: stored.accessToken,
         idToken: parsed,
-        expiresAt,
+        expiresAt: stored.expiresAt,
         isLoading: false,
         error: null
       });
+    };
+
+    handleAuthorizationCode();
+  }, [config]);
+
+  // Auto-refresh token before expiration
+  useEffect(() => {
+    if (!state.token || !state.expiresAt) {
       return;
     }
 
     const stored = loadStoredSession();
-
-    if (!stored || stored.expiresAt <= Date.now() || isTokenExpired(stored.idToken)) {
-      persistSession(null);
-      setState((prev) => ({ ...prev, isLoading: false }));
+    if (!stored?.refreshToken) {
       return;
     }
 
-    const parsed = parseIdToken(stored.idToken);
-    if (!parsed) {
-      persistSession(null);
-      setState((prev) => ({ ...prev, isLoading: false }));
-      return;
-    }
+    const timeUntilExpiry = state.expiresAt - Date.now();
+    const refreshTime = Math.max(timeUntilExpiry - 5 * 60 * 1000, 0); // 5 minutes before expiry
 
-    setState({
-      token: stored.accessToken,
-      idToken: parsed,
-      expiresAt: stored.expiresAt,
-      isLoading: false,
-      error: null
-    });
-  }, []);
+    const timer = setTimeout(async () => {
+      try {
+        const tokenResponse = await refreshAccessToken(
+          config.issuerUrl,
+          config.clientId,
+          stored.refreshToken!
+        );
+
+        const expiresAt = resolveExpiresAt(tokenResponse.expires_in);
+        const parsed = parseIdToken(tokenResponse.id_token);
+
+        if (parsed) {
+          const session: StoredSession = {
+            accessToken: tokenResponse.access_token,
+            idToken: tokenResponse.id_token,
+            refreshToken: tokenResponse.refresh_token ?? stored.refreshToken,
+            expiresAt,
+            scope: tokenResponse.scope,
+            tokenType: tokenResponse.token_type
+          };
+
+          persistSession(session);
+          setState((prev) => ({
+            ...prev,
+            token: tokenResponse.access_token,
+            idToken: parsed,
+            expiresAt
+          }));
+        }
+      } catch (error) {
+        console.error('Auto token refresh failed:', error);
+        // Token refresh failed, user will need to re-authenticate
+        logout();
+      }
+    }, refreshTime);
+
+    return () => clearTimeout(timer);
+  }, [state.token, state.expiresAt, config, logout]);
 
   const isAuthenticated = useMemo(() => {
     if (!state.token || !state.idToken || !state.expiresAt) {

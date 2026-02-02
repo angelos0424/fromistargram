@@ -80,3 +80,82 @@ export const parseIdToken = (token: string): ParsedIdToken | null => {
     raw: token
   };
 };
+
+export interface TokenResponse {
+  access_token: string;
+  id_token: string;
+  refresh_token?: string;
+  expires_in: number;
+  token_type: string;
+  scope?: string;
+}
+
+/**
+ * Exchange authorization code for tokens using PKCE
+ */
+export const exchangeCodeForTokens = async (
+  issuerUrl: string,
+  clientId: string,
+  redirectUri: string,
+  code: string,
+  codeVerifier: string
+): Promise<TokenResponse> => {
+  const tokenEndpoint = `${issuerUrl.replace(/\/$/, '')}/application/o/token/`;
+
+  const params = new URLSearchParams({
+    grant_type: 'authorization_code',
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    code,
+    code_verifier: codeVerifier
+  });
+
+  const response = await fetch(tokenEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: params.toString()
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Token exchange failed: ${error}`);
+  }
+
+  const data = await response.json();
+  return data as TokenResponse;
+};
+
+/**
+ * Refresh access token using refresh token
+ */
+export const refreshAccessToken = async (
+  issuerUrl: string,
+  clientId: string,
+  refreshToken: string
+): Promise<TokenResponse> => {
+  const tokenEndpoint = `${issuerUrl.replace(/\/$/, '')}/application/o/token/`;
+
+  const params = new URLSearchParams({
+    grant_type: 'refresh_token',
+    client_id: clientId,
+    refresh_token: refreshToken
+  });
+
+  const response = await fetch(tokenEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: params.toString()
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Token refresh failed: ${error}`);
+  }
+
+  const data = await response.json();
+  return data as TokenResponse;
+};
