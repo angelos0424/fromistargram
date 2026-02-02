@@ -16,12 +16,14 @@ model Account {
   posts               Post[]
   profilePics         ProfilePic[]
   highlights          Highlight[]
+
+  @@index([lastIndexedAt])
 }
 
 model Post {
   id        String    @id
   accountId String
-  account   Account   @relation(fields: [accountId], references: [id])
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
   postedAt  DateTime
   caption   String?
   type      String    @default("Post")
@@ -33,12 +35,13 @@ model Post {
   tags      PostTag[]
 
   @@index([accountId, postedAt])
+  @@index([createdAt])
 }
 
 model Media {
   id         String   @id @default(cuid())
   postId     String
-  post       Post     @relation(fields: [postId], references: [id])
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   orderIndex Int
   filename   String
   mime       String
@@ -53,7 +56,7 @@ model Media {
 model ProfilePic {
   id        String   @id
   accountId String
-  account   Account  @relation(fields: [accountId], references: [id])
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   takenAt   DateTime
   filename  String
   createdAt DateTime @default(now())
@@ -70,7 +73,7 @@ model Tag {
 model PostTag {
   postId String
   tagId  Int
-  post   Post @relation(fields: [postId], references: [id])
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   tag    Tag  @relation(fields: [tagId], references: [id])
 
   @@id([postId, tagId])
@@ -78,7 +81,7 @@ model PostTag {
 
 model PostText {
   postId   String  @id
-  post     Post    @relation(fields: [postId], references: [id])
+  post     Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
   content  String
   updatedAt DateTime @updatedAt
 }
@@ -143,7 +146,7 @@ model CrawlRun {
 model Highlight {
   id        String   @id @default(cuid())
   accountId String
-  account   Account  @relation(fields: [accountId], references: [id])
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   title     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -158,7 +161,7 @@ model Highlight {
 model HighlightMedia {
   id          String    @id @default(cuid())
   highlightId String
-  highlight   Highlight @relation("HighlightItems", fields: [highlightId], references: [id])
+  highlight   Highlight @relation("HighlightItems", fields: [highlightId], references: [id], onDelete: Cascade)
   
   coverForHighlight Highlight? @relation("HighlightCover")
 
@@ -172,7 +175,7 @@ model HighlightMedia {
 
 model SharedMedia {
   id           String   @id @default(cuid())
-  filename     String   @unique
+  filename     String
   originalName String
   mime         String
   size         Int
@@ -186,4 +189,6 @@ model SharedMedia {
 
   @@index([uploadedAt])
   @@index([uploadBatchId])
+  @@index([isDeleted, uploadedAt])
+  @@unique([uploadBatchId, filename])
 }
