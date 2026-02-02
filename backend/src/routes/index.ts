@@ -2,9 +2,6 @@ import { FastifyInstance } from 'fastify';
 import { registerAccountRoutes } from './registerAccountRoutes.js';
 import { registerPostRoutes } from './registerPostRoutes.js';
 import { registerMediaRoutes } from './registerMediaRoutes.js';
-import { registerAdminAccountRoutes } from './registerAdminAccountRoutes.js';
-import { registerAdminTargetRoutes } from './registerAdminTargetRoutes.js';
-import { registerAdminRunRoutes } from './registerAdminRunRoutes.js';
 import { registerAdminMetricsRoutes } from './registerAdminMetricsRoutes.js';
 import { registerAdminIndexerRoutes } from './registerAdminIndexerRoutes.js';
 import { registerAdminDatabaseRoutes } from './registerAdminDatabaseRoutes.js';
@@ -28,9 +25,6 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     // Apply admin auth to all routes in this scope
     adminApp.addHook('preHandler', requireAdminAuth);
 
-    await adminApp.register(registerAdminAccountRoutes);
-    await adminApp.register(registerAdminTargetRoutes);
-    await adminApp.register(registerAdminRunRoutes);
     await adminApp.register(registerAdminMetricsRoutes);
     await adminApp.register(registerAdminIndexerRoutes);
     await adminApp.register(registerAdminDatabaseRoutes);

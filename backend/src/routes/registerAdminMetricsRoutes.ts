@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { fetchFeedStatistics } from '../services/crawlTargetsService.js';
+import { prisma } from '../db/client.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 
 const statsSchema = {
@@ -36,7 +36,18 @@ export async function registerAdminMetricsRoutes(app: FastifyInstance): Promise<
     },
     async (request, reply) => {
       try {
-        const data = await fetchFeedStatistics();
+        const postAggregate = await prisma.post.aggregate({
+          _count: { _all: true }
+        });
+
+        const data = {
+          totalTargets: 0,
+          activeTargets: 0,
+          featuredTargets: 0,
+          totalPosts: postAggregate._count._all ?? 0,
+          lastIndexedAt: null
+        };
+        
         return sendSuccess(reply, data);
       } catch (error) {
         request.log.error(error, 'Failed to fetch feed statistics');
