@@ -2,22 +2,34 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { signPath } from '../utils/imagor.js';
 
 const imagorUrl = process.env.IMAGOR_URL;
-const publicApiUrl = process.env.PUBLIC_API_BASE_URL;
 
-function getPublicBaseUrl(request: FastifyRequest): string {
-    if (publicApiUrl) {
-        return publicApiUrl;
+/**
+ * Parse Imagor path into transformation and file path parts
+ * Example: "fit-in/1080x0/filters:format(webp)/source/rosieline_/filename.jpg"
+ * → transformation: "fit-in/1080x0/filters:format(webp)"
+ * → filePath: "source/rosieline_/filename.jpg"
+ */
+function parseImagorPath(path: string): { transformation: string; filePath: string } {
+    // Find where the file path starts (after source/ or uploaded/)
+    const sourceMatch = path.match(/(source\/|uploaded\/)/);
+    if (sourceMatch && sourceMatch.index !== undefined) {
+        return {
+            transformation: path.slice(0, sourceMatch.index).replace(/\/$/, ''),
+            filePath: path.slice(sourceMatch.index),
+        };
     }
+    // If no recognizable prefix, assume the whole path is a file path (fallback)
+    return { transformation: '', filePath: path };
+}
 
-    const forwardedProto = request.headers['x-forwarded-proto'];
-    const forwardedHost = request.headers['x-forwarded-host'];
-    const protocol = Array.isArray(forwardedProto)
-        ? forwardedProto[0]
-        : forwardedProto ?? request.protocol ?? 'http';
-    const host = Array.isArray(forwardedHost)
-        ? forwardedHost[0]
-        : forwardedHost ?? request.headers.host;
-    return host ? `${protocol}://${host}` : '';
+/**
+ * Encode file path to Base64 with URL-safe characters
+ */
+function encodeToBase64Path(filePath: string): string {
+    return 'b64:' + Buffer.from(filePath).toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
 }
 
 export async function registerImageProxyRoutes(app: FastifyInstance) {
@@ -34,32 +46,34 @@ export async function registerImageProxyRoutes(app: FastifyInstance) {
             return reply.code(500).send({ error: 'Image service not configured' });
         }
 
-        let normalizedPath = path.normalize('NFC');
-        // uploaded/ 경로는 imagor local loader가 직접 접근하므로 변환하지 않음
+        const normalizedPath = path.normalize('NFC');
 
-        const isVideo = normalizedPath.toLowerCase().endsWith('.mp4');
+        // Parse the path to extract transformation and file path
+        const { transformation, filePath } = parseImagorPath(normalizedPath);
+
+        const isVideo = filePath.toLowerCase().endsWith('.mp4');
+
+        // Adjust format for videos
+        let finalTransformation = transformation;
         if (isVideo) {
-            normalizedPath = normalizedPath.replace('filters:format(webp)', 'filters:format(jpeg)');
+            finalTransformation = transformation.replace('filters:format(webp)', 'filters:format(jpeg)');
         }
 
-        const signature = signPath(normalizedPath);
+        // Encode file path to Base64
+        const b64FilePath = encodeToBase64Path(filePath);
+
+        // Build final path for signing
+        const finalPath = finalTransformation ? `${finalTransformation}/${b64FilePath}` : b64FilePath;
+
+        const signature = signPath(finalPath);
+        const normalizedBase = imagorUrl.endsWith('/') ? imagorUrl.slice(0, -1) : imagorUrl;
+        const prefix = isVideo ? '/videos' : '/images';
 
         if (!signature) {
-            const normalizedBase = imagorUrl.endsWith('/') ? imagorUrl.slice(0, -1) : imagorUrl;
-            const encodedPath = normalizedPath.split('/').map(p => encodeURIComponent(p)).join('/')
-                .replace(/%3A/g, ':');
-            return reply.redirect(`${normalizedBase}/unsafe/${encodedPath}`);
+            return reply.redirect(`${normalizedBase}${prefix}/unsafe/${finalPath}`);
         }
 
-        const normalizedBase = imagorUrl.endsWith('/') ? imagorUrl.slice(0, -1) : imagorUrl;
-
-        const encodedPath = normalizedPath.split('/').map(p => encodeURIComponent(p)).join('/')
-            .replace(/%3A/g, ':')
-            .replace(/%28/g, '(')
-            .replace(/%29/g, ')');
-
-        const prefix = isVideo ? '/videos' : '/images';
-        const signedUrl = `${normalizedBase}${prefix}/${signature}/${encodedPath}`;
+        const signedUrl = `${normalizedBase}${prefix}/${signature}/${finalPath}`;
 
         return reply.redirect(signedUrl);
     });
