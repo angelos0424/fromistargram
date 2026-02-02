@@ -375,18 +375,66 @@ async function scrapeMultipleProfiles(usernames: string[]) {
   return result;
 }
 
+/**
+ * Launch crawler as background task
+ * Updates run status in database based on completion
+ */
 function launchManualCrawler(
   runId: string,
   handles: string[],
   sessionId: string,
   credentials?: { username: string; password: string }
 ): void {
-  const scriptPath = resolveCrawlerScriptPath();
-  console.log(`Run status: ${runId} || handles: ${handles.join(', ')}`);
-  const args = [scriptPath, '--profiles', ...handles, '--session-id', sessionId, '-f', '-s', '-hl', '-r'];
-  void scrapeMultipleProfiles(handles)
+  // Run crawler in background without blocking the response
+  (async () => {
+    try {
+      console.log(`Starting crawl run ${runId} for handles: ${handles.join(', ')}`);
 
-  return ;
+      // Update status to running
+      await updateRunStatus(runId, 'running');
+
+      // Execute crawler
+      const result = await scrapeMultipleProfiles(handles);
+
+      // Check if any profiles were successfully scraped
+      const successCount = result.length;
+      const failureCount = handles.length - successCount;
+
+      if (successCount === 0) {
+        await updateRunStatus(
+          runId,
+          'failure',
+          `All profiles failed to scrape. ${failureCount} errors.`
+        );
+      } else if (failureCount > 0) {
+        await updateRunStatus(
+          runId,
+          'success',
+          `Scraped ${successCount} profiles with ${failureCount} failures`
+        );
+      } else {
+        await updateRunStatus(runId, 'success', `Successfully scraped ${successCount} profiles`);
+      }
+
+      // Trigger indexer after successful crawl
+      if (successCount > 0) {
+        console.log(`Triggering indexer after crawl run ${runId}`);
+        await scheduleIndexerRun();
+      }
+    } catch (error) {
+      console.error(`Crawler run ${runId} failed:`, error);
+      await updateRunStatus(
+        runId,
+        'failure',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+    }
+  })().catch((error) => {
+    // Catch any unhandled errors in the async IIFE
+    console.error(`Fatal error in crawler run ${runId}:`, error);
+  });
+
+  return;
 
   // if (credentials) {
   //   args.push('-l', credentials.username, '-p', credentials.password);

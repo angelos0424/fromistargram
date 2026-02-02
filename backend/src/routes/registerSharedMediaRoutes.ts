@@ -12,6 +12,7 @@ import {
   saveUploadedFile,
   generateUniqueFilename
 } from '../utils/fileUpload.js';
+import { formatDateToYYYYMMDD } from '../utils/dateFormat.js';
 function getApiBaseUrl(request: { headers: Record<string, string | string[] | undefined>; protocol?: string }): string {
   const publicApiUrl = process.env.PUBLIC_API_BASE_URL;
   if (publicApiUrl) {
@@ -159,11 +160,8 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
           app.log.info(`Database record created with ID: ${media.id}`);
 
           const date = new Date();
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
           const apiBaseUrl = getApiBaseUrl(request);
-          const yyyyMMdd = `${year}${month}${day}`;
+          const yyyyMMdd = formatDateToYYYYMMDD(date);
           const mediaUrl = buildUploadedMediaUrl(apiBaseUrl, yyyyMMdd, uniqueFilename);
           const thumbnailUrl = buildUploadedThumbnailUrl(apiBaseUrl, yyyyMMdd, uniqueFilename, mediaUrl);
           app.log.info(`Media URL: ${mediaUrl}`);
@@ -250,10 +248,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
 
       const data = result.data.map((media: any) => {
         const uploadDate = new Date(media.uploadedAt);
-        const year = uploadDate.getFullYear();
-        const month = String(uploadDate.getMonth() + 1).padStart(2, '0');
-        const day = String(uploadDate.getDate()).padStart(2, '0');
-        const yyyyMMdd = `${year}${month}${day}`;
+        const yyyyMMdd = formatDateToYYYYMMDD(uploadDate);
         const mediaUrl = buildUploadedMediaUrl(apiBaseUrl, yyyyMMdd, media.filename);
         const thumbnailUrl = buildUploadedThumbnailUrl(apiBaseUrl, yyyyMMdd, media.filename, mediaUrl);
 
@@ -339,10 +334,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
 
       const apiBaseUrl = getApiBaseUrl(request);
       const uploadDate = new Date(media.uploadedAt);
-      const year = uploadDate.getFullYear();
-      const month = String(uploadDate.getMonth() + 1).padStart(2, '0');
-      const day = String(uploadDate.getDate()).padStart(2, '0');
-      const yyyyMMdd = `${year}${month}${day}`;
+      const yyyyMMdd = formatDateToYYYYMMDD(uploadDate);
       const mediaUrl = buildUploadedMediaUrl(apiBaseUrl, yyyyMMdd, media.filename);
       const thumbnailUrl = buildUploadedThumbnailUrl(apiBaseUrl, yyyyMMdd, media.filename, mediaUrl);
 

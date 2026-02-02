@@ -3,6 +3,9 @@ import path from 'path';
 import { prisma } from '../db/client.js';
 import { getUploadPath } from '../utils/fileUpload.js';
 
+// Extract Prisma types from client instance
+type PrismaSharedMediaWhereInput = Parameters<typeof prisma.sharedMedia.findMany>[0]['where'];
+
 export interface CreateSharedMediaInput {
   filename: string;
   originalName: string;
@@ -41,7 +44,7 @@ export async function createSharedMedia(input: CreateSharedMediaInput) {
 
 export async function listSharedMedia(params: ListSharedMediaParams) {
   const limit = params.limit ?? 20;
-  const where: any = {};
+  const where: PrismaSharedMediaWhereInput = {};
 
   if (!params.includeDeleted) {
     where.isDeleted = false;

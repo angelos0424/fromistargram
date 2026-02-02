@@ -1,4 +1,4 @@
-import IORedis from 'ioredis';
+import { Redis } from 'ioredis';
 
 type CacheValue = string;
 
@@ -50,25 +50,88 @@ class MemoryCacheAdapter implements CacheAdapter {
 }
 
 class RedisCacheAdapter implements CacheAdapter {
-  private readonly client: any;
+  private readonly client: Redis;
+  private isHealthy = false;
 
   constructor(redisUrl: string) {
-    this.client = new (IORedis as any)(redisUrl, { lazyConnect: true });
+    this.client = new Redis(redisUrl, {
+      lazyConnect: true,
+      // Retry strategy: exponential backoff with max delay
+      retryStrategy: (times: number) => {
+        const delay = Math.min(times * 50, 2000);
+        console.log(`Redis reconnecting, attempt ${times}, delay ${delay}ms`);
+        return delay;
+      },
+      // Keep connection alive
+      enableReadyCheck: true,
+      maxRetriesPerRequest: 3,
+      // Connection timeouts
+      connectTimeout: 10000,
+      commandTimeout: 5000,
+    });
+
+    // Setup event handlers
+    this.client.on('connect', () => {
+      console.log('Redis client connecting...');
+    });
+
+    this.client.on('ready', () => {
+      console.log('Redis client ready');
+      this.isHealthy = true;
+    });
+
+    this.client.on('error', (error: Error) => {
+      console.error('Redis client error:', error);
+      this.isHealthy = false;
+    });
+
+    this.client.on('close', () => {
+      console.warn('Redis connection closed');
+      this.isHealthy = false;
+    });
+
+    this.client.on('reconnecting', () => {
+      console.log('Redis client reconnecting...');
+    });
+
+    this.client.on('end', () => {
+      console.warn('Redis connection ended');
+      this.isHealthy = false;
+    });
+
+    // Initial connection
     this.client.connect().catch((error: unknown) => {
-      console.warn('Failed to connect to Redis, falling back to in-memory cache', error);
+      console.warn('Failed to initially connect to Redis, will retry automatically', error);
     });
   }
 
+  /**
+   * Check if Redis is currently healthy
+   */
+  isConnected(): boolean {
+    return this.isHealthy && this.client.status === 'ready';
+  }
+
   async get(key: string): Promise<CacheValue | null> {
+    // Fast path: if disconnected, skip cache
+    if (!this.isConnected()) {
+      return null;
+    }
+
     try {
       return await this.client.get(key);
     } catch (error: unknown) {
-      console.warn('Redis get error, ignoring cache miss', error);
+      console.warn('Redis get error, treating as cache miss', { key, error });
       return null;
     }
   }
 
   async set(key: string, value: CacheValue, ttlSeconds: number): Promise<void> {
+    // Fast path: if disconnected, skip cache write
+    if (!this.isConnected()) {
+      return;
+    }
+
     try {
       if (ttlSeconds > 0) {
         await this.client.set(key, value, 'EX', ttlSeconds);
@@ -76,15 +139,16 @@ class RedisCacheAdapter implements CacheAdapter {
         await this.client.set(key, value);
       }
     } catch (error: unknown) {
-      console.warn('Redis set error, skipping cache write', error);
+      console.warn('Redis set error, skipping cache write', { key, error });
     }
   }
 
   async delete(key: string): Promise<void> {
+    // Best effort: try even if connection seems unhealthy
     try {
       await this.client.del(key);
     } catch (error: unknown) {
-      console.warn('Redis delete error, skipping cache delete', error);
+      console.warn('Redis delete error, skipping cache delete', { key, error });
     }
   }
 
