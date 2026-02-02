@@ -24,8 +24,8 @@ export function getImagorUrl(
 
     const { width = 0, height = 0 } = options;
 
-    // Construct path: accountId/filename
-    const path = `${accountId}/${filename}`;
+    // Construct path: source/accountId/filename
+    const path = `source/${accountId}/${filename}`;
 
     const parts: string[] = [];
 

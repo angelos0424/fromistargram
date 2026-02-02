@@ -53,7 +53,7 @@ export async function getAccount(id: string): Promise<Account | null> {
       
       let profileUrl = account.latestProfilePicUrl;
       if (profileUrl) {
-        const source = `local:///${account.id}/${profileUrl}`;
+        const source = `local:///source/${account.id}/${profileUrl}`;
         const signed = buildImagorUrl(source, {
           resize: { width: 300, height: 300, type: 'fill' }
         });
@@ -63,7 +63,7 @@ export async function getAccount(id: string): Promise<Account | null> {
       }
 
       const profilePictures = account.profilePics?.map((pic) => {
-        const source = `local:///${account.id}/${pic.filename}`;
+        const source = `local:///source/${account.id}/${pic.filename}`;
         const signed = buildImagorUrl(source, {
           resize: { width: 150, height: 150, type: 'fill' }
         });
@@ -112,7 +112,7 @@ export async function listAccounts(): Promise<Account[]> {
       return accounts.map((account) => {
         let profileUrl = account.latestProfilePicUrl;
         if (profileUrl) {
-          const source = `local:///${account.id}/${profileUrl}`;
+          const source = `local:///source/${account.id}/${profileUrl}`;
           const signed = buildImagorUrl(source, {
             resize: { width: 300, height: 300, type: 'fill' }
           });
@@ -122,7 +122,7 @@ export async function listAccounts(): Promise<Account[]> {
         }
 
         const profilePictures = account.profilePics?.map((pic) => {
-          const source = `local:///${account.id}/${pic.filename}`;
+          const source = `local:///source/${account.id}/${pic.filename}`;
           const signed = buildImagorUrl(source, {
             resize: { width: 150, height: 150, type: 'fill' }
           });

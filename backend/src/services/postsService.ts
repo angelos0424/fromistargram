@@ -198,7 +198,7 @@ function inferMediaType(mime: string): 'image' | 'video' {
 }
 
 function buildThumbnailUrl(accountId: string, filename: string, mime: string): string {
-  const source = `local:///${accountId}/${filename}`;
+  const source = `local:///source/${accountId}/${filename}`;
 
   // If it's a video, we might want to let imgproxy attempt to extract a frame
   // or just return the raw video URL if imgproxy isn't configured for video.
