@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { getPostById, listPosts } from '../services/postsService.js';
 import { ListPostsResponseSchema, PostSummarySchema } from './schemas.js';
+import { sendSuccess, sendError } from '../utils/response.js';
 
 const listQuerySchema = z.object({
   accountId: z.string().optional(),
@@ -37,10 +38,10 @@ export async function registerPostRoutes(app: FastifyInstance): Promise<void> {
         }
       }
     },
-    async (request) => {
+    async (request, reply) => {
       const { accountId, cursor, limit, from, to, page, type } = listQuerySchema.extend({ type: z.string().optional() }).parse(request.query);
 
-      return await listPosts({
+      const result = await listPosts({
         accountId,
         cursor,
         limit: limit ?? 20,
@@ -48,6 +49,11 @@ export async function registerPostRoutes(app: FastifyInstance): Promise<void> {
         postedAtTo: to,
         page,
         type
+      });
+
+      return sendSuccess(reply, result.data, 200, {
+        total: result.total,
+        pageInfo: result.pageInfo
       });
     }
   );
@@ -70,17 +76,26 @@ export async function registerPostRoutes(app: FastifyInstance): Promise<void> {
           200: {
             type: 'object',
             properties: {
+              success: { type: 'boolean', const: true },
               data: PostSummarySchema
             },
-            required: ['data'],
+            required: ['success', 'data'],
             additionalProperties: false
           },
           404: {
             type: 'object',
             properties: {
-              message: { type: 'string' }
+              success: { type: 'boolean', const: false },
+              error: {
+                type: 'object',
+                properties: {
+                  code: { type: 'string' },
+                  message: { type: 'string' }
+                },
+                required: ['code', 'message']
+              }
             },
-            required: ['message'],
+            required: ['success', 'error'],
             additionalProperties: false
           }
         }
@@ -91,10 +106,10 @@ export async function registerPostRoutes(app: FastifyInstance): Promise<void> {
       const post = await getPostById(params.id);
 
       if (!post) {
-        return reply.code(404).send({ message: 'Post not found' });
+        return sendError(reply, 'Post not found', 404, 'NOT_FOUND');
       }
 
-      return { data: post };
+      return sendSuccess(reply, post);
     }
   );
 }

@@ -13,6 +13,8 @@ import {
   generateUniqueFilename
 } from '../utils/fileUpload.js';
 import { formatDateToYYYYMMDD } from '../utils/dateFormat.js';
+import { sendSuccess, sendError } from '../utils/response.js';
+
 function getApiBaseUrl(request: { headers: Record<string, string | string[] | undefined>; protocol?: string }): string {
   const publicApiUrl = process.env.PUBLIC_API_BASE_URL;
   if (publicApiUrl) {
@@ -65,6 +67,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
           200: {
             type: 'object',
             properties: {
+              success: { type: 'boolean', const: true },
               data: {
                 type: 'array',
                 items: {
@@ -83,13 +86,23 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
                   }
                 }
               }
-            }
+            },
+            required: ['success', 'data']
           },
           400: {
             type: 'object',
             properties: {
-              message: { type: 'string' }
-            }
+              success: { type: 'boolean', const: false },
+              error: {
+                type: 'object',
+                properties: {
+                  code: { type: 'string' },
+                  message: { type: 'string' }
+                },
+                required: ['code', 'message']
+              }
+            },
+            required: ['success', 'error']
           }
         }
       }
@@ -118,7 +131,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
         app.log.info(`Total files received: ${files.length}`);
         if (files.length === 0) {
           app.log.warn('No files provided in request');
-          return reply.code(400).send({ message: 'No files provided' });
+          return sendError(reply, 'No files provided', 400, 'BAD_REQUEST');
         }
 
         const uploadedMedia = [];
@@ -132,7 +145,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
 
           if (!validation.valid) {
             app.log.error(`File validation failed: ${validation.error}`);
-            return reply.code(400).send({ message: validation.error });
+            return sendError(reply, validation.error || 'Invalid file', 400, 'BAD_REQUEST');
           }
 
           const uniqueFilename = generateUniqueFilename(file.filename);
@@ -181,14 +194,14 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
         }
 
         app.log.info(`Upload completed successfully. Total files uploaded: ${uploadedMedia.length}`);
-        return { data: uploadedMedia };
+        return sendSuccess(reply, uploadedMedia);
       } catch (error) {
         app.log.error(error, 'Failed to upload files');
         app.log.error(`Error details: ${JSON.stringify({
           message: error instanceof Error ? error.message : 'Unknown error',
           stack: error instanceof Error ? error.stack : undefined
         })}`);
-        return reply.code(500).send({ message: 'Failed to upload files' });
+        return sendError(reply, 'Failed to upload files');
       }
     }
   );
@@ -213,6 +226,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
           200: {
             type: 'object',
             properties: {
+              success: { type: 'boolean', const: true },
               data: {
                 type: 'array',
                 items: {
@@ -234,14 +248,21 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
                   }
                 }
               },
-              hasMore: { type: 'boolean' },
-              nextCursor: { type: 'string', nullable: true }
-            }
+              meta: {
+                type: 'object',
+                properties: {
+                  hasMore: { type: 'boolean' },
+                  nextCursor: { type: 'string', nullable: true }
+                },
+                required: ['hasMore', 'nextCursor']
+              }
+            },
+            required: ['success', 'data', 'meta']
           }
         }
       }
     },
-    async (request) => {
+    async (request, reply) => {
       const params = listQuerySchema.parse(request.query);
       const result = await listSharedMedia(params);
       const apiBaseUrl = getApiBaseUrl(request);
@@ -269,11 +290,10 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
         };
       });
 
-      return {
-        data,
+      return sendSuccess(reply, data, 200, {
         hasMore: result.hasMore,
         nextCursor: result.nextCursor
-      };
+      });
     }
   );
 
@@ -295,6 +315,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
           200: {
             type: 'object',
             properties: {
+              success: { type: 'boolean', const: true },
               data: {
                 type: 'object',
                 properties: {
@@ -313,13 +334,23 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
                   uploadedAt: { type: 'string', format: 'date-time' }
                 }
               }
-            }
+            },
+            required: ['success', 'data']
           },
           404: {
             type: 'object',
             properties: {
-              message: { type: 'string' }
-            }
+              success: { type: 'boolean', const: false },
+              error: {
+                type: 'object',
+                properties: {
+                  code: { type: 'string' },
+                  message: { type: 'string' }
+                },
+                required: ['code', 'message']
+              }
+            },
+            required: ['success', 'error']
           }
         }
       }
@@ -329,7 +360,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
       const media = await getSharedMediaById(params.id);
 
       if (!media || media.isDeleted) {
-        return reply.code(404).send({ message: 'Shared media not found' });
+        return sendError(reply, 'Shared media not found', 404, 'NOT_FOUND');
       }
 
       const apiBaseUrl = getApiBaseUrl(request);
@@ -338,23 +369,21 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
       const mediaUrl = buildUploadedMediaUrl(apiBaseUrl, yyyyMMdd, media.filename);
       const thumbnailUrl = buildUploadedThumbnailUrl(apiBaseUrl, yyyyMMdd, media.filename, mediaUrl);
 
-      return {
-        data: {
-          id: media.id,
-          filename: media.filename,
-          originalName: media.originalName,
-          mime: media.mime,
-          size: media.size,
-          width: media.width,
-          height: media.height,
-          duration: media.duration,
-          mediaUrl,
-          thumbnailUrl,
-          caption: media.caption,
-          uploadBatchId: media.uploadBatchId,
-          uploadedAt: media.uploadedAt.toISOString()
-        }
-      };
+      return sendSuccess(reply, {
+        id: media.id,
+        filename: media.filename,
+        originalName: media.originalName,
+        mime: media.mime,
+        size: media.size,
+        width: media.width,
+        height: media.height,
+        duration: media.duration,
+        mediaUrl,
+        thumbnailUrl,
+        caption: media.caption,
+        uploadBatchId: media.uploadBatchId,
+        uploadedAt: media.uploadedAt.toISOString()
+      });
     }
   );
 }

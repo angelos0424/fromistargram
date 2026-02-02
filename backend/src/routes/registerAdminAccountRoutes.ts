@@ -7,6 +7,7 @@ import {
   registerCrawlerSession,
   updateCrawlerAccount
 } from '../services/accountsService.js';
+import { sendSuccess, sendError } from '../utils/response.js';
 
 const accountSchema = {
   type: 'object',
@@ -26,21 +27,41 @@ const accountSchema = {
 const listResponseSchema = {
   type: 'object',
   properties: {
+    success: { type: 'boolean', const: true },
     data: {
       type: 'array',
       items: accountSchema
     }
   },
-  required: ['data'],
+  required: ['success', 'data'],
   additionalProperties: false
 } as const;
 
 const singleResponseSchema = {
   type: 'object',
   properties: {
+    success: { type: 'boolean', const: true },
     data: accountSchema
   },
-  required: ['data'],
+  required: ['success', 'data'],
+  additionalProperties: false
+} as const;
+
+const errorResponseSchema = {
+  type: 'object',
+  properties: {
+    success: { type: 'boolean', const: false },
+    error: {
+      type: 'object',
+      properties: {
+        code: { type: 'string' },
+        message: { type: 'string' },
+        details: {}
+      },
+      required: ['code', 'message']
+    }
+  },
+  required: ['success', 'error'],
   additionalProperties: false
 } as const;
 
@@ -137,17 +158,18 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
       schema: {
         tags: ['AdminAccounts'],
         response: {
-          200: listResponseSchema
+          200: listResponseSchema,
+          500: errorResponseSchema
         }
       }
     },
     async (request, reply) => {
       try {
         const data = await listCrawlerAccounts();
-        return { data };
+        return sendSuccess(reply, data);
       } catch (error) {
         request.log.error(error, 'Failed to list crawler accounts');
-        return reply.code(500).send({ message: 'Failed to list crawler accounts' });
+        return sendError(reply, 'Failed to list crawler accounts');
       }
     }
   );
@@ -159,7 +181,9 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
         tags: ['AdminAccounts'],
         body: createBodyJsonSchema,
         response: {
-          201: singleResponseSchema
+          201: singleResponseSchema,
+          400: errorResponseSchema,
+          500: errorResponseSchema
         }
       }
     },
@@ -167,13 +191,13 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
       try {
         const body = createBodySchema.parse(request.body);
         const data = await createCrawlerAccount(body);
-        return reply.code(201).send({ data });
+        return sendSuccess(reply, data, 201);
       } catch (error) {
         request.log.error(error, 'Failed to create crawler account');
         if (error instanceof ZodError) {
-          return reply.code(400).send({ message: 'Invalid request body' });
+          return sendError(reply, 'Invalid request body', 400, 'BAD_REQUEST', error.issues);
         }
-        return reply.code(500).send({ message: 'Failed to create crawler account' });
+        return sendError(reply, 'Failed to create crawler account');
       }
     }
   );
@@ -186,7 +210,10 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
         params: paramsJsonSchema,
         body: updateBodyJsonSchema,
         response: {
-          200: singleResponseSchema
+          200: singleResponseSchema,
+          400: errorResponseSchema,
+          404: errorResponseSchema,
+          500: errorResponseSchema
         }
       }
     },
@@ -196,15 +223,15 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
         const body = updateBodySchema.parse(request.body);
         const updated = await updateCrawlerAccount(params.id, body);
         if (!updated) {
-          return reply.code(404).send({ message: 'Crawler account not found' });
+          return sendError(reply, 'Crawler account not found', 404, 'NOT_FOUND');
         }
-        return reply.send({ data: updated });
+        return sendSuccess(reply, updated);
       } catch (error) {
         request.log.error(error, 'Failed to update crawler account');
         if (error instanceof ZodError) {
-          return reply.code(400).send({ message: 'Invalid request body' });
+          return sendError(reply, 'Invalid request body', 400, 'BAD_REQUEST', error.issues);
         }
-        return reply.code(500).send({ message: 'Failed to update crawler account' });
+        return sendError(reply, 'Failed to update crawler account');
       }
     }
   );
@@ -216,7 +243,10 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
         tags: ['AdminAccounts'],
         params: paramsJsonSchema,
         response: {
-          204: { type: 'null' }
+          204: { type: 'null' },
+          400: errorResponseSchema,
+          404: errorResponseSchema,
+          500: errorResponseSchema
         }
       }
     },
@@ -225,15 +255,15 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
         const params = paramsSchema.parse(request.params);
         const deleted = await deleteCrawlerAccount(params.id);
         if (!deleted) {
-          return reply.code(404).send({ message: 'Crawler account not found' });
+          return sendError(reply, 'Crawler account not found', 404, 'NOT_FOUND');
         }
         return reply.code(204).send();
       } catch (error) {
         request.log.error(error, 'Failed to delete crawler account');
         if (error instanceof ZodError) {
-          return reply.code(400).send({ message: 'Invalid request parameters' });
+          return sendError(reply, 'Invalid request parameters', 400, 'BAD_REQUEST', error.issues);
         }
-        return reply.code(500).send({ message: 'Failed to delete crawler account' });
+        return sendError(reply, 'Failed to delete crawler account');
       }
     }
   );
@@ -246,7 +276,10 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
         params: paramsJsonSchema,
         body: sessionBodyJsonSchema,
         response: {
-          200: singleResponseSchema
+          200: singleResponseSchema,
+          400: errorResponseSchema,
+          404: errorResponseSchema,
+          500: errorResponseSchema
         }
       }
     },
@@ -256,15 +289,15 @@ export async function registerAdminAccountRoutes(app: FastifyInstance): Promise<
         const body = sessionBodySchema.parse(request.body);
         const updated = await registerCrawlerSession(params.id, body.sessionId);
         if (!updated) {
-          return reply.code(404).send({ message: 'Crawler account not found' });
+          return sendError(reply, 'Crawler account not found', 404, 'NOT_FOUND');
         }
-        return reply.send({ data: updated });
+        return sendSuccess(reply, updated);
       } catch (error) {
         request.log.error(error, 'Failed to register crawler session');
         if (error instanceof ZodError) {
-          return reply.code(400).send({ message: 'Invalid request body' });
+          return sendError(reply, 'Invalid request body', 400, 'BAD_REQUEST', error.issues);
         }
-        return reply.code(500).send({ message: 'Failed to register crawler session' });
+        return sendError(reply, 'Failed to register crawler session');
       }
     }
   );

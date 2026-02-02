@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { fetchFeedStatistics } from '../services/crawlTargetsService.js';
+import { sendSuccess, sendError } from '../utils/response.js';
 
 const statsSchema = {
   type: 'object',
@@ -24,9 +25,10 @@ export async function registerAdminMetricsRoutes(app: FastifyInstance): Promise<
           200: {
             type: 'object',
             properties: {
+              success: { type: 'boolean', const: true },
               data: statsSchema
             },
-            required: ['data'],
+            required: ['success', 'data'],
             additionalProperties: false
           }
         }
@@ -35,10 +37,10 @@ export async function registerAdminMetricsRoutes(app: FastifyInstance): Promise<
     async (request, reply) => {
       try {
         const data = await fetchFeedStatistics();
-        return { data };
+        return sendSuccess(reply, data);
       } catch (error) {
         request.log.error(error, 'Failed to fetch feed statistics');
-        return reply.code(500).send({ message: 'Failed to fetch feed statistics' });
+        return sendError(reply, 'Failed to fetch feed statistics');
       }
     }
   );

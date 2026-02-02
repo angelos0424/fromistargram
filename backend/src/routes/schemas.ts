@@ -90,24 +90,28 @@ export const PostSummarySchema = {
 export const ListPostsResponseSchema = {
   type: 'object',
   properties: {
+    success: { type: 'boolean', const: true },
     data: {
       type: 'array',
       items: PostSummarySchema
     },
-    total: {
-      type: 'integer',
-      minimum: 0
-    },
-    pageInfo: {
+    meta: {
       type: 'object',
       properties: {
-        hasNextPage: { type: 'boolean' },
-        nextCursor: { type: ['string', 'null'] }
+        total: { type: 'integer', minimum: 0 },
+        pageInfo: {
+          type: 'object',
+          properties: {
+            hasNextPage: { type: 'boolean' },
+            nextCursor: { type: ['string', 'null'] }
+          },
+          required: ['hasNextPage', 'nextCursor'],
+          additionalProperties: false
+        }
       },
-      required: ['hasNextPage', 'nextCursor'],
       additionalProperties: false
     }
   },
-  required: ['data', 'total', 'pageInfo'],
+  required: ['success', 'data', 'meta'],
   additionalProperties: false
 } as const;

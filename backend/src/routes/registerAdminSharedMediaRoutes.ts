@@ -7,6 +7,7 @@ import {
   getSharedMediaById
 } from '../services/sharedMediaService.js';
 import { buildImagorUrl } from '../utils/imagor.js';
+import { sendSuccess, sendError } from '../utils/response.js';
 
 function getApiBaseUrl(request: { headers: Record<string, string | string[] | undefined>; protocol?: string }): string {
   const publicApiUrl = process.env.PUBLIC_API_BASE_URL;
@@ -109,23 +110,32 @@ const sharedMediaSchema = {
 const listResponseSchema = {
   type: 'object',
   properties: {
+    success: { type: 'boolean', const: true },
     data: {
       type: 'array',
       items: sharedMediaSchema
     },
-    hasMore: { type: 'boolean' },
-    nextCursor: { type: ['string', 'null'] }
+    meta: {
+      type: 'object',
+      properties: {
+        hasMore: { type: 'boolean' },
+        nextCursor: { type: ['string', 'null'] }
+      },
+      required: ['hasMore', 'nextCursor'],
+      additionalProperties: false
+    }
   },
-  required: ['data', 'hasMore', 'nextCursor'],
+  required: ['success', 'data', 'meta'],
   additionalProperties: false
 } as const;
 
 const singleResponseSchema = {
   type: 'object',
   properties: {
+    success: { type: 'boolean', const: true },
     data: sharedMediaSchema
   },
-  required: ['data'],
+  required: ['success', 'data'],
   additionalProperties: false
 } as const;
 
@@ -174,17 +184,16 @@ export async function registerAdminSharedMediaRoutes(app: FastifyInstance): Prom
           };
         });
 
-        return {
-          data,
+        return sendSuccess(reply, data, 200, {
           hasMore: result.hasMore,
           nextCursor: result.nextCursor
-        };
+        });
       } catch (error) {
         request.log.error(error, 'Failed to fetch shared media');
         if (error instanceof ZodError) {
-          return reply.code(400).send({ message: 'Invalid request parameters' });
+          return sendError(reply, 'Invalid request parameters', 400, 'BAD_REQUEST', error.issues);
         }
-        return reply.code(500).send({ message: 'Failed to fetch shared media' });
+        return sendError(reply, 'Failed to fetch shared media');
       }
     }
   );
@@ -207,7 +216,7 @@ export async function registerAdminSharedMediaRoutes(app: FastifyInstance): Prom
         const body = updateBodySchema.parse(request.body);
         const existing = await getSharedMediaById(params.id);
         if (!existing) {
-          return reply.code(404).send({ message: 'Shared media not found' });
+          return sendError(reply, 'Shared media not found', 404, 'NOT_FOUND');
         }
         const updated = await updateSharedMediaCaption(params.id, body.caption);
         const apiBaseUrl = getApiBaseUrl(request);
@@ -219,30 +228,30 @@ export async function registerAdminSharedMediaRoutes(app: FastifyInstance): Prom
         const mediaUrl = buildUploadedMediaUrl(apiBaseUrl, yyyyMMdd, updated.filename);
         const thumbnailUrl = buildUploadedThumbnailUrl(apiBaseUrl, yyyyMMdd, updated.filename, mediaUrl);
 
-        return {
-          data: {
-            id: updated.id,
-            filename: updated.filename,
-            originalName: updated.originalName,
-            mime: updated.mime,
-            size: updated.size,
-            width: updated.width,
-            height: updated.height,
-            duration: updated.duration,
-            mediaUrl,
-            thumbnailUrl,
-            caption: updated.caption,
-            uploadBatchId: updated.uploadBatchId,
-            isDeleted: updated.isDeleted,
-            uploadedAt: updated.uploadedAt.toISOString()
-          }
+        const responseData = {
+          id: updated.id,
+          filename: updated.filename,
+          originalName: updated.originalName,
+          mime: updated.mime,
+          size: updated.size,
+          width: updated.width,
+          height: updated.height,
+          duration: updated.duration,
+          mediaUrl,
+          thumbnailUrl,
+          caption: updated.caption,
+          uploadBatchId: updated.uploadBatchId,
+          isDeleted: updated.isDeleted,
+          uploadedAt: updated.uploadedAt.toISOString()
         };
+
+        return sendSuccess(reply, responseData);
       } catch (error) {
         request.log.error(error, 'Failed to update shared media');
         if (error instanceof ZodError) {
-          return reply.code(400).send({ message: 'Invalid request body' });
+          return sendError(reply, 'Invalid request body', 400, 'BAD_REQUEST', error.issues);
         }
-        return reply.code(500).send({ message: 'Failed to update shared media' });
+        return sendError(reply, 'Failed to update shared media');
       }
     }
   );
@@ -263,15 +272,15 @@ export async function registerAdminSharedMediaRoutes(app: FastifyInstance): Prom
         const params = paramsSchema.parse(request.params);
         const deleted = await softDeleteSharedMedia(params.id);
         if (!deleted) {
-          return reply.code(404).send({ message: 'Shared media not found' });
+          return sendError(reply, 'Shared media not found', 404, 'NOT_FOUND');
         }
         return reply.code(204).send();
       } catch (error) {
         request.log.error(error, 'Failed to delete shared media');
         if (error instanceof ZodError) {
-          return reply.code(400).send({ message: 'Invalid request parameters' });
+          return sendError(reply, 'Invalid request parameters', 400, 'BAD_REQUEST', error.issues);
         }
-        return reply.code(500).send({ message: 'Failed to delete shared media' });
+        return sendError(reply, 'Failed to delete shared media');
       }
     }
   );

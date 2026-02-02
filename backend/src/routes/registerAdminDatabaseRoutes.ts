@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { fetchDatabaseOverview } from '../services/databaseInspectService.js';
 import { deleteAccount } from '../services/accountsService.js';
+import { sendSuccess, sendError } from '../utils/response.js';
 
 const tablePreviewSchema = {
   type: 'object',
@@ -32,6 +33,24 @@ const databaseOverviewSchema = {
   additionalProperties: false
 } as const;
 
+const errorResponseSchema = {
+  type: 'object',
+  properties: {
+    success: { type: 'boolean', const: false },
+    error: {
+      type: 'object',
+      properties: {
+        code: { type: 'string' },
+        message: { type: 'string' },
+        details: {}
+      },
+      required: ['code', 'message']
+    }
+  },
+  required: ['success', 'error'],
+  additionalProperties: false
+} as const;
+
 export async function registerAdminDatabaseRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     '/api/admin/db-overview',
@@ -42,21 +61,23 @@ export async function registerAdminDatabaseRoutes(app: FastifyInstance): Promise
           200: {
             type: 'object',
             properties: {
+              success: { type: 'boolean', const: true },
               data: databaseOverviewSchema
             },
-            required: ['data'],
+            required: ['success', 'data'],
             additionalProperties: false
-          }
+          },
+          500: errorResponseSchema
         }
       }
     },
     async (request, reply) => {
       try {
         const data = await fetchDatabaseOverview();
-        return { data };
+        return sendSuccess(reply, data);
       } catch (error) {
         request.log.error(error, 'Failed to fetch database overview');
-        return reply.code(500).send({ message: 'Failed to load database overview' });
+        return sendError(reply, 'Failed to load database overview');
       }
     }
   );
@@ -75,12 +96,8 @@ export async function registerAdminDatabaseRoutes(app: FastifyInstance): Promise
         },
         response: {
           204: { type: 'null' },
-          404: {
-            type: 'object',
-            properties: {
-              message: { type: 'string' }
-            }
-          }
+          404: errorResponseSchema,
+          500: errorResponseSchema
         }
       }
     },
@@ -89,12 +106,12 @@ export async function registerAdminDatabaseRoutes(app: FastifyInstance): Promise
       try {
         const deleted = await deleteAccount(id);
         if (!deleted) {
-          return reply.code(404).send({ message: 'Account not found' });
+          return sendError(reply, 'Account not found', 404, 'NOT_FOUND');
         }
         return reply.code(204).send();
       } catch (error) {
         request.log.error(error, 'Failed to delete account');
-        return reply.code(500).send({ message: 'Failed to delete account' });
+        return sendError(reply, 'Failed to delete account');
       }
     }
   );

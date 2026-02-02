@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { HighlightMedia } from '@prisma/client';
 import { prisma } from '../db/client.js';
 import { buildImagorUrl } from '../utils/imagor.js';
+import { sendSuccess } from '../utils/response.js';
 
 export async function registerHighlightRoutes(app: FastifyInstance) {
     app.get<{ Params: { accountId: string } }>(
@@ -17,44 +18,51 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
                 },
                 response: {
                     200: {
-                        type: 'array',
-                        items: {
-                            type: 'object',
-                            properties: {
-                                id: { type: 'string' },
-                                title: { type: 'string' },
-                                coverUrl: { type: 'string' },
-                                coverMedia: {
+                        type: 'object',
+                        properties: {
+                            success: { type: 'boolean', const: true },
+                            data: {
+                                type: 'array',
+                                items: {
                                     type: 'object',
-                                    nullable: true,
                                     properties: {
                                         id: { type: 'string' },
-                                        filename: { type: 'string' },
-                                        mime: { type: 'string' },
-                                        orderIndex: { type: 'number' },
-                                        url: { type: 'string' },
-                                        thumbnailUrl: { type: 'string' }
-                                    },
-                                    required: ['id', 'filename', 'mime', 'orderIndex', 'url', 'thumbnailUrl']
-                                },
-                                media: {
-                                    type: 'array',
-                                    items: {
-                                        type: 'object',
-                                        properties: {
-                                            id: { type: 'string' },
-                                            filename: { type: 'string' },
-                                            mime: { type: 'string' },
-                                            orderIndex: { type: 'number' },
-                                            url: { type: 'string' },
-                                            thumbnailUrl: { type: 'string' }
+                                        title: { type: 'string' },
+                                        coverUrl: { type: 'string' },
+                                        coverMedia: {
+                                            type: 'object',
+                                            nullable: true,
+                                            properties: {
+                                                id: { type: 'string' },
+                                                filename: { type: 'string' },
+                                                mime: { type: 'string' },
+                                                orderIndex: { type: 'number' },
+                                                url: { type: 'string' },
+                                                thumbnailUrl: { type: 'string' }
+                                            },
+                                            required: ['id', 'filename', 'mime', 'orderIndex', 'url', 'thumbnailUrl']
                                         },
-                                        required: ['id', 'filename', 'mime', 'orderIndex', 'url', 'thumbnailUrl']
-                                    }
+                                        media: {
+                                            type: 'array',
+                                            items: {
+                                                type: 'object',
+                                                properties: {
+                                                    id: { type: 'string' },
+                                                    filename: { type: 'string' },
+                                                    mime: { type: 'string' },
+                                                    orderIndex: { type: 'number' },
+                                                    url: { type: 'string' },
+                                                    thumbnailUrl: { type: 'string' }
+                                                },
+                                                required: ['id', 'filename', 'mime', 'orderIndex', 'url', 'thumbnailUrl']
+                                            }
+                                        }
+                                    },
+                                    required: ['id', 'title', 'media', 'coverUrl']
                                 }
-                            },
-                            required: ['id', 'title', 'media', 'coverUrl']
-                        }
+                            }
+                        },
+                        required: ['success', 'data']
                     }
                 }
             }
@@ -73,7 +81,7 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
                 orderBy: { title: 'asc' }
             });
 
-            return highlights.map((highlight) => {
+            const data = highlights.map((highlight) => {
                 // Map media items to include signed URLs
                 const mapMedia = (m: HighlightMedia) => {
                     const source = `local:///${accountId}/${m.filename}`;
@@ -112,6 +120,8 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
                     media: mediaWithUrls
                 };
             });
+
+            return sendSuccess(reply, data);
         }
     );
 }

@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z, ZodError } from 'zod';
 import { listCrawlRuns, triggerManualRun } from '../services/crawlTargetsService.js';
+import { sendSuccess, sendError } from '../utils/response.js';
 
 const runSchema = {
   type: 'object',
@@ -22,21 +23,23 @@ const runSchema = {
 const runsResponseSchema = {
   type: 'object',
   properties: {
+    success: { type: 'boolean', const: true },
     data: {
       type: 'array',
       items: runSchema
     }
   },
-  required: ['data'],
+  required: ['success', 'data'],
   additionalProperties: false
 } as const;
 
 const singleResponseSchema = {
   type: 'object',
   properties: {
+    success: { type: 'boolean', const: true },
     data: runSchema
   },
-  required: ['data'],
+  required: ['success', 'data'],
   additionalProperties: false
 } as const;
 
@@ -69,10 +72,10 @@ export async function registerAdminRunRoutes(app: FastifyInstance): Promise<void
     async (request, reply) => {
       try {
         const data = await listCrawlRuns();
-        return { data };
+        return sendSuccess(reply, data);
       } catch (error) {
         request.log.error(error, 'Failed to fetch crawl runs');
-        return reply.code(500).send({ message: 'Failed to fetch crawl runs' });
+        return sendError(reply, 'Failed to fetch crawl runs');
       }
     }
   );
@@ -93,15 +96,15 @@ export async function registerAdminRunRoutes(app: FastifyInstance): Promise<void
         const body = triggerBodySchema.parse(request.body);
         const run = await triggerManualRun({ ...body, triggeredBy: 'admin:manual' });
         if (!run) {
-          return reply.code(404).send({ message: 'Crawl target not found' });
+          return sendError(reply, 'Crawl target not found', 404, 'NOT_FOUND');
         }
-        return reply.code(201).send({ data: run });
+        return sendSuccess(reply, run, 201);
       } catch (error) {
         request.log.error(error, 'Failed to trigger manual crawl run');
         if (error instanceof ZodError) {
-          return reply.code(400).send({ message: 'Invalid request body' });
+          return sendError(reply, 'Invalid request body', 400, 'BAD_REQUEST', error.issues);
         }
-        return reply.code(500).send({ message: 'Failed to trigger manual crawl run' });
+        return sendError(reply, 'Failed to trigger manual crawl run');
       }
     }
   );

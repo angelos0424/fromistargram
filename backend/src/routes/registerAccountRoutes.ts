@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { listAccounts, getAccount } from '../services/accountsService.js';
-import { AccountSummarySchema, AccountSchema } from './schemas.js';
+import { AccountSchema } from './schemas.js';
+import { sendSuccess, sendError } from '../utils/response.js';
 
 export async function registerAccountRoutes(app: FastifyInstance): Promise<void> {
   app.get(
@@ -13,20 +14,21 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
           200: {
             type: 'object',
             properties: {
+              success: { type: 'boolean', const: true },
               data: {
                 type: 'array',
                 items: AccountSchema
               }
             },
-            required: ['data'],
+            required: ['success', 'data'],
             additionalProperties: false
           }
         }
       }
     },
-    async () => {
+    async (request, reply) => {
       const accounts = await listAccounts();
-      return { data: accounts };
+      return sendSuccess(reply, accounts);
     }
   );
 
@@ -47,16 +49,27 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
           200: {
             type: 'object',
             properties: {
+              success: { type: 'boolean', const: true },
               data: AccountSchema
             },
-            required: ['data'],
+            required: ['success', 'data'],
             additionalProperties: false
           },
           404: {
             type: 'object',
             properties: {
-              message: { type: 'string' }
-            }
+              success: { type: 'boolean', const: false },
+              error: {
+                type: 'object',
+                properties: {
+                  code: { type: 'string' },
+                  message: { type: 'string' }
+                },
+                required: ['code', 'message']
+              }
+            },
+            required: ['success', 'error'],
+            additionalProperties: false
           }
         }
       }
@@ -66,10 +79,10 @@ export async function registerAccountRoutes(app: FastifyInstance): Promise<void>
       const account = await getAccount(id);
 
       if (!account) {
-        return reply.status(404).send({ message: 'Account not found' });
+        return sendError(reply, 'Account not found', 404, 'NOT_FOUND');
       }
 
-      return { data: account };
+      return sendSuccess(reply, account);
     }
   );
 }

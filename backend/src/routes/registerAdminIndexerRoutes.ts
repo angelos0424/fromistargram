@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { getIndexerStatus, scheduleIndexerRun, triggerIndexerRun } from '../services/indexerService.js';
+import { sendSuccess } from '../utils/response.js';
 
 const indexerStatusSchema = {
   type: 'object',
@@ -17,9 +18,10 @@ const indexerStatusSchema = {
 const statusResponseSchema = {
   type: 'object',
   properties: {
+    success: { type: 'boolean', const: true },
     data: indexerStatusSchema
   },
-  required: ['data'],
+  required: ['success', 'data'],
   additionalProperties: false
 } as const;
 
@@ -34,8 +36,8 @@ export async function registerAdminIndexerRoutes(app: FastifyInstance): Promise<
         }
       }
     },
-    async () => {
-      return { data: getIndexerStatus() };
+    async (request, reply) => {
+      return sendSuccess(reply, getIndexerStatus());
     }
   );
 
@@ -54,7 +56,7 @@ export async function registerAdminIndexerRoutes(app: FastifyInstance): Promise<
       if (process.env.NODE_ENV === 'test') {
         await triggerIndexerRun('manual-trigger');
       }
-      return reply.code(202).send({ data: getIndexerStatus() });
+      return sendSuccess(reply, getIndexerStatus(), 202);
     }
   );
 }
