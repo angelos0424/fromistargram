@@ -275,11 +275,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           sessionStorage.removeItem(STATE_KEY);
           sessionStorage.removeItem(NONCE_KEY);
           sessionStorage.removeItem(CODE_VERIFIER_KEY);
-          window.history.replaceState(
-            {},
-            document.title,
-            window.location.pathname + window.location.search.replace(/[?&]code=[^&]*/, '').replace(/^&/, '?')
-          );
+
+          // OAuth 파라미터를 모두 제거한 깨끗한 URL로 교체
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.searchParams.delete('code');
+          cleanUrl.searchParams.delete('state');
+          cleanUrl.searchParams.delete('session_state');
+          const cleanPath = cleanUrl.pathname + (cleanUrl.search || '');
+          window.history.replaceState({}, document.title, cleanPath);
 
           setState({
             token: tokenResponse.access_token,

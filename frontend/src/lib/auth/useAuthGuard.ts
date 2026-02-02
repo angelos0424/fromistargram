@@ -1,10 +1,8 @@
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useAuth } from './context';
 
 export const useAuthGuard = () => {
   const auth = useAuth();
-  const location = useLocation();
 
   useEffect(() => {
     if (auth.isLoading) {
@@ -14,7 +12,7 @@ export const useAuthGuard = () => {
     if (!auth.isAuthenticated) {
       auth.login({ force: true });
     }
-  }, [auth, location]);
+  }, [auth.isLoading, auth.isAuthenticated, auth.login]);
 
   return {
     isLoading: auth.isLoading,
