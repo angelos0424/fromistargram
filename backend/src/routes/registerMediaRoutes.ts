@@ -18,6 +18,46 @@ const filenameOnlySchema = z.object({
   })
 });
 
+/**
+ * Sanitize and validate file path to prevent directory traversal attacks
+ * @throws Error if path contains traversal sequences or is absolute
+ */
+function sanitizePath(filePath: string): string {
+  // Normalize the path to resolve any . or .. sequences
+  const normalized = path.normalize(filePath);
+
+  // Check for path traversal attempts
+  if (normalized.includes('..')) {
+    throw new Error('Path traversal detected');
+  }
+
+  // Reject absolute paths
+  if (path.isAbsolute(normalized)) {
+    throw new Error('Absolute paths not allowed');
+  }
+
+  // Reject paths that try to escape using backslashes (Windows-style)
+  if (filePath.includes('\\')) {
+    throw new Error('Invalid path separator');
+  }
+
+  return normalized;
+}
+
+/**
+ * Validate that the resolved path is within the allowed base directory
+ */
+function validatePathWithinBase(basePath: string, requestedPath: string): string {
+  const resolvedBase = path.resolve(basePath);
+  const resolvedFull = path.resolve(basePath, requestedPath);
+
+  if (!resolvedFull.startsWith(resolvedBase + path.sep) && resolvedFull !== resolvedBase) {
+    throw new Error('Path escapes base directory');
+  }
+
+  return resolvedFull;
+}
+
 async function resolveAccountForFilename(filename: string): Promise<{ accountId: string } | { ambiguous: true } | null> {
   const [mediaMatches, profilePicMatches] = await Promise.all([
     (prisma.media as any).findMany({
@@ -86,7 +126,17 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const { account } = paramsSchema.pick({ account: true }).parse(request.params);
       const filename = (request.params as any)['*'];
-      const filePath = path.join(dataRoot, account, filename);
+
+      // Sanitize and validate path
+      let filePath: string;
+      try {
+        const sanitizedAccount = sanitizePath(account);
+        const sanitizedFilename = sanitizePath(filename);
+        filePath = validatePathWithinBase(dataRoot, path.join(sanitizedAccount, sanitizedFilename));
+      } catch (error) {
+        app.log.warn(error, 'Invalid path requested');
+        return reply.code(400).send({ message: 'Invalid path' });
+      }
 
       try {
         await access(filePath, constants.R_OK);
@@ -156,7 +206,16 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
           .send({ message: 'Multiple media records share this filename' });
       }
 
-      const filePath = path.join(dataRoot, resolution.accountId, filename);
+      // Sanitize and validate path
+      let filePath: string;
+      try {
+        const sanitizedAccount = sanitizePath(resolution.accountId);
+        const sanitizedFilename = sanitizePath(filename);
+        filePath = validatePathWithinBase(dataRoot, path.join(sanitizedAccount, sanitizedFilename));
+      } catch (error) {
+        app.log.warn(error, 'Invalid path requested');
+        return reply.code(400).send({ message: 'Invalid path' });
+      }
 
       try {
         await access(filePath, constants.R_OK);
@@ -211,10 +270,22 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
       const filename = (request.params as any)['*'];
 
       const resultRoot = process.env.RESULT_ROOT ?? '/result';
-      const filePath = path.join(resultRoot, 'uploaded', date, filename);
 
+      // Validate date format (yyyyMMdd)
+      if (!/^\d{8}$/.test(date)) {
+        return reply.code(400).send({ message: 'Invalid date format' });
+      }
 
-      console.log('get uploaded filepath : ', filePath)
+      // Sanitize and validate path
+      let filePath: string;
+      try {
+        const sanitizedFilename = sanitizePath(filename);
+        const uploadedBase = path.join(resultRoot, 'uploaded');
+        filePath = validatePathWithinBase(uploadedBase, path.join(date, sanitizedFilename));
+      } catch (error) {
+        app.log.warn(error, 'Invalid path requested');
+        return reply.code(400).send({ message: 'Invalid path' });
+      }
 
       try {
         await access(filePath, constants.R_OK);

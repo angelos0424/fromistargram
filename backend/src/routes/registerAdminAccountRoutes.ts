@@ -57,9 +57,17 @@ const paramsJsonSchema = {
   additionalProperties: false
 } as const;
 
+// Password policy: minimum 8 characters, at least one uppercase, one lowercase, one number
+const passwordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one number');
+
 const createBodySchema = z.object({
   username: z.string().min(1),
-  password: z.string().min(1),
+  password: passwordSchema,
   note: z.string().max(1000).optional().nullable()
 });
 
@@ -67,7 +75,11 @@ const createBodyJsonSchema = {
   type: 'object',
   properties: {
     username: { type: 'string', minLength: 1 },
-    password: { type: 'string', minLength: 1 },
+    password: {
+      type: 'string',
+      minLength: 8,
+      description: 'Minimum 8 characters with at least one uppercase, one lowercase, and one number'
+    },
     note: { type: ['string', 'null'], maxLength: 1000 }
   },
   required: ['username', 'password'],
@@ -77,7 +89,7 @@ const createBodyJsonSchema = {
 const updateBodySchema = z
   .object({
     username: z.string().min(1).optional(),
-    password: z.union([z.string().min(1), z.null()]).optional(),
+    password: z.union([passwordSchema, z.null()]).optional(),
     note: z.string().max(1000).optional().nullable(),
     status: z.enum(['ready', 'error', 'disabled']).optional()
   })
@@ -91,7 +103,11 @@ const updateBodyJsonSchema = {
     username: { type: 'string', minLength: 1 },
     password: {
       anyOf: [
-        { type: 'string', minLength: 1 },
+        {
+          type: 'string',
+          minLength: 8,
+          description: 'Minimum 8 characters with at least one uppercase, one lowercase, and one number'
+        },
         { type: 'null' }
       ]
     },

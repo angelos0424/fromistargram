@@ -2,6 +2,7 @@ import type { CrawlAccountStatus } from '@prisma/client';
 import { prisma } from '../db/client.js';
 import { cacheKey, cacheTtlSeconds, withCache } from '../utils/cache.js';
 import { buildImagorUrl } from '../utils/imagor.js';
+import { hashPassword, isBcryptHash } from '../utils/password.js';
 
 export type AccountSummary = {
   id: string;
@@ -204,10 +205,13 @@ export async function listCrawlerAccounts(): Promise<AdminAccount[]> {
 export async function createCrawlerAccount(
   payload: CreateCrawlerAccountInput
 ): Promise<AdminAccount> {
+  // Hash password before storing
+  const hashedPassword = await hashPassword(payload.password);
+
   const account = await prisma.crawlAccount.create({
     data: {
       username: payload.username,
-      password: payload.password,
+      password: hashedPassword,
       note: payload.note ?? null
     }
   });
@@ -235,7 +239,12 @@ export async function updateCrawlerAccount(
   }
 
   if (Object.prototype.hasOwnProperty.call(patch, 'password')) {
-    data.password = patch.password ?? null;
+    if (patch.password) {
+      // Hash the new password before storing
+      data.password = await hashPassword(patch.password);
+    } else {
+      data.password = null;
+    }
   }
 
   if (Object.prototype.hasOwnProperty.call(patch, 'note')) {

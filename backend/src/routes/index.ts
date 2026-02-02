@@ -12,21 +12,30 @@ import { registerAdminSharedMediaRoutes } from './registerAdminSharedMediaRoutes
 import { registerHighlightRoutes } from './highlights.js';
 import { registerImageProxyRoutes } from './imageProxy.js';
 import { registerSharedMediaRoutes } from './registerSharedMediaRoutes.js';
+import { requireAdminAuth } from '../utils/auth.js';
 
 export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
+  // Public routes
   await app.register(registerAccountRoutes);
   await app.register(registerPostRoutes);
   await app.register(registerMediaRoutes);
   await app.register(registerSharedMediaRoutes);
-  await app.register(registerAdminAccountRoutes);
-  await app.register(registerAdminTargetRoutes);
-  await app.register(registerAdminRunRoutes);
-  await app.register(registerAdminMetricsRoutes);
-  await app.register(registerAdminIndexerRoutes);
-  await app.register(registerAdminDatabaseRoutes);
-  await app.register(registerAdminSharedMediaRoutes);
   await app.register(registerHighlightRoutes);
   await app.register(registerImageProxyRoutes);
+
+  // Admin routes - protected with authentication
+  await app.register(async (adminApp) => {
+    // Apply admin auth to all routes in this scope
+    adminApp.addHook('preHandler', requireAdminAuth);
+
+    await adminApp.register(registerAdminAccountRoutes);
+    await adminApp.register(registerAdminTargetRoutes);
+    await adminApp.register(registerAdminRunRoutes);
+    await adminApp.register(registerAdminMetricsRoutes);
+    await adminApp.register(registerAdminIndexerRoutes);
+    await adminApp.register(registerAdminDatabaseRoutes);
+    await adminApp.register(registerAdminSharedMediaRoutes);
+  });
 
   // Redirect /api/docs → /docs so Swagger UI is reachable behind /api-only proxies.
   app.get('/api/docs', async (_request, reply) => reply.redirect('/docs'));
