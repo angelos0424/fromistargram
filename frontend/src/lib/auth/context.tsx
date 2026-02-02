@@ -98,6 +98,15 @@ const persistSession = (session: StoredSession | null) => {
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
 };
 
+const cleanOAuthParamsFromUrl = () => {
+  const cleanUrl = new URL(window.location.href);
+  cleanUrl.searchParams.delete('code');
+  cleanUrl.searchParams.delete('state');
+  cleanUrl.searchParams.delete('session_state');
+  const cleanPath = cleanUrl.pathname + (cleanUrl.search || '');
+  window.history.replaceState({}, document.title, cleanPath);
+};
+
 const buildAuthorizeUrl = (
   config: AuthentikConfig,
   state: string,
@@ -204,6 +213,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const codeVerifier = sessionStorage.getItem(CODE_VERIFIER_KEY);
 
         if (codeResponse.state && codeResponse.state !== stateValue) {
+          cleanOAuthParamsFromUrl();
           setState((prev) => ({
             ...prev,
             error: '인증 상태값이 일치하지 않습니다.',
@@ -216,6 +226,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (!codeVerifier) {
+          cleanOAuthParamsFromUrl();
           setState((prev) => ({
             ...prev,
             error: 'PKCE code verifier를 찾을 수 없습니다.',
@@ -237,6 +248,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const parsed = parseIdToken(tokenResponse.id_token);
 
           if (!parsed) {
+            cleanOAuthParamsFromUrl();
             persistSession(null);
             sessionStorage.removeItem(STATE_KEY);
             sessionStorage.removeItem(NONCE_KEY);
@@ -250,6 +262,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
 
           if (nonceValue && parsed.nonce && parsed.nonce !== nonceValue) {
+            cleanOAuthParamsFromUrl();
             persistSession(null);
             sessionStorage.removeItem(STATE_KEY);
             sessionStorage.removeItem(NONCE_KEY);
@@ -275,14 +288,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           sessionStorage.removeItem(STATE_KEY);
           sessionStorage.removeItem(NONCE_KEY);
           sessionStorage.removeItem(CODE_VERIFIER_KEY);
-
-          // OAuth 파라미터를 모두 제거한 깨끗한 URL로 교체
-          const cleanUrl = new URL(window.location.href);
-          cleanUrl.searchParams.delete('code');
-          cleanUrl.searchParams.delete('state');
-          cleanUrl.searchParams.delete('session_state');
-          const cleanPath = cleanUrl.pathname + (cleanUrl.search || '');
-          window.history.replaceState({}, document.title, cleanPath);
+          cleanOAuthParamsFromUrl();
 
           setState({
             token: tokenResponse.access_token,
@@ -293,6 +299,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           });
         } catch (error) {
           console.error('Token exchange failed:', error);
+          cleanOAuthParamsFromUrl();
           sessionStorage.removeItem(STATE_KEY);
           sessionStorage.removeItem(NONCE_KEY);
           sessionStorage.removeItem(CODE_VERIFIER_KEY);
