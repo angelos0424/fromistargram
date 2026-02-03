@@ -2,10 +2,11 @@ import { FormEvent, useMemo, useState } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import AdminSectionCard from '../../components/admin/AdminSectionCard';
 import { ADMIN_KEY } from '../../lib/api/admin/consts';
-import { listAccount } from '../../lib/api/admin/accounts';
+import { listAccount } from '../../lib/api/client';
 import { deleteSharedMedia, listSharedMedia, updateSharedMedia } from '../../lib/api/admin/sharedMedia';
 import { uploadAdminMedia } from '../../lib/api/admin/uploads';
 import type { AdminSharedMedia } from '../../lib/api/admin/types';
+import type { Account } from '../../lib/api/types';
 
 const DATETIME_REGEX = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 
@@ -50,11 +51,13 @@ const AdminUploadsPage = () => {
 
   const { data: accounts = [], isPending: isAccountsPending } = useQuery({
     queryKey: [ADMIN_KEY, 'accounts'],
-    queryFn: () => listAccount()
+    queryFn: () => listAccount().then((res) => res.data)
   });
 
   const sortedAccounts = useMemo(() => {
-    return [...accounts].sort((a, b) => a.username.localeCompare(b.username));
+    return [...accounts].sort((a: Account, b: Account) =>
+      (a.username ?? a.id).localeCompare(b.username ?? b.id)
+    );
   }, [accounts]);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
@@ -172,7 +175,7 @@ const AdminUploadsPage = () => {
                 <option value="">계정을 선택하세요</option>
                 {sortedAccounts.map((account) => (
                   <option key={account.id} value={account.id}>
-                    {account.username}
+                    {account.username ?? account.displayName ?? account.id}
                   </option>
                 ))}
               </select>
