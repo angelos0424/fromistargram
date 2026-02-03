@@ -303,9 +303,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           sessionStorage.removeItem(STATE_KEY);
           sessionStorage.removeItem(NONCE_KEY);
           sessionStorage.removeItem(CODE_VERIFIER_KEY);
+          const errorMessage = error instanceof Error ? error.message : '토큰 교환에 실패했습니다.';
           setState((prev) => ({
             ...prev,
-            error: '토큰 교환에 실패했습니다.',
+            error: errorMessage,
             isLoading: false
           }));
         }

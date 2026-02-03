@@ -1,18 +1,12 @@
-import {Navigate, Outlet, useNavigate} from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { useAuth } from '../../lib/auth/context';
-import { useAuthGuard } from '../../lib/auth/useAuthGuard';
 
 const AdminGate = () => {
   const auth = useAuth();
-  const guard = useAuthGuard();
-  const navigate = useNavigate();
-  const handleRetry = () => {
-    void navigate('/');
-  }
 
-
-  if (auth.isLoading || guard.isLoading) {
+  // 로딩 중
+  if (auth.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-200">
         <div className="space-y-3 text-center">
@@ -23,12 +17,21 @@ const AdminGate = () => {
     );
   }
 
-  if (!guard.isAuthenticated) {
+  // 미인증 시 로그인 버튼 표시 (자동 리다이렉트 대신)
+  if (!auth.isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-300">
-        <div className="space-y-2 text-center">
+        <div className="space-y-4 text-center">
           <p className="text-lg font-semibold">관리자 인증이 필요합니다.</p>
-          <p className="text-sm text-slate-400">Authentik 로그인 화면으로 이동합니다…</p>
+          {auth.error && (
+            <p className="text-sm text-red-400">{auth.error}</p>
+          )}
+          <button
+            onClick={() => auth.login({ force: true })}
+            className="rounded-lg bg-brand-500 px-6 py-2 text-white hover:bg-brand-600"
+          >
+            Authentik으로 로그인
+          </button>
         </div>
       </div>
     );
