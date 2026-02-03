@@ -19,7 +19,7 @@ export const uploadAdminMedia = async (payload: AdminUploadPayload): Promise<voi
     formData.append('caption', payload.caption);
   }
   payload.files.forEach((file) => {
-    formData.append('files[]', file);
+    formData.append('files', file);
   });
 
   await fetchApi.post<ApiResponse<unknown>>(ADMIN_UPLOADS_PATH, formData, {
