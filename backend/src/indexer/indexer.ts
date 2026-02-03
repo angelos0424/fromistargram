@@ -59,36 +59,25 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
       }
     });
 
+    // Account의 기존 Post 전체 삭제 (CASCADE로 Media, PostTag, PostText도 삭제됨)
+    await prisma.post.deleteMany({ where: { accountId: account.id } });
+
+    // 모든 Post 새로 생성
     for (const post of account.posts) {
       await (prisma.$transaction as any)(async (tx: any) => {
-        const existingPost = await tx.post.findUnique({ where: { id: post.id } });
-        const isNewPost = !existingPost;
-        if (!existingPost) {
-          await tx.post.create({
-            data: {
-              id: post.id,
-              accountId: post.accountId,
-              postedAt: post.postedAt,
-              caption: post.caption,
-              hasText: post.hasText,
-              type: post.type
-            }
-          });
-          stats.postsCreated += 1;
-        } else {
-          await tx.post.update({
-            where: { id: post.id },
-            data: {
-              caption: post.caption,
-              postedAt: post.postedAt,
-              hasText: post.hasText,
-              type: post.type,
-              updatedAt: new Date()
-            }
-          });
-        }
+        await tx.post.create({
+          data: {
+            id: post.id,
+            accountId: post.accountId,
+            postedAt: post.postedAt,
+            caption: post.caption,
+            hasText: post.hasText,
+            type: post.type
+          }
+        });
+        stats.postsCreated += 1;
 
-        await tx.media.deleteMany({ where: { postId: post.id } });
+        // Media 생성
         if (post.media.length > 0) {
           await tx.media.createMany({
             data: post.media.map((media) => ({
@@ -104,7 +93,7 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
           stats.mediaCreated += post.media.length;
         }
 
-        await tx.postTag.deleteMany({ where: { postId: post.id } });
+        // Tag 처리
         for (const tagName of post.tags) {
           let tag = await tx.tag.findUnique({ where: { name: tagName } });
           if (!tag) {
@@ -120,13 +109,10 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
           });
         }
 
-        await tx.postText.upsert({
-          where: { postId: post.id },
-          create: {
+        // PostText 생성
+        await tx.postText.create({
+          data: {
             postId: post.id,
-            content: post.textContent ?? ''
-          },
-          update: {
             content: post.textContent ?? ''
           }
         });
