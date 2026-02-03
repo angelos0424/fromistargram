@@ -49,10 +49,11 @@ const AdminUploadsPage = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
-  const { data: accounts = [], isPending: isAccountsPending } = useQuery({
+  const { data: accountsResponse, isPending: isAccountsPending } = useQuery({
     queryKey: [ADMIN_KEY, 'accounts'],
-    queryFn: () => listAccount().then((res) => res.data)
+    queryFn: () => listAccount()
   });
+  const accounts = accountsResponse?.data ?? [];
 
   const sortedAccounts = useMemo(() => {
     return [...accounts].sort((a: Account, b: Account) =>

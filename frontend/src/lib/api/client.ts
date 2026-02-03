@@ -6,14 +6,17 @@ import {
   type PostResponse,
   type PostsRequest,
   type PostsResponse,
-  type Highlight
+  type Highlight,
+  type ApiResponse
 } from './types';
 
 export const CLIENT_KEY = 'client';
 
-export const listAccount = () => fetchApi.get<AccountsResponse>('/accounts').then((res) => res.data);
+export const listAccount = () =>
+  fetchApi.get<AccountsResponse>('/accounts').then((res) => res.data);
 
-export const getAccount = (id: string) => fetchApi.get<AccountResponse>(`/accounts/${id}`).then((res) => res.data);
+export const getAccount = (id: string) =>
+  fetchApi.get<AccountResponse>(`/accounts/${id}`).then((res) => res.data);
 
 export const listPost = async (params: PostsRequest) => {
   const search = new URLSearchParams();
@@ -30,9 +33,13 @@ export const listPost = async (params: PostsRequest) => {
   return res.data;
 };
 
-export const detailPost = (postId: string) => fetchApi.get<PostResponse>(`/posts/${postId}`).then((res) => res.data);
+export const detailPost = (postId: string) =>
+  fetchApi.get<PostResponse>(`/posts/${postId}`).then((res) => res.data);
 
-export const listHighlights = (accountId: string) => fetchApi.get<Highlight[]>(`/accounts/${accountId}/highlights`).then((res) => res.data);
+export const listHighlights = (accountId: string) =>
+  fetchApi
+    .get<ApiResponse<Highlight[]>>(`/accounts/${accountId}/highlights`)
+    .then((res) => res.data);
 
 // Shared Media API
 export const uploadSharedMedia = async (files: File[], caption?: string) => {
@@ -44,7 +51,7 @@ export const uploadSharedMedia = async (files: File[], caption?: string) => {
     formData.append('caption', caption);
   }
 
-  const res = await fetchApi.post('/shared/upload', formData, {
+  const res = await fetchApi.post<ApiResponse<import('./types').SharedMedia[]>>('/shared/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
