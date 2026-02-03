@@ -269,7 +269,8 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
       const date = (request.params as any).date;
       const filename = (request.params as any)['*'];
 
-      const resultRoot = process.env.RESULT_ROOT ?? '/result';
+      // 업로드된 파일은 DATA_ROOT/uploaded/에 저장됨 (fileUpload.ts와 일치해야 함)
+      const uploadDataRoot = process.env.DATA_ROOT ?? '/data';
 
       // Validate date format (yyyyMMdd)
       if (!/^\d{8}$/.test(date)) {
@@ -280,7 +281,7 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
       let filePath: string;
       try {
         const sanitizedFilename = sanitizePath(filename);
-        const uploadedBase = path.join(resultRoot, 'uploaded');
+        const uploadedBase = path.join(uploadDataRoot, 'uploaded');
         filePath = validatePathWithinBase(uploadedBase, path.join(date, sanitizedFilename));
       } catch (error) {
         app.log.warn(error, 'Invalid path requested');
