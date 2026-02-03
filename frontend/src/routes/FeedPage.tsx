@@ -26,10 +26,11 @@ import SeoHead from '../components/common/SeoHead';
 
 const FeedPage = () => {
 
-  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
-    queryFn: () => listAccount().then(res => res.data),
+  const { data: accountsResponse, isLoading: accountsLoading } = useQuery({
+    queryFn: () => listAccount(),
     queryKey: [CLIENT_KEY, 'accounts']
   });
+  const accounts = accountsResponse?.data ?? [];
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -129,11 +130,12 @@ const FeedPage = () => {
     queryKey: [CLIENT_KEY, 'feed', query]
   });
 
-  const { data: modalPost, isLoading: modalLoading } = useQuery({
-    queryFn: () => detailPost(activePostId!).then((res) => res.data),
+  const { data: modalPostResponse, isLoading: modalLoading } = useQuery({
+    queryFn: () => detailPost(activePostId!),
     queryKey: [CLIENT_KEY, 'detailPost', activePostId],
     enabled: !!activePostId
   });
+  const modalPost = modalPostResponse?.data ?? null;
 
   const { data: sharedMediaResponse, isLoading: sharedMediaLoading } = useQuery({
     queryFn: () => listSharedMedia({ limit: pageSize }),
@@ -142,7 +144,7 @@ const FeedPage = () => {
   });
 
   const groupedSharedMedia = useMemo(() => {
-    const data = sharedMediaResponse?.data || [];
+    const data = sharedMediaResponse?.data ?? [];
     const groups = new Map<string, SharedMedia[]>();
     
     data.forEach(item => {
@@ -165,7 +167,7 @@ const FeedPage = () => {
   );
 
   const feedPosts = feedResponse?.data ?? [];
-  const totalPosts = feedResponse?.total ?? 0;
+  const totalPosts = feedResponse?.meta?.total ?? 0;
 
   const handleAccountSelect = (accountId: string | null) => {
     setSelectedAccountId(accountId);

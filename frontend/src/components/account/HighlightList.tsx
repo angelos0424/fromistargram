@@ -17,8 +17,8 @@ const HighlightList = ({ accountId }: HighlightListProps) => {
         const fetchHighlights = async () => {
             setIsLoading(true);
             try {
-                const data = await listHighlights(accountId);
-                setHighlights(data);
+                const response = await listHighlights(accountId);
+                setHighlights(response.data);
             } catch (error) {
                 console.error('Failed to fetch highlights', error);
             } finally {

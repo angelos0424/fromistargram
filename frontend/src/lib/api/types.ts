@@ -1,5 +1,22 @@
 export type MediaType = 'image' | 'video';
 
+export interface ApiResponse<T, M = undefined> {
+  success: true;
+  data: T;
+  meta?: M;
+}
+
+export interface ApiError {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+}
+
+export type ApiResult<T, M = undefined> = ApiResponse<T, M> | ApiError;
+
 export interface AccountProfilePicture {
   id: string;
   url: string;
@@ -26,13 +43,9 @@ export interface Account extends AccountSummary {
   profilePictures?: AccountProfilePicture[];
 }
 
-export interface AccountsResponse {
-  data: Account[];
-}
+export type AccountsResponse = ApiResponse<Account[]>;
 
-export interface AccountResponse {
-  data: Account;
-}
+export type AccountResponse = ApiResponse<Account>;
 
 export interface MediaItem {
   id: string;
@@ -69,18 +82,18 @@ export interface PostsRequest {
   type?: string;
 }
 
-export interface PostsResponse {
-  data: Post[];
-  total: number;
-  pageInfo: {
-    hasNextPage: boolean;
-    nextCursor: string | null;
-  };
-}
+export type PostsResponse = ApiResponse<
+  Post[],
+  {
+    total: number;
+    pageInfo: {
+      hasNextPage: boolean;
+      nextCursor: string | null;
+    };
+  }
+>;
 
-export interface PostResponse {
-  data: Post;
-}
+export type PostResponse = ApiResponse<Post>;
 
 export interface FeedQuery {
   accountId?: string;
@@ -143,16 +156,14 @@ export interface SharedMediaListRequest {
   to?: string;
 }
 
-export interface SharedMediaListResponse {
-  data: SharedMedia[];
-  hasMore: boolean;
-  nextCursor: string | null;
-}
+export type SharedMediaListResponse = ApiResponse<
+  SharedMedia[],
+  {
+    hasMore: boolean;
+    nextCursor: string | null;
+  }
+>;
 
-export interface SharedMediaUploadResponse {
-  data: SharedMedia[];
-}
+export type SharedMediaUploadResponse = ApiResponse<SharedMedia[]>;
 
-export interface SharedMediaResponse {
-  data: SharedMedia;
-}
+export type SharedMediaResponse = ApiResponse<SharedMedia>;
