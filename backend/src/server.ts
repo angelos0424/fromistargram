@@ -70,7 +70,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
 
   await app.register(multipart, {
     limits: {
-      fileSize: 50 * 1024 * 1024 // 50MB max (for videos)
+      fileSize: 200 * 1024 * 1024 // 200MB max (for videos)
     }
   });
 
