@@ -6,6 +6,7 @@ import { registerAdminMetricsRoutes } from './registerAdminMetricsRoutes.js';
 import { registerAdminIndexerRoutes } from './registerAdminIndexerRoutes.js';
 import { registerAdminDatabaseRoutes } from './registerAdminDatabaseRoutes.js';
 import { registerAdminSharedMediaRoutes } from './registerAdminSharedMediaRoutes.js';
+import { registerAdminManualUploadRoutes } from './registerAdminManualUploadRoutes.js';
 import { registerHighlightRoutes } from './highlights.js';
 import { registerImageProxyRoutes } from './imageProxy.js';
 import { registerSharedMediaRoutes } from './registerSharedMediaRoutes.js';
@@ -29,6 +30,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     await adminApp.register(registerAdminIndexerRoutes);
     await adminApp.register(registerAdminDatabaseRoutes);
     await adminApp.register(registerAdminSharedMediaRoutes);
+    await adminApp.register(registerAdminManualUploadRoutes);
   });
 
   // Redirect /api/docs → /docs so Swagger UI is reachable behind /api-only proxies.
