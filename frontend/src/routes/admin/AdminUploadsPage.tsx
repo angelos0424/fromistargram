@@ -1,13 +1,61 @@
-import { useState } from 'react';
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { FormEvent, useMemo, useState } from 'react';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import AdminSectionCard from '../../components/admin/AdminSectionCard';
 import { ADMIN_KEY } from '../../lib/api/admin/consts';
+import { listAccount } from '../../lib/api/admin/accounts';
 import { deleteSharedMedia, listSharedMedia, updateSharedMedia } from '../../lib/api/admin/sharedMedia';
+import { uploadAdminMedia } from '../../lib/api/admin/uploads';
 import type { AdminSharedMedia } from '../../lib/api/admin/types';
+
+const DATETIME_REGEX = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+
+const parsePostedAt = (input: string) => {
+  if (!DATETIME_REGEX.test(input)) {
+    return null;
+  }
+
+  const [datePart, timePart] = input.split(' ');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, minute, second] = timePart.split(':').map(Number);
+  const parsed = new Date(`${datePart}T${timePart}`);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() + 1 !== month ||
+    parsed.getDate() !== day ||
+    parsed.getHours() !== hour ||
+    parsed.getMinutes() !== minute ||
+    parsed.getSeconds() !== second
+  ) {
+    return null;
+  }
+
+  return parsed;
+};
 
 const AdminUploadsPage = () => {
   const queryClient = useQueryClient();
   const [limit] = useState(50);
+  const [accountId, setAccountId] = useState('');
+  const [postedAt, setPostedAt] = useState('');
+  const [caption, setCaption] = useState('');
+  const [postType, setPostType] = useState<'Post' | 'Story'>('Post');
+  const [files, setFiles] = useState<File[]>([]);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
+
+  const { data: accounts = [], isPending: isAccountsPending } = useQuery({
+    queryKey: [ADMIN_KEY, 'accounts'],
+    queryFn: () => listAccount()
+  });
+
+  const sortedAccounts = useMemo(() => {
+    return [...accounts].sort((a, b) => a.username.localeCompare(b.username));
+  }, [accounts]);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useInfiniteQuery({
@@ -34,6 +82,29 @@ const AdminUploadsPage = () => {
     },
   });
 
+  const uploadMutation = useMutation({
+    mutationFn: () =>
+      uploadAdminMedia({
+        accountId,
+        postedAt,
+        type: postType,
+        caption: caption.trim() ? caption.trim() : undefined,
+        files
+      }),
+    onSuccess: () => {
+      setFormError(null);
+      setFormSuccess('업로드가 완료되었습니다.');
+      setPostedAt('');
+      setCaption('');
+      setFiles([]);
+      queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'shared-media'] });
+    },
+    onError: (error: Error) => {
+      setFormSuccess(null);
+      setFormError(error.message || '업로드에 실패했습니다.');
+    }
+  });
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editCaption, setEditCaption] = useState('');
 
@@ -58,8 +129,123 @@ const AdminUploadsPage = () => {
     }
   };
 
+  const handleUploadSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFormError(null);
+    setFormSuccess(null);
+
+    if (!accountId) {
+      setFormError('계정을 선택해 주세요.');
+      return;
+    }
+
+    const parsedDate = parsePostedAt(postedAt);
+    if (!parsedDate) {
+      setFormError('게시일시는 yyyy-MM-dd hh:mm:ss 형식으로 입력해 주세요.');
+      return;
+    }
+
+    if (files.length === 0) {
+      setFormError('업로드할 파일을 선택해 주세요.');
+      return;
+    }
+
+    uploadMutation.mutate();
+  };
+
   return (
     <div className="space-y-6">
+      <AdminSectionCard
+        title="수동 업로드"
+        description="관리자가 직접 업로드할 콘텐츠를 등록합니다."
+      >
+        <form onSubmit={handleUploadSubmit} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="flex flex-col gap-2 text-sm text-slate-300">
+              계정 선택
+              <select
+                value={accountId}
+                onChange={(event) => setAccountId(event.target.value)}
+                className="rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-brand-400 focus:outline-none"
+                disabled={isAccountsPending}
+              >
+                <option value="">계정을 선택하세요</option>
+                {sortedAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.username}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-2 text-sm text-slate-300">
+              게시일시 (yyyy-MM-dd hh:mm:ss)
+              <input
+                type="text"
+                value={postedAt}
+                onChange={(event) => setPostedAt(event.target.value)}
+                placeholder="2024-01-30 14:30:00"
+                className="rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-brand-400 focus:outline-none"
+              />
+            </label>
+            <label className="flex flex-col gap-2 text-sm text-slate-300">
+              타입
+              <select
+                value={postType}
+                onChange={(event) => setPostType(event.target.value as 'Post' | 'Story')}
+                className="rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-brand-400 focus:outline-none"
+              >
+                <option value="Post">Post</option>
+                <option value="Story">Story</option>
+              </select>
+            </label>
+            <label className="flex flex-col gap-2 text-sm text-slate-300">
+              파일 선택 (이미지/비디오)
+              <input
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                onChange={(event) => {
+                  const selectedFiles = Array.from(event.target.files ?? []);
+                  setFiles(selectedFiles);
+                }}
+                className="rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 file:mr-4 file:rounded file:border-0 file:bg-slate-800 file:px-3 file:py-1 file:text-sm file:text-slate-200"
+              />
+            </label>
+          </div>
+          <label className="flex flex-col gap-2 text-sm text-slate-300">
+            본문
+            <textarea
+              value={caption}
+              onChange={(event) => setCaption(event.target.value)}
+              rows={3}
+              className="rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-brand-400 focus:outline-none"
+              placeholder="캡션을 입력하세요."
+            />
+          </label>
+          {formError && (
+            <div className="rounded border border-red-500/60 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+              {formError}
+            </div>
+          )}
+          {formSuccess && (
+            <div className="rounded border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+              {formSuccess}
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              disabled={uploadMutation.isPending}
+              className="rounded bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-500 disabled:opacity-50"
+            >
+              {uploadMutation.isPending ? '업로드 중...' : '업로드'}
+            </button>
+            {files.length > 0 && (
+              <span className="text-xs text-slate-400">{files.length}개 파일 선택됨</span>
+            )}
+          </div>
+        </form>
+      </AdminSectionCard>
       <AdminSectionCard
         title="공유 미디어 관리"
         description="사용자가 업로드한 공유 미디어 파일을 관리합니다."

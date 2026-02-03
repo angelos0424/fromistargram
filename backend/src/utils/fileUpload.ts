@@ -52,6 +52,11 @@ export function getUploadPath(date: Date = new Date()): string {
   return path.join(dataRoot, 'uploaded', yyyyMMdd);
 }
 
+export function getSourcePath(accountId: string, _date: Date = new Date()): string {
+  const dataRoot = process.env.DATA_ROOT ?? '/data';
+  return path.join(dataRoot, 'source', accountId);
+}
+
 export async function saveUploadedFile(
   file: MultipartFile,
   filename: string

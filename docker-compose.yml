@@ -34,7 +34,7 @@ services:
       DATA_ROOT: /data
       REDIS_URL: redis://redis:6379
     volumes:
-      - /mnt/volume1/fromistargram/data/source:/data/source:ro
+      - /mnt/volume1/fromistargram/data/source:/data/source
       - /mnt/volume1/fromistargram/data/result:/result
       - /mnt/volume1/fromistargram/data/uploaded:/data/uploaded
     ports:
