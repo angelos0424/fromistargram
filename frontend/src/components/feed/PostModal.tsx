@@ -202,12 +202,12 @@ const PostModal = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="post-detail-title"
-          className="flex w-full max-w-5xl flex-col overflow-hidden rounded-[24px] border border-white/60 bg-white/95 shadow-[0_16px_48px_rgba(0,0,0,0.12)] backdrop-blur-[8px] focus:outline-none sm:h-[90vh] sm:max-h-[95vh] dark:rounded-3xl dark:border-white/10 dark:bg-slate-950 dark:shadow-2xl dark:shadow-black/60"
+          className="flex h-[90vh] max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-[24px] border border-white/60 bg-white/95 shadow-[0_16px_48px_rgba(0,0,0,0.12)] backdrop-blur-[8px] focus:outline-none dark:rounded-3xl dark:border-white/10 dark:bg-slate-950 dark:shadow-2xl dark:shadow-black/60"
           tabIndex={-1}
           onMouseDown={(event) => event.stopPropagation()}
           onClick={(event) => event.stopPropagation()}
         >
-          <header className="flex flex-col gap-3 border-b border-white/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:border-white/10">
+          <header className="flex flex-col gap-3 border-b border-white/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 shrink-0 dark:border-white/10">
             <div className="flex flex-col gap-1">
               <h3 id="post-detail-title" className="text-lg font-semibold text-[#2D3748] dark:text-white">
                 게시물 상세
@@ -227,7 +227,7 @@ const PostModal = ({
               닫기
             </button>
           </header>
-          <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-5 sm:p-6 lg:flex-row">
+          <div className="flex flex-1 min-h-0 flex-col gap-6 overflow-y-auto p-5 sm:p-6 lg:flex-row">
             <div className="flex flex-1 min-h-0 min-w-0 flex-col gap-5">
               <PostMediaCarousel
                 media={post?.media ?? []}
