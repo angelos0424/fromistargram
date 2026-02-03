@@ -3,7 +3,7 @@ import path from 'path';
 import { MultipartFile } from '@fastify/multipart';
 
 const MAX_IMAGE_SIZE = 30 * 1024 * 1024; // 30MB
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 50MB
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'];
