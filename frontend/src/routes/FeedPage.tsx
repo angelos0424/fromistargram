@@ -5,6 +5,7 @@ import {
   useParams,
   useSearchParams
 } from 'react-router-dom';
+import { useShallow } from 'zustand/shallow';
 import AccountStrip from '../components/account/AccountStrip';
 import FiltersPanel from '../components/filter/FiltersPanel';
 import AppShell from '../components/layout/AppShell';
@@ -45,19 +46,21 @@ const FeedPage = () => {
     setType,
     resetFilters,
     hydrateFromQuery
-  ] = useFeedUiStore((state) => [
-    state.selectedAccountId,
-    state.setSelectedAccountId,
-    state.dateRange,
-    state.setDateRange,
-    state.page,
-    state.pageSize,
-    state.type,
-    state.setPage,
-    state.setType,
-    state.resetFilters,
-    state.hydrateFromQuery
-  ]);
+  ] = useFeedUiStore(
+    useShallow((state) => [
+      state.selectedAccountId,
+      state.setSelectedAccountId,
+      state.dateRange,
+      state.setDateRange,
+      state.page,
+      state.pageSize,
+      state.type,
+      state.setPage,
+      state.setType,
+      state.resetFilters,
+      state.hydrateFromQuery
+    ])
+  );
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activePostId = routePostId ?? null;
