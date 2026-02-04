@@ -91,7 +91,7 @@ const loadStoredSession = (): StoredSession | null => {
 
 const persistSession = (session: StoredSession | null) => {
   if (!session) {
-    sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(AUTH_STORAGE_KEY);
     return;
   }
 

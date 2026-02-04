@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import axios, { AxiosHeaders } from 'axios';
 import { AUTH_STORAGE_KEY } from './auth/context';
 
 export const fetchApi = axios.create({
@@ -18,10 +18,14 @@ fetchApi.interceptors.request.use((config) => {
     }
     const parsed = JSON.parse(raw) as { accessToken?: string };
     if (parsed.accessToken) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${parsed.accessToken}`
-      };
+      if (config.headers && config.headers instanceof AxiosHeaders) {
+        config.headers.set('Authorization', `Bearer ${parsed.accessToken}`);
+      } else {
+        config.headers = {
+          ...(config.headers ?? {}),
+          Authorization: `Bearer ${parsed.accessToken}`
+        };
+      }
     }
   } catch {
     // ignore malformed session storage
