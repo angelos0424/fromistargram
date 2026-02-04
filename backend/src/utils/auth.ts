@@ -180,12 +180,6 @@ export async function requireAdminAuth(
     return;
   }
 
-  if (!hasAdminRole(user)) {
-    request.log.warn({ user: user.username, roles: user.roles }, 'Access denied - missing admin role');
-    reply.code(403).send({ error: 'Admin role required' });
-    return;
-  }
-
   request.user = user;
 }
 
