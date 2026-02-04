@@ -31,6 +31,7 @@ declare module 'fastify' {
 // Cache for JWKS
 let jwksCache: jose.JWTVerifyGetKey | null = null;
 let jwksCacheTime = 0;
+let jwksUriCache: string | null = null;
 const JWKS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 const getIssuerUrl = (): string | null => {
@@ -41,8 +42,31 @@ const getAdminRole = (): string => {
   return process.env.AUTHENTIK_ADMIN_ROLE || 'admin';
 };
 
-async function getJwks(): Promise<jose.JWTVerifyGetKey> {
+const resolveIssuer = (): string | null => {
   const issuerUrl = getIssuerUrl();
+  if (!issuerUrl) {
+    return null;
+  }
+  return issuerUrl.endsWith('/') ? issuerUrl : `${issuerUrl}/`;
+};
+
+async function fetchJwksUri(issuerUrl: string): Promise<string> {
+  const discoveryUrl = new URL('.well-known/openid-configuration', issuerUrl);
+  const res = await fetch(discoveryUrl, {
+    headers: { accept: 'application/json' }
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch OIDC discovery: ${res.status} ${res.statusText}`);
+  }
+  const payload = await res.json();
+  if (!payload?.jwks_uri || typeof payload.jwks_uri !== 'string') {
+    throw new Error('OIDC discovery response missing jwks_uri');
+  }
+  return payload.jwks_uri;
+}
+
+async function getJwks(): Promise<jose.JWTVerifyGetKey> {
+  const issuerUrl = resolveIssuer();
   if (!issuerUrl) {
     throw new Error('AUTHENTIK_ISSUER_URL environment variable is not set');
   }
@@ -52,15 +76,18 @@ async function getJwks(): Promise<jose.JWTVerifyGetKey> {
     return jwksCache;
   }
 
-  const jwksUrl = new URL('/.well-known/jwks.json', issuerUrl);
-  jwksCache = jose.createRemoteJWKSet(jwksUrl);
+  if (!jwksUriCache) {
+    jwksUriCache = await fetchJwksUri(issuerUrl);
+  }
+
+  jwksCache = jose.createRemoteJWKSet(new URL(jwksUriCache));
   jwksCacheTime = now;
 
   return jwksCache;
 }
 
 export async function verifyToken(token: string): Promise<AuthenticatedUser | null> {
-  const issuerUrl = getIssuerUrl();
+  const issuerUrl = resolveIssuer();
 
   // If no issuer URL is configured, skip verification (for development)
   if (!issuerUrl) {
