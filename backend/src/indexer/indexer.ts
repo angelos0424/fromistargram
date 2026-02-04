@@ -73,9 +73,14 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
       await prisma.post.deleteMany({ where: { accountId: account.id } });
     }
 
-    // 모든 Post 새로 생성 (중복 ID 방지를 위해 upsert 사용)
+    // 모든 Post 생성/업데이트
     for (const post of account.posts) {
       await (prisma.$transaction as any)(async (tx: any) => {
+        // 기존 Post의 관련 데이터 삭제 (중복 방지)
+        await tx.postText.deleteMany({ where: { postId: post.id } });
+        await tx.postTag.deleteMany({ where: { postId: post.id } });
+        await tx.media.deleteMany({ where: { postId: post.id } });
+
         await tx.post.upsert({
           where: { id: post.id },
           create: {
@@ -106,7 +111,8 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
               width: media.width,
               height: media.height,
               duration: media.duration
-            }))
+            })),
+            skipDuplicates: true
           });
           stats.mediaCreated += post.media.length;
         }
@@ -119,20 +125,18 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
             stats.tagsCreated += 1;
           }
 
-          await tx.postTag.create({
-            data: {
-              postId: post.id,
-              tagId: tag.id
-            }
+          await tx.postTag.upsert({
+            where: { postId_tagId: { postId: post.id, tagId: tag.id } },
+            create: { postId: post.id, tagId: tag.id },
+            update: {}
           });
         }
 
         // PostText 생성
-        await tx.postText.create({
-          data: {
-            postId: post.id,
-            content: post.textContent ?? ''
-          }
+        await tx.postText.upsert({
+          where: { postId: post.id },
+          create: { postId: post.id, content: post.textContent ?? '' },
+          update: { content: post.textContent ?? '' }
         });
       }, { timeout: 30000 });
     }
