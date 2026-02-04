@@ -39,7 +39,7 @@ export interface AuthContextValue {
   error: string | null;
 }
 
-const STORAGE_KEY = 'fromistargram.auth.session';
+export const AUTH_STORAGE_KEY = 'fromistargram.auth.session';
 const STATE_KEY = 'fromistargram.auth.state';
 const NONCE_KEY = 'fromistargram.auth.nonce';
 const CODE_VERIFIER_KEY = 'fromistargram.auth.code_verifier';
@@ -71,7 +71,7 @@ const tryParseAuthorizationCode = (
 };
 
 const loadStoredSession = (): StoredSession | null => {
-  const raw = sessionStorage.getItem(STORAGE_KEY);
+  const raw = sessionStorage.getItem(AUTH_STORAGE_KEY);
   if (!raw) {
     return null;
   }
@@ -84,7 +84,7 @@ const loadStoredSession = (): StoredSession | null => {
     return parsed;
   } catch (error) {
     console.error('Failed to parse stored session', error);
-    sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(AUTH_STORAGE_KEY);
     return null;
   }
 };
@@ -95,7 +95,7 @@ const persistSession = (session: StoredSession | null) => {
     return;
   }
 
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
 };
 
 const cleanOAuthParamsFromUrl = () => {
