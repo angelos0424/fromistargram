@@ -59,8 +59,19 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
       }
     });
 
-    // Account의 기존 Post 전체 삭제 (CASCADE로 Media, PostTag, PostText도 삭제됨)
-    await prisma.post.deleteMany({ where: { accountId: account.id } });
+    // Account의 기존 Post ID 목록 조회
+    const existingPostIds = await prisma.post.findMany({
+      where: { accountId: account.id },
+      select: { id: true }
+    }).then(posts => posts.map(p => p.id));
+
+    // 기존 Post 및 관련 데이터 삭제 (FK 제약 우회를 위해 관련 데이터 먼저 삭제)
+    if (existingPostIds.length > 0) {
+      await prisma.postText.deleteMany({ where: { postId: { in: existingPostIds } } });
+      await prisma.postTag.deleteMany({ where: { postId: { in: existingPostIds } } });
+      await prisma.media.deleteMany({ where: { postId: { in: existingPostIds } } });
+      await prisma.post.deleteMany({ where: { accountId: account.id } });
+    }
 
     // 모든 Post 새로 생성
     for (const post of account.posts) {
