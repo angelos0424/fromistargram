@@ -18,13 +18,12 @@ fetchApi.interceptors.request.use((config) => {
     }
     const parsed = JSON.parse(raw) as { accessToken?: string };
     if (parsed.accessToken) {
-      if (config.headers && config.headers instanceof AxiosHeaders) {
+      if (config.headers instanceof AxiosHeaders) {
         config.headers.set('Authorization', `Bearer ${parsed.accessToken}`);
       } else {
-        config.headers = {
-          ...(config.headers ?? {}),
-          Authorization: `Bearer ${parsed.accessToken}`
-        };
+        const headers = new AxiosHeaders(config.headers ?? {});
+        headers.set('Authorization', `Bearer ${parsed.accessToken}`);
+        config.headers = headers;
       }
     }
   } catch {
