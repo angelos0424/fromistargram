@@ -5,13 +5,11 @@ import { sendSuccess, sendError } from '../utils/response.js';
 const statsSchema = {
   type: 'object',
   properties: {
-    totalTargets: { type: 'integer' },
-    activeTargets: { type: 'integer' },
-    featuredTargets: { type: 'integer' },
+    totalAccounts: { type: 'integer' },
     totalPosts: { type: 'integer' },
     lastIndexedAt: { type: ['string', 'null'], format: 'date-time' }
   },
-  required: ['totalTargets', 'activeTargets', 'featuredTargets', 'totalPosts', 'lastIndexedAt'],
+  required: ['totalAccounts', 'totalPosts', 'lastIndexedAt'],
   additionalProperties: false
 } as const;
 
@@ -36,16 +34,20 @@ export async function registerAdminMetricsRoutes(app: FastifyInstance): Promise<
     },
     async (request, reply) => {
       try {
+        const accountAggregate = await prisma.account.aggregate({
+          _count: { _all: true },
+          _max: { lastIndexedAt: true }
+        });
         const postAggregate = await prisma.post.aggregate({
           _count: { _all: true }
         });
 
         const data = {
-          totalTargets: 0,
-          activeTargets: 0,
-          featuredTargets: 0,
+          totalAccounts: accountAggregate._count._all ?? 0,
           totalPosts: postAggregate._count._all ?? 0,
-          lastIndexedAt: null
+          lastIndexedAt: accountAggregate._max.lastIndexedAt
+            ? accountAggregate._max.lastIndexedAt.toISOString()
+            : null
         };
         
         return sendSuccess(reply, data);

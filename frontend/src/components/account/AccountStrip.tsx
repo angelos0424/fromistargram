@@ -141,7 +141,7 @@ const AccountStrip = ({
       <div className="flex w-full items-center justify-center rounded-[20px] border border-dashed border-white/60 bg-white/85 px-6 py-8 text-center backdrop-blur-[8px] dark:rounded-2xl dark:border-white/10 dark:bg-white/5">
         <p className="text-sm text-[#7B8794] dark:text-slate-400">
           연결된 Instagram 계정이 없습니다.<br />
-          크롤러를 실행해 데이터를 수집해 주세요.
+          관리자에서 계정 데이터를 먼저 준비해 주세요.
         </p>
       </div>
     );

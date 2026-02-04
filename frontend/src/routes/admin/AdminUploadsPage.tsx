@@ -3,6 +3,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import AdminSectionCard from '../../components/admin/AdminSectionCard';
 import { ADMIN_KEY } from '../../lib/api/admin/consts';
 import { listAccount } from '../../lib/api/client';
+import { fetchIndexerStatus, requestIndexerRun } from '../../lib/api/admin/indexer';
 import { deleteSharedMedia, listSharedMedia, updateSharedMedia } from '../../lib/api/admin/sharedMedia';
 import { uploadAdminMedia } from '../../lib/api/admin/uploads';
 import type { AdminSharedMedia } from '../../lib/api/admin/types';
@@ -60,6 +61,20 @@ const AdminUploadsPage = () => {
       (a.username ?? a.id).localeCompare(b.username ?? b.id)
     );
   }, [accounts]);
+
+  const { data: indexerStatus } = useQuery({
+    queryKey: [ADMIN_KEY, 'indexer'],
+    queryFn: () => fetchIndexerStatus().then((res) => res.data)
+  });
+
+  const { mutate: runIndexerMutate, isPending: isIndexerRunPending } = useMutation({
+    mutationKey: [ADMIN_KEY, 'indexer', 'run'],
+    mutationFn: () => requestIndexerRun().then((res) => res.data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'indexer'] });
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'shared-media'] });
+    }
+  });
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useInfiniteQuery({
@@ -159,6 +174,44 @@ const AdminUploadsPage = () => {
 
   return (
     <div className="space-y-6">
+      <AdminSectionCard
+        title="인덱서"
+        description="업로드된 미디어를 DB에 반영하기 위해 인덱서를 실행합니다."
+        actions={
+          <button
+            type="button"
+            onClick={() => runIndexerMutate()}
+            className="rounded bg-brand-500/80 px-3 py-1 text-xs font-semibold text-slate-950 transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:bg-slate-600"
+            disabled={isIndexerRunPending || indexerStatus?.running}
+          >
+            인덱서 실행
+          </button>
+        }
+      >
+        <div className="grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
+          <div>
+            <span className="text-xs uppercase tracking-wide text-slate-400">상태</span>
+            <p className="mt-1 font-semibold text-slate-100">
+              {indexerStatus?.status ?? '알 수 없음'}
+              {indexerStatus?.running ? ' (실행 중)' : ''}
+            </p>
+          </div>
+          <div>
+            <span className="text-xs uppercase tracking-wide text-slate-400">최근 실행</span>
+            <p className="mt-1 text-slate-100">
+              {indexerStatus?.lastFinishedAt
+                ? new Date(indexerStatus.lastFinishedAt).toLocaleString()
+                : '기록 없음'}
+            </p>
+          </div>
+          <div className="sm:col-span-2">
+            <span className="text-xs uppercase tracking-wide text-slate-400">오류</span>
+            <p className="mt-1 text-slate-100">
+              {indexerStatus?.lastError ?? '없음'}
+            </p>
+          </div>
+        </div>
+      </AdminSectionCard>
       <AdminSectionCard
         title="수동 업로드"
         description="관리자가 직접 업로드할 콘텐츠를 등록합니다."

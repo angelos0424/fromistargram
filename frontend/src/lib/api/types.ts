@@ -105,9 +105,7 @@ export interface FeedQuery {
 }
 
 interface FeedStatistics {
-  totalTargets: number;
-  activeTargets: number;
-  featuredTargets: number;
+  totalAccounts: number;
   totalPosts: number;
   lastIndexedAt: string | null;
 }

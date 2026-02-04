@@ -38,7 +38,7 @@ const ProfileHistoryTimeline = ({
       <div className="flex flex-col gap-3 rounded-[20px] border border-dashed border-white/60 bg-white/85 p-4 text-sm text-[#7B8794] backdrop-blur-[8px] dark:rounded-2xl dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
         <p>기록된 프로필 이미지가 없습니다.</p>
         <p className="text-xs text-[#9CA3AF] dark:text-slate-500">
-          새로운 크롤링이 실행되면 자동으로 히스토리가 채워집니다.
+          신규 프로필 이미지가 등록되면 자동으로 히스토리가 채워집니다.
         </p>
       </div>
     );

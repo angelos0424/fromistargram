@@ -1,4 +1,5 @@
 import path from 'path';
+import { promises as fs } from 'fs';
 import { prisma } from '../db/client.js';
 import { clearCache } from '../utils/cache.js';
 import { scanDataRoot } from './fileSystemScanner.js';
@@ -17,13 +18,21 @@ export type IndexerResult = {
 };
 
 export async function buildSnapshot(options: IndexerOptions = {}): Promise<IndexerSnapshot> {
-  const dataRoot = process.env.CRAWL_OUTPUT_DIR ?? process.env.DATA_ROOT ?? '/root';
+  const dataRoot =
+    options.dataRoot ?? process.env.CRAWL_OUTPUT_DIR ?? process.env.DATA_ROOT ?? '/root';
+  const resolvedRoot = path.resolve(dataRoot);
 
-  if (dataRoot !== '/data/source') {
-    throw new Error('Indexer can only be run on the /data/source directory');
+  try {
+    const stats = await fs.stat(resolvedRoot);
+    if (!stats.isDirectory()) {
+      throw new Error('not-a-directory');
+    }
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'unknown error';
+    throw new Error(`Indexer data root is not accessible: ${resolvedRoot} (${reason})`);
   }
 
-  return scanDataRoot(path.resolve(dataRoot));
+  return scanDataRoot(resolvedRoot);
 }
 
 export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise<IndexerResult> {
