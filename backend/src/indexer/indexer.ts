@@ -73,13 +73,20 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
       await prisma.post.deleteMany({ where: { accountId: account.id } });
     }
 
-    // 모든 Post 새로 생성
+    // 모든 Post 새로 생성 (중복 ID 방지를 위해 upsert 사용)
     for (const post of account.posts) {
       await (prisma.$transaction as any)(async (tx: any) => {
-        await tx.post.create({
-          data: {
+        await tx.post.upsert({
+          where: { id: post.id },
+          create: {
             id: post.id,
             accountId: post.accountId,
+            postedAt: post.postedAt,
+            caption: post.caption,
+            hasText: post.hasText,
+            type: post.type
+          },
+          update: {
             postedAt: post.postedAt,
             caption: post.caption,
             hasText: post.hasText,
