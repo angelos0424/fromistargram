@@ -136,9 +136,10 @@ export interface SharedMedia {
   originalName: string;
   mime: string;
   size: number;
-  width?: number | null;
-  height?: number | null;
-  duration?: number | null;
+ width?: number | null;
+ height?: number | null;
+ duration?: number | null;
+	accountName?: string | null;
 	caption?: string | null;
 	uploadBatchId?: string | null;
 	uploadedAt: string;

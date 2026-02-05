@@ -50,6 +50,7 @@ declare module '@prisma/client' {
     width: number | null;
     height: number | null;
     duration: number | null;
+    accountName: string | null;
     caption: string | null;
     isDeleted: boolean;
     uploadBatchId: string | null;

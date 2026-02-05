@@ -13,6 +13,7 @@ interface UploadModalProps {
 
 const UploadModal = ({ isOpen, onClose, onSuccess }: UploadModalProps) => {
 	const [files, setFiles] = useState<File[]>([]);
+	const [accountName, setAccountName] = useState('');
 	const [caption, setCaption] = useState('');
 	const [previews, setPreviews] = useState<string[]>([]);
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -27,10 +28,12 @@ const UploadModal = ({ isOpen, onClose, onSuccess }: UploadModalProps) => {
 	}, [previews]);
 
 	const uploadMutation = useMutation({
-		mutationFn: () => uploadSharedMedia(files, caption || undefined),
+		mutationFn: () =>
+			uploadSharedMedia(files, caption || undefined, accountName || undefined),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: [CLIENT_KEY, 'sharedMedia'] });
 			setFiles([]);
+			setAccountName('');
 			setCaption('');
 			setPreviews([]);
 			onSuccess?.();
@@ -67,6 +70,7 @@ const UploadModal = ({ isOpen, onClose, onSuccess }: UploadModalProps) => {
 		if (!uploadMutation.isPending) {
 			previews.forEach((preview) => URL.revokeObjectURL(preview));
 			setFiles([]);
+			setAccountName('');
 			setCaption('');
 			setPreviews([]);
 			onClose();
@@ -139,6 +143,20 @@ const UploadModal = ({ isOpen, onClose, onSuccess }: UploadModalProps) => {
 								onAddMore={() => fileInputRef.current?.click()}
 							/>
 						)}
+					</div>
+
+					<div>
+						<label htmlFor="accountName" className="mb-1 block text-sm font-medium text-[#2D3748] dark:text-white">
+							계정명 (선택사항)
+						</label>
+						<input
+							id="accountName"
+							type="text"
+							value={accountName}
+							onChange={(e) => setAccountName(e.target.value)}
+							placeholder="계정명을 입력하세요..."
+							className="w-full rounded-xl border border-white/60 bg-white/80 px-4 py-3 text-sm text-[#2D3748] outline-none transition focus:border-[#7EC8FF] focus:bg-white focus:shadow-[0_0_12px_rgba(126,200,255,0.3)] dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:border-brand-400 dark:focus:bg-white/10 dark:placeholder:text-slate-500"
+						/>
 					</div>
 
 					<CaptionInput value={caption} onChange={setCaption} />

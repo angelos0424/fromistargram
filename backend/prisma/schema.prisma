@@ -182,7 +182,8 @@ model SharedMedia {
   width        Int?
   height       Int?
   duration     Int?
-  caption       String?
+  accountName  String?
+  caption      String?
   uploadBatchId String?
   isDeleted     Boolean  @default(false)
   uploadedAt    DateTime @default(now())

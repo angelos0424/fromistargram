@@ -14,6 +14,7 @@ export interface CreateSharedMediaInput {
   width?: number;
   height?: number;
   duration?: number;
+  accountName?: string;
   caption?: string;
   uploadBatchId?: string;
 }
@@ -36,6 +37,7 @@ export async function createSharedMedia(input: CreateSharedMediaInput) {
       width: input.width,
       height: input.height,
       duration: input.duration,
+      accountName: input.accountName,
       caption: input.caption,
       uploadBatchId: input.uploadBatchId
     }

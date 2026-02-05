@@ -80,6 +80,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
                     size: { type: 'number' },
                     mediaUrl: { type: 'string' },
                     thumbnailUrl: { type: 'string' },
+                    accountName: { type: 'string', nullable: true },
                     caption: { type: 'string', nullable: true },
                     uploadBatchId: { type: 'string', nullable: true },
                     uploadedAt: { type: 'string', format: 'date-time' }
@@ -112,6 +113,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
       const parts = request.parts();
       const files: Array<{ file: MultipartFile; buffer: Buffer }> = [];
       let caption: string | undefined;
+      let accountName: string | undefined;
       const uploadBatchId = randomUUID();
 
       try {
@@ -125,6 +127,9 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
           } else if (part.type === 'field' && part.fieldname === 'caption') {
             caption = (part as any).value as string;
             app.log.info(`Caption field received: ${caption}`);
+          } else if (part.type === 'field' && part.fieldname === 'accountName') {
+            accountName = (part as any).value as string;
+            app.log.info(`Account name field received: ${accountName}`);
           }
         }
 
@@ -167,6 +172,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
             originalName: file.filename,
             mime: file.mimetype,
             size,
+            accountName,
             caption: uploadedMedia.length === 0 ? caption : undefined,
             uploadBatchId
           });
@@ -187,6 +193,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
             size: media.size,
             mediaUrl,
             thumbnailUrl,
+            accountName: media.accountName,
             caption: media.caption,
             uploadBatchId: media.uploadBatchId,
             uploadedAt: media.uploadedAt.toISOString()
@@ -242,6 +249,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
                     duration: { type: 'number', nullable: true },
                     mediaUrl: { type: 'string' },
                     thumbnailUrl: { type: 'string' },
+                    accountName: { type: 'string', nullable: true },
                     caption: { type: 'string', nullable: true },
                     uploadBatchId: { type: 'string', nullable: true },
                     uploadedAt: { type: 'string', format: 'date-time' }
@@ -284,6 +292,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
           duration: media.duration,
           mediaUrl,
           thumbnailUrl,
+          accountName: media.accountName,
           caption: media.caption,
           uploadBatchId: media.uploadBatchId,
           uploadedAt: media.uploadedAt.toISOString()
@@ -329,6 +338,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
                   duration: { type: 'number', nullable: true },
                   mediaUrl: { type: 'string' },
                   thumbnailUrl: { type: 'string' },
+                  accountName: { type: 'string', nullable: true },
                   caption: { type: 'string', nullable: true },
                   uploadBatchId: { type: 'string', nullable: true },
                   uploadedAt: { type: 'string', format: 'date-time' }
@@ -380,6 +390,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
         duration: media.duration,
         mediaUrl,
         thumbnailUrl,
+        accountName: media.accountName,
         caption: media.caption,
         uploadBatchId: media.uploadBatchId,
         uploadedAt: media.uploadedAt.toISOString()
