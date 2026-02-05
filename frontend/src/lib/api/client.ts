@@ -42,13 +42,20 @@ export const listHighlights = (accountId: string) =>
     .then((res) => res.data);
 
 // Shared Media API
-export const uploadSharedMedia = async (files: File[], caption?: string) => {
+export const uploadSharedMedia = async (
+  files: File[],
+  caption?: string,
+  accountName?: string
+) => {
   const formData = new FormData();
   files.forEach((file) => {
     formData.append('files', file);
   });
   if (caption) {
     formData.append('caption', caption);
+  }
+  if (accountName) {
+    formData.append('accountName', accountName);
   }
 
   const res = await fetchApi.post<ApiResponse<import('./types').SharedMedia[]>>('/shared/upload', formData, {

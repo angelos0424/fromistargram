@@ -206,6 +206,12 @@ const SharedMediaModal = ({
             {primaryItem ? (
               <>
                 <div className="space-y-3">
+                  {primaryItem.accountName ? (
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-semibold text-[#2D3748] dark:text-white">계정명</h4>
+                      <p className="text-sm text-[#2D3748] dark:text-slate-200">{primaryItem.accountName}</p>
+                    </div>
+                  ) : null}
                   <div className="space-y-2">
                     <h4 className="text-sm font-semibold text-[#2D3748] dark:text-white">설명</h4>
                     <div

@@ -46,6 +46,7 @@ export interface AdminSharedMedia {
   duration: number | null;
   mediaUrl: string;
   thumbnailUrl: string | null;
+  accountName: string | null;
   caption: string | null;
   uploadBatchId: string | null;
   isDeleted: boolean;
