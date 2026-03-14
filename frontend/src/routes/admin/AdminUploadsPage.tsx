@@ -9,30 +9,12 @@ import { uploadAdminMedia } from '../../lib/api/admin/uploads';
 import type { AdminSharedMedia } from '../../lib/api/admin/types';
 import type { Account } from '../../lib/api/types';
 
-const DATETIME_REGEX = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+const DEFAULT_POSTED_AT = '2026-03-13T12:04:27.000Z';
 
 const parsePostedAt = (input: string) => {
-  if (!DATETIME_REGEX.test(input)) {
-    return null;
-  }
-
-  const [datePart, timePart] = input.split(' ');
-  const [year, month, day] = datePart.split('-').map(Number);
-  const [hour, minute, second] = timePart.split(':').map(Number);
-  const parsed = new Date(`${datePart}T${timePart}`);
+  const parsed = new Date(input);
 
   if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  if (
-    parsed.getFullYear() !== year ||
-    parsed.getMonth() + 1 !== month ||
-    parsed.getDate() !== day ||
-    parsed.getHours() !== hour ||
-    parsed.getMinutes() !== minute ||
-    parsed.getSeconds() !== second
-  ) {
     return null;
   }
 
@@ -43,7 +25,7 @@ const AdminUploadsPage = () => {
   const queryClient = useQueryClient();
   const [limit] = useState(50);
   const [accountId, setAccountId] = useState('');
-  const [postedAt, setPostedAt] = useState('');
+  const [postedAt, setPostedAt] = useState(DEFAULT_POSTED_AT);
   const [caption, setCaption] = useState('');
   const [postType, setPostType] = useState<'Post' | 'Story'>('Post');
   const [files, setFiles] = useState<File[]>([]);
@@ -113,7 +95,7 @@ const AdminUploadsPage = () => {
     onSuccess: () => {
       setFormError(null);
       setFormSuccess('업로드가 완료되었습니다.');
-      setPostedAt('');
+      setPostedAt(DEFAULT_POSTED_AT);
       setCaption('');
       setFiles([]);
       queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'shared-media'] });
@@ -160,7 +142,7 @@ const AdminUploadsPage = () => {
 
     const parsedDate = parsePostedAt(postedAt);
     if (!parsedDate) {
-      setFormError('게시일시는 yyyy-MM-dd hh:mm:ss 형식으로 입력해 주세요.');
+      setFormError('게시일시는 ISO 8601 형식으로 입력해 주세요. (예: 2026-03-13T12:04:27.000Z)');
       return;
     }
 
@@ -235,12 +217,12 @@ const AdminUploadsPage = () => {
               </select>
             </label>
             <label className="flex flex-col gap-2 text-sm text-slate-300">
-              게시일시 (yyyy-MM-dd hh:mm:ss)
+              게시일시 (ISO 8601)
               <input
                 type="text"
                 value={postedAt}
                 onChange={(event) => setPostedAt(event.target.value)}
-                placeholder="2024-01-30 14:30:00"
+                placeholder="2026-03-13T12:04:27.000Z"
                 className="rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-brand-400 focus:outline-none"
               />
             </label>

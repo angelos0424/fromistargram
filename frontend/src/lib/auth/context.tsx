@@ -43,6 +43,7 @@ export const AUTH_STORAGE_KEY = 'fromistargram.auth.session';
 const STATE_KEY = 'fromistargram.auth.state';
 const NONCE_KEY = 'fromistargram.auth.nonce';
 const CODE_VERIFIER_KEY = 'fromistargram.auth.code_verifier';
+const AUTH_MAX_AGE_SECONDS = 60 * 60;
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -191,8 +192,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         authorizeUrl.searchParams.set('prompt', options.prompt);
       }
 
+      authorizeUrl.searchParams.set('max_age', String(AUTH_MAX_AGE_SECONDS));
+
       if (options?.force) {
-        authorizeUrl.searchParams.set('max_age', '0');
+        authorizeUrl.searchParams.set('prompt', 'login');
       }
 
       sessionStorage.setItem(STATE_KEY, stateValue);

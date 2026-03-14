@@ -7,34 +7,21 @@ import { sendError, sendSuccess } from '../utils/response.js';
 
 type ManualUploadType = 'Post' | 'Story';
 
-const postedAtRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
-
 function parsePostedAt(value: string): { date: Date; timestampBase: string } | null {
-  if (!postedAtRegex.test(value)) {
-    return null;
-  }
-
-  const [datePart, timePart] = value.split(' ');
-  const [year, month, day] = datePart.split('-').map(Number);
-  const [hour, minute, second] = timePart.split(':').map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
     return null;
   }
 
-  if (
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() + 1 !== month ||
-    date.getUTCDate() !== day ||
-    date.getUTCHours() !== hour ||
-    date.getUTCMinutes() !== minute ||
-    date.getUTCSeconds() !== second
-  ) {
-    return null;
-  }
+  const yyyy = date.getUTCFullYear();
+  const MM = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(date.getUTCDate()).padStart(2, '0');
+  const HH = String(date.getUTCHours()).padStart(2, '0');
+  const mm = String(date.getUTCMinutes()).padStart(2, '0');
+  const ss = String(date.getUTCSeconds()).padStart(2, '0');
 
-  const timestampBase = `${datePart}_${timePart.replace(/:/g, '-')}`;
+  const timestampBase = `${yyyy}-${MM}-${dd}_${HH}-${mm}-${ss}`;
   return { date, timestampBase };
 }
 
@@ -140,7 +127,7 @@ export async function registerAdminManualUploadRoutes(app: FastifyInstance): Pro
 
       const parsedPostedAt = parsePostedAt(postedAt);
       if (!parsedPostedAt) {
-        return sendError(reply, 'postedAt must match yyyy-MM-dd hh:mm:ss', 400, 'BAD_REQUEST');
+        return sendError(reply, 'postedAt must be a valid ISO 8601 datetime', 400, 'BAD_REQUEST');
       }
 
       if (!type) {
