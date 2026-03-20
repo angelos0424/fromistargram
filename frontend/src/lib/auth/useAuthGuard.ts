@@ -20,7 +20,7 @@ export const useAuthGuard = () => {
 
     if (!auth.isAuthenticated) {
       sessionStorage.setItem(LOGIN_ATTEMPTED_KEY, 'true');
-      auth.login({ force: true });
+      auth.login();
     }
   }, [auth.isLoading, auth.isAuthenticated, auth.login]);
 
