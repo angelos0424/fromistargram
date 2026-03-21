@@ -27,7 +27,7 @@ const AdminGate = () => {
             <p className="text-sm text-red-400">{auth.error}</p>
           )}
           <button
-            onClick={() => auth.login({ force: true })}
+            onClick={() => auth.login()}
             className="rounded-lg bg-brand-500 px-6 py-2 text-white hover:bg-brand-600"
           >
             Authentik으로 로그인
