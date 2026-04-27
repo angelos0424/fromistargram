@@ -10,7 +10,6 @@ import {
 } from 'react';
 import { loadAuthentikConfig, type AuthentikConfig } from './config';
 import {
-  decodeJwt,
   isTokenExpired,
   parseIdToken,
   type ParsedIdToken,
@@ -49,6 +48,28 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const resolveExpiresAt = (expiresIn: number): number => {
   return Date.now() + expiresIn * 1000;
+};
+
+const resolveIdentity = (idToken: string | undefined, fallbackIdToken?: string) => {
+  const resolvedIdToken = idToken ?? fallbackIdToken;
+
+  if (!resolvedIdToken) {
+    return null;
+  }
+
+  if (isTokenExpired(resolvedIdToken)) {
+    return null;
+  }
+
+  const parsedIdToken = parseIdToken(resolvedIdToken);
+  if (!parsedIdToken) {
+    return null;
+  }
+
+  return {
+    idToken: resolvedIdToken,
+    parsedIdToken
+  };
 };
 
 const tryParseAuthorizationCode = (
@@ -248,9 +269,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           );
 
           const expiresAt = resolveExpiresAt(tokenResponse.expires_in);
-          const parsed = parseIdToken(tokenResponse.id_token);
+          const identity = resolveIdentity(tokenResponse.id_token);
 
-          if (!parsed) {
+          if (!identity) {
             cleanOAuthParamsFromUrl();
             persistSession(null);
             sessionStorage.removeItem(STATE_KEY);
@@ -264,7 +285,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             return;
           }
 
-          if (nonceValue && parsed.nonce && parsed.nonce !== nonceValue) {
+          if (nonceValue && identity.parsedIdToken.nonce && identity.parsedIdToken.nonce !== nonceValue) {
             cleanOAuthParamsFromUrl();
             persistSession(null);
             sessionStorage.removeItem(STATE_KEY);
@@ -280,7 +301,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           const session: StoredSession = {
             accessToken: tokenResponse.access_token,
-            idToken: tokenResponse.id_token,
+            idToken: identity.idToken,
             refreshToken: tokenResponse.refresh_token,
             expiresAt,
             scope: tokenResponse.scope,
@@ -295,7 +316,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           setState({
             token: tokenResponse.access_token,
-            idToken: parsed,
+            idToken: identity.parsedIdToken,
             expiresAt,
             isLoading: false,
             error: null
@@ -329,12 +350,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             );
 
             const expiresAt = resolveExpiresAt(tokenResponse.expires_in);
-            const parsed = parseIdToken(tokenResponse.id_token);
+            const identity = resolveIdentity(tokenResponse.id_token, stored.idToken);
 
-            if (parsed) {
+            if (identity) {
               const session: StoredSession = {
                 accessToken: tokenResponse.access_token,
-                idToken: tokenResponse.id_token,
+                idToken: identity.idToken,
                 refreshToken: tokenResponse.refresh_token ?? stored.refreshToken,
                 expiresAt,
                 scope: tokenResponse.scope,
@@ -344,7 +365,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               persistSession(session);
               setState({
                 token: tokenResponse.access_token,
-                idToken: parsed,
+                idToken: identity.parsedIdToken,
                 expiresAt,
                 isLoading: false,
                 error: null
@@ -403,12 +424,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         );
 
         const expiresAt = resolveExpiresAt(tokenResponse.expires_in);
-        const parsed = parseIdToken(tokenResponse.id_token);
+        const identity = resolveIdentity(tokenResponse.id_token, stored.idToken);
 
-        if (parsed) {
+        if (identity) {
           const session: StoredSession = {
             accessToken: tokenResponse.access_token,
-            idToken: tokenResponse.id_token,
+            idToken: identity.idToken,
             refreshToken: tokenResponse.refresh_token ?? stored.refreshToken,
             expiresAt,
             scope: tokenResponse.scope,
@@ -419,7 +440,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setState((prev) => ({
             ...prev,
             token: tokenResponse.access_token,
-            idToken: parsed,
+            idToken: identity.parsedIdToken,
             expiresAt
           }));
         }
