@@ -26,6 +26,18 @@ type BufferedUploadFile = {
   buffer: Buffer;
 };
 
+class IngestClientError extends Error {
+  readonly statusCode: number;
+  readonly code: string;
+
+  constructor(message: string, statusCode = 400, code = 'BAD_REQUEST') {
+    super(message);
+    this.name = 'IngestClientError';
+    this.statusCode = statusCode;
+    this.code = code;
+  }
+}
+
 function getApiBaseUrl(request: { headers: Record<string, string | string[] | undefined>; protocol?: string }): string {
   const publicApiUrl = process.env.PUBLIC_API_BASE_URL;
   if (publicApiUrl) {
@@ -123,7 +135,13 @@ function getMobileIngestToken(request: FastifyRequest): string | null {
 function requireMobileIngestAuth(request: FastifyRequest, reply: FastifyReply): boolean {
   const expectedToken = process.env.MOBILE_INGEST_TOKEN;
   if (!expectedToken) {
-    return true;
+    sendError(
+      reply,
+      'Mobile ingest token is not configured',
+      503,
+      'MOBILE_INGEST_TOKEN_NOT_CONFIGURED'
+    );
+    return false;
   }
 
   if (getMobileIngestToken(request) === expectedToken) {
@@ -150,7 +168,7 @@ async function readMobileIngestForm(request: FastifyRequest): Promise<{
   for await (const part of request.parts()) {
     if (part.type === 'file') {
       if (part.fieldname !== 'files') {
-        throw new Error('Unexpected file field name');
+        throw new IngestClientError('Unexpected file field name');
       }
 
       files.push({
@@ -194,7 +212,7 @@ async function saveToShared(input: {
   for (const { file, buffer } of input.files) {
     const validation = validateFileType(file.mimetype, buffer.length);
     if (!validation.valid) {
-      throw new Error(validation.error || 'Invalid file');
+      throw new IngestClientError(validation.error || 'Invalid file');
     }
 
     const uniqueFilename = generateUniqueFilename(file.filename);
@@ -267,7 +285,7 @@ async function saveToSource(input: {
   for (const [index, entry] of input.files.entries()) {
     const validation = validateFileType(entry.file.mimetype, entry.buffer.length);
     if (!validation.valid) {
-      throw new Error(validation.error || 'Invalid file');
+      throw new IngestClientError(validation.error || 'Invalid file');
     }
 
     const ext = resolveFileExtension(entry.file);
@@ -339,6 +357,15 @@ export async function registerMobileIngestRoutes(app: FastifyInstance): Promise<
         : null;
       const postedAt = parsePostedAt(input.uploadedAt);
 
+      if (existingAccount && !postedAt) {
+        return sendError(
+          reply,
+          'uploadedAt must be a valid ISO 8601 datetime for existing accounts',
+          400,
+          'BAD_REQUEST'
+        );
+      }
+
       const data = existingAccount && postedAt
         ? await saveToSource({
           files: input.files,
@@ -359,7 +386,11 @@ export async function registerMobileIngestRoutes(app: FastifyInstance): Promise<
     } catch (error) {
       request.log.error(error, 'Mobile ingest failed');
       const message = error instanceof Error ? error.message : 'Mobile ingest failed';
-      return sendError(reply, message, 400, 'BAD_REQUEST');
+      if (error instanceof IngestClientError) {
+        return sendError(reply, message, error.statusCode, error.code);
+      }
+
+      return sendError(reply, 'Mobile ingest failed');
     }
   });
 
