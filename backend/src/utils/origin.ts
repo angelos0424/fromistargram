@@ -1,4 +1,5 @@
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1']);
+const WILDCARD_ORIGIN_PATTERN = /^([a-z][a-z\d+.-]*:\/\/)\*\.(.+)$/i;
 
 export function getAllowedOrigins(): string[] {
   const corsOrigins = process.env.CORS_ORIGINS;
@@ -13,30 +14,34 @@ export function isOriginAllowed(origin: string | undefined, allowedOrigins: stri
     return false;
   }
 
+  const originUrl = parseUrl(origin);
+  const normalizedOrigin = originUrl?.origin ?? null;
+
   if (allowedOrigins.length === 0) {
-    return isLocalhostOrigin(origin);
+    return isLocalhostOrigin(originUrl);
   }
 
-  return allowedOrigins.some((allowedOrigin) => matchesAllowedOrigin(origin, allowedOrigin));
+  return allowedOrigins.some((allowedOrigin) =>
+    matchesAllowedOrigin(origin, originUrl, normalizedOrigin, allowedOrigin)
+  );
 }
 
-function isLocalhostOrigin(origin: string): boolean {
-  try {
-    const { hostname } = new URL(origin);
-    return LOCALHOST_HOSTS.has(hostname);
-  } catch {
-    return false;
-  }
+function isLocalhostOrigin(originUrl: URL | null): boolean {
+  return originUrl ? LOCALHOST_HOSTS.has(originUrl.hostname) : false;
 }
 
-function matchesAllowedOrigin(origin: string, allowedOrigin: string): boolean {
-  const normalizedOrigin = normalizeOrigin(origin);
+function matchesAllowedOrigin(
+  origin: string,
+  originUrl: URL | null,
+  normalizedOrigin: string | null,
+  allowedOrigin: string
+): boolean {
   const normalizedAllowedOrigin = normalizeOrigin(allowedOrigin);
   if (normalizedOrigin && normalizedAllowedOrigin && normalizedOrigin === normalizedAllowedOrigin) {
     return true;
   }
 
-  if (matchesWildcardOrigin(origin, allowedOrigin)) {
+  if (originUrl && matchesWildcardOrigin(originUrl, allowedOrigin)) {
     return true;
   }
 
@@ -44,21 +49,24 @@ function matchesAllowedOrigin(origin: string, allowedOrigin: string): boolean {
 }
 
 function normalizeOrigin(origin: string): string | null {
+  return parseUrl(origin)?.origin ?? null;
+}
+
+function parseUrl(url: string): URL | null {
   try {
-    return new URL(origin).origin;
+    return new URL(url);
   } catch {
     return null;
   }
 }
 
-function matchesWildcardOrigin(origin: string, allowedOrigin: string): boolean {
-  const wildcardMatch = allowedOrigin.match(/^([a-z][a-z\d+.-]*:\/\/)\*\.(.+)$/i);
+function matchesWildcardOrigin(originUrl: URL, allowedOrigin: string): boolean {
+  const wildcardMatch = allowedOrigin.match(WILDCARD_ORIGIN_PATTERN);
   if (!wildcardMatch) {
     return false;
   }
 
   try {
-    const originUrl = new URL(origin);
     const allowedBaseUrl = new URL(`${wildcardMatch[1]}${wildcardMatch[2]}`);
     const originHostname = originUrl.hostname.toLowerCase();
     const allowedHostname = allowedBaseUrl.hostname.toLowerCase();

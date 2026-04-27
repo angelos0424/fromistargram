@@ -12,6 +12,7 @@ import { getAllowedOrigins, isOriginAllowed } from './origin.js';
  */
 
 const STATE_CHANGING_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
+const ALLOWED_ORIGINS = getAllowedOrigins();
 
 /**
  * Validate Origin header for state-changing requests
@@ -43,11 +44,9 @@ export async function csrfProtection(
     return;
   }
 
-  const allowedOrigins = getAllowedOrigins();
-
   // Check origin header first
   if (origin) {
-    if (!isOriginAllowed(origin, allowedOrigins)) {
+    if (!isOriginAllowed(origin, ALLOWED_ORIGINS)) {
       request.log.warn({ origin }, 'CSRF: Origin not allowed');
       reply.code(403).send({ error: 'Origin not allowed' });
       return;
@@ -59,7 +58,7 @@ export async function csrfProtection(
   if (referer) {
     try {
       const refererOrigin = new URL(referer).origin;
-      if (!isOriginAllowed(refererOrigin, allowedOrigins)) {
+      if (!isOriginAllowed(refererOrigin, ALLOWED_ORIGINS)) {
         request.log.warn({ referer }, 'CSRF: Referer origin not allowed');
         reply.code(403).send({ error: 'Origin not allowed' });
         return;
