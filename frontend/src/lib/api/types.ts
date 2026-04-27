@@ -155,6 +155,7 @@ export interface SharedMediaListRequest {
   from?: string;
   to?: string;
   sort?: 'newest' | 'oldest';
+  page?: number;
 }
 
 export type SharedMediaListResponse = ApiResponse<
@@ -162,6 +163,7 @@ export type SharedMediaListResponse = ApiResponse<
   {
     hasMore: boolean;
     nextCursor: string | null;
+    total: number;
   }
 >;
 

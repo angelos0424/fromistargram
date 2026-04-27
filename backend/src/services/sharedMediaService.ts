@@ -26,6 +26,7 @@ export interface ListSharedMediaParams {
   to?: string;
   includeDeleted?: boolean;
   sort?: 'newest' | 'oldest';
+  page?: number;
 }
 
 export async function createSharedMedia(input: CreateSharedMediaInput) {
@@ -68,11 +69,20 @@ export async function listSharedMedia(params: ListSharedMediaParams) {
     where.id = { lt: params.cursor };
   }
 
-  const items = await prisma.sharedMedia.findMany({
+  const queryArgs: Parameters<typeof prisma.sharedMedia.findMany>[0] = {
     where,
     orderBy: { uploadedAt: sortDirection },
     take: limit + 1
-  });
+  };
+
+  if (params.page && params.page > 1) {
+    queryArgs.skip = (params.page - 1) * limit;
+  }
+
+  const [items, total] = await Promise.all([
+    prisma.sharedMedia.findMany(queryArgs),
+    prisma.sharedMedia.count({ where })
+  ]);
 
   const hasMore = items.length > limit;
   const data = hasMore ? items.slice(0, limit) : items;
@@ -81,7 +91,8 @@ export async function listSharedMedia(params: ListSharedMediaParams) {
   return {
     data,
     hasMore,
-    nextCursor
+    nextCursor,
+    total
   };
 }
 

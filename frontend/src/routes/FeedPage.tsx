@@ -144,8 +144,20 @@ const FeedPage = () => {
   const modalPost = modalPostResponse?.data ?? null;
 
   const { data: sharedMediaResponse, isLoading: sharedMediaLoading } = useQuery({
-    queryFn: () => listSharedMedia({ limit: pageSize, sort: sortOrder }),
-    queryKey: [CLIENT_KEY, 'sharedMedia', { limit: pageSize, sort: sortOrder }],
+    queryFn: () => listSharedMedia({
+      from: dateRange.from ?? undefined,
+      limit: pageSize,
+      page,
+      sort: sortOrder,
+      to: dateRange.to ?? undefined
+    }),
+    queryKey: [CLIENT_KEY, 'sharedMedia', {
+      from: dateRange.from,
+      limit: pageSize,
+      page,
+      sort: sortOrder,
+      to: dateRange.to
+    }],
     enabled: type === 'Shared'
   });
 
@@ -174,6 +186,7 @@ const FeedPage = () => {
 
   const feedPosts = feedResponse?.data ?? [];
   const totalPosts = feedResponse?.meta?.total ?? 0;
+  const totalSharedMedia = sharedMediaResponse?.meta?.total ?? 0;
   const accountById = useMemo(
     () => new Map(accounts.map((account) => [account.id, account])),
     [accounts]
@@ -228,7 +241,9 @@ const FeedPage = () => {
 
   const displayedTotal =
     type === 'Shared'
-      ? visibleSharedGroups.length
+      ? searchNeedle
+        ? visibleSharedGroups.length
+        : totalSharedMedia
       : searchNeedle
         ? visibleFeedPosts.length
         : totalPosts;
@@ -401,14 +416,12 @@ const FeedPage = () => {
             onOpenPost={handleOpenPost}
           />
         )}
-        {type !== 'Shared' && (
-          <Pagination
-            page={page}
-            pageSize={pageSize}
-            total={totalPosts}
-            onChange={setPage}
-          />
-        )}
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={type === 'Shared' ? totalSharedMedia : totalPosts}
+          onChange={setPage}
+        />
       </div>
       <PostModal
         post={modalPost ?? null}

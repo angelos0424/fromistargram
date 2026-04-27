@@ -199,6 +199,7 @@ declare module '@prisma/client' {
       update(...args: any[]): Promise<SharedMedia>;
       findUnique(...args: any[]): Promise<SharedMedia | null>;
       findMany(...args: any[]): Promise<SharedMedia[]>;
+      count(...args: any[]): Promise<number>;
       deleteMany(...args: any[]): Promise<any>;
       createMany(...args: any[]): Promise<any>;
     };

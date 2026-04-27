@@ -74,6 +74,7 @@ export const listSharedMedia = async (params: import('./types').SharedMediaListR
   if (params.from) search.set('from', params.from);
   if (params.to) search.set('to', params.to);
   if (params.sort) search.set('sort', params.sort);
+  if (params.page) search.set('page', String(params.page));
 
   const qs = search.toString() ? `?${search.toString()}` : '';
   const res = await fetchApi.get<import('./types').SharedMediaListResponse>(`/shared${qs}`);
