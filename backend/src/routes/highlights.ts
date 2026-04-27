@@ -43,10 +43,11 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
                                                 filename: { type: 'string' },
                                                 mime: { type: 'string' },
                                                 orderIndex: { type: 'number' },
+                                                rawUrl: { type: 'string' },
                                                 url: { type: 'string' },
                                                 thumbnailUrl: { type: 'string' }
                                             },
-                                            required: ['id', 'filename', 'mime', 'orderIndex', 'url', 'thumbnailUrl']
+                                            required: ['id', 'filename', 'mime', 'orderIndex', 'rawUrl', 'url', 'thumbnailUrl']
                                         },
                                         media: {
                                             type: 'array',
@@ -57,10 +58,11 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
                                                     filename: { type: 'string' },
                                                     mime: { type: 'string' },
                                                     orderIndex: { type: 'number' },
+                                                    rawUrl: { type: 'string' },
                                                     url: { type: 'string' },
                                                     thumbnailUrl: { type: 'string' }
                                                 },
-                                                required: ['id', 'filename', 'mime', 'orderIndex', 'url', 'thumbnailUrl']
+                                                required: ['id', 'filename', 'mime', 'orderIndex', 'rawUrl', 'url', 'thumbnailUrl']
                                             }
                                         }
                                     },
@@ -92,9 +94,10 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
                 const mapMedia = (m: HighlightMedia) => {
                     const source = `local:///source/${accountId}/${m.filename}`;
                     const mediaUrl = buildHighlightMediaUrl(accountId, m.filename);
+                    const isVideo = m.mime.startsWith('video/');
 
-                    // Full URL (Original or high quality)
-                    const url = buildImagorUrl(source) ?? mediaUrl;
+                    // Full URL for images, raw stream URL for videos.
+                    const url = isVideo ? mediaUrl : buildImagorUrl(source) ?? mediaUrl;
 
                     // Thumbnail URL (Resized)
                     const thumbnailUrl = buildImagorUrl(source, {
@@ -103,6 +106,7 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
 
                     return {
                         ...m,
+                        rawUrl: mediaUrl,
                         url,
                         thumbnailUrl
                     };

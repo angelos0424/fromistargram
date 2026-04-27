@@ -81,7 +81,7 @@ function normalizeAccountName(value?: string): string | null {
 function normalizeHighlightTitle(value?: string): string | null {
   const normalized = (value ?? '')
     .trim()
-    .replace(/[\\/]+/g, '_')
+    .replace(/[^a-zA-Z0-9._-]+/g, '_')
     .replace(/^\.+$/g, '')
     .replace(/^_+|_+$/g, '');
 
