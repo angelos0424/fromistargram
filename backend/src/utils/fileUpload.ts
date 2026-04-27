@@ -53,8 +53,12 @@ export function getUploadPath(date: Date = new Date()): string {
 }
 
 export function getSourcePath(accountId: string, _date: Date = new Date()): string {
+  return path.join(getSourceRootPath(), accountId);
+}
+
+export function getSourceRootPath(): string {
   const dataRoot = process.env.DATA_ROOT ?? '/data';
-  return path.join(dataRoot, 'source', accountId);
+  return path.join(dataRoot, 'source');
 }
 
 export async function saveUploadedFile(

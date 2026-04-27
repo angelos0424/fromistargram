@@ -2,6 +2,7 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import { prisma } from '../db/client.js';
 import { clearCache } from '../utils/cache.js';
+import { getSourceRootPath } from '../utils/fileUpload.js';
 import { scanDataRoot } from './fileSystemScanner.js';
 import { IndexerSnapshot } from './types.js';
 
@@ -19,7 +20,7 @@ export type IndexerResult = {
 
 export async function buildSnapshot(options: IndexerOptions = {}): Promise<IndexerSnapshot> {
   const dataRoot =
-    options.dataRoot ?? process.env.CRAWL_OUTPUT_DIR ?? process.env.DATA_ROOT ?? '/root';
+    options.dataRoot ?? process.env.CRAWL_OUTPUT_DIR ?? getSourceRootPath();
   const resolvedRoot = path.resolve(dataRoot);
 
   try {
