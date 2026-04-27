@@ -68,7 +68,7 @@ const HighlightViewer = ({ highlight, accountId, onClose }: HighlightViewerProps
                 <div className="flex h-full items-center justify-center">
                     {currentMedia.mime.startsWith('video') ? (
                         <video
-                            src={`/api/media/${accountId}/${currentMedia.filename}`}
+                            src={currentMedia.url}
                             className="max-h-full max-w-full object-contain"
                             autoPlay
                             controls

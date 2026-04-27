@@ -4,6 +4,12 @@ import { prisma } from '../db/client.js';
 import { buildImagorUrl } from '../utils/imagor.js';
 import { sendSuccess } from '../utils/response.js';
 
+function buildHighlightMediaUrl(accountId: string, filename: string): string {
+    const safeAccount = encodeURIComponent(accountId);
+    const safePath = filename.split(/[\\/]/g).map((part) => encodeURIComponent(part)).join('/');
+    return `/api/media/${safeAccount}/${safePath}`;
+}
+
 export async function registerHighlightRoutes(app: FastifyInstance) {
     app.get<{ Params: { accountId: string } }>(
         '/api/accounts/:accountId/highlights',
@@ -84,15 +90,16 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
             const data = highlights.map((highlight) => {
                 // Map media items to include signed URLs
                 const mapMedia = (m: HighlightMedia) => {
-                    const source = `local:///${accountId}/${m.filename}`;
+                    const source = `local:///source/${accountId}/${m.filename}`;
+                    const mediaUrl = buildHighlightMediaUrl(accountId, m.filename);
 
                     // Full URL (Original or high quality)
-                    const url = buildImagorUrl(source) ?? '';
+                    const url = buildImagorUrl(source) ?? mediaUrl;
 
                     // Thumbnail URL (Resized)
                     const thumbnailUrl = buildImagorUrl(source, {
                         resize: { width: 640, type: 'fit' }
-                    }) ?? '';
+                    }) ?? mediaUrl;
 
                     return {
                         ...m,

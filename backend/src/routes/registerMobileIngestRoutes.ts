@@ -17,9 +17,9 @@ import {
 import { formatDateToYYYYMMDD } from '../utils/dateFormat.js';
 import { sendError, sendSuccess } from '../utils/response.js';
 
-type MobileIngestContentType = 'POST' | 'STORY' | 'REEL';
+type MobileIngestContentType = 'POST' | 'STORY' | 'REEL' | 'HIGHLIGHT';
 type SourceUploadType = 'Post' | 'Story';
-type StorageTarget = 'SOURCE' | 'SHARED';
+type StorageTarget = 'SOURCE' | 'SHARED' | 'HIGHLIGHT';
 
 type BufferedUploadFile = {
   file: MultipartFile;
@@ -78,8 +78,18 @@ function normalizeAccountName(value?: string): string | null {
   return normalized || null;
 }
 
+function normalizeHighlightTitle(value?: string): string | null {
+  const normalized = (value ?? '')
+    .trim()
+    .replace(/[\\/]+/g, '_')
+    .replace(/^\.+$/g, '')
+    .replace(/^_+|_+$/g, '');
+
+  return normalized || null;
+}
+
 function parseContentType(value?: string): MobileIngestContentType {
-  if (value === 'STORY' || value === 'REEL' || value === 'POST') {
+  if (value === 'STORY' || value === 'REEL' || value === 'POST' || value === 'HIGHLIGHT') {
     return value;
   }
 
@@ -158,12 +168,14 @@ async function readMobileIngestForm(request: FastifyRequest): Promise<{
   uploadedAt?: string;
   contentType: MobileIngestContentType;
   caption?: string;
+  highlightTitle: string | null;
 }> {
   const files: BufferedUploadFile[] = [];
   let accountName: string | null = null;
   let uploadedAt: string | undefined;
   let contentType: MobileIngestContentType = 'POST';
   let caption: string | undefined;
+  let highlightTitle: string | null = null;
 
   for await (const part of request.parts()) {
     if (part.type === 'file') {
@@ -192,12 +204,15 @@ async function readMobileIngestForm(request: FastifyRequest): Promise<{
       case 'caption':
         caption = value;
         break;
+      case 'highlightTitle':
+        highlightTitle = normalizeHighlightTitle(value);
+        break;
       default:
         break;
     }
   }
 
-  return { files, accountName, uploadedAt, contentType, caption };
+  return { files, accountName, uploadedAt, contentType, caption, highlightTitle };
 }
 
 async function saveToShared(input: {
@@ -337,6 +352,46 @@ async function saveToSource(input: {
   };
 }
 
+async function saveToHighlight(input: {
+  files: BufferedUploadFile[];
+  accountId: string;
+  highlightTitle: string;
+  postedAt: { date: Date; timestampBase: string };
+}) {
+  const highlightDir = path.join(getSourcePath(input.accountId, input.postedAt.date), input.highlightTitle);
+  await mkdir(highlightDir, { recursive: true });
+
+  const savedFiles: Array<{ filename: string; filepath: string }> = [];
+  const totalFiles = input.files.length;
+
+  for (const [index, entry] of input.files.entries()) {
+    const validation = validateFileType(entry.file.mimetype, entry.buffer.length);
+    if (!validation.valid) {
+      throw new IngestClientError(validation.error || 'Invalid file');
+    }
+
+    const ext = resolveFileExtension(entry.file);
+    const fileSuffix = totalFiles === 1 ? `_UTC${ext}` : `_UTC_${index + 1}${ext}`;
+    const filename = `${input.postedAt.timestampBase}${fileSuffix}`;
+    const filepath = path.join(highlightDir, filename);
+    await writeFile(filepath, entry.buffer);
+    savedFiles.push({ filename, filepath });
+  }
+
+  return {
+    storageTarget: 'HIGHLIGHT' as StorageTarget,
+    accountId: input.accountId,
+    highlightTitle: input.highlightTitle,
+    postId: null,
+    archiveUrl: null,
+    uploadedAt: input.postedAt.date.toISOString(),
+    fileCount: savedFiles.length,
+    uploadBatchId: null,
+    savedFiles,
+    shouldRunIndexer: true
+  };
+}
+
 export async function registerMobileIngestRoutes(app: FastifyInstance): Promise<void> {
   app.post('/api/mobile/instagram-ingest', async (request, reply) => {
     if (!requireMobileIngestAuth(request, reply)) {
@@ -356,6 +411,38 @@ export async function registerMobileIngestRoutes(app: FastifyInstance): Promise<
         })
         : null;
       const postedAt = parsePostedAt(input.uploadedAt);
+
+      if (input.contentType === 'HIGHLIGHT') {
+        if (!input.accountName) {
+          return sendError(reply, 'accountName is required for highlight uploads', 400, 'BAD_REQUEST');
+        }
+
+        if (!existingAccount) {
+          return sendError(reply, 'Account not found for highlight upload', 404, 'NOT_FOUND');
+        }
+
+        if (!input.highlightTitle) {
+          return sendError(reply, 'highlightTitle is required for highlight uploads', 400, 'BAD_REQUEST');
+        }
+
+        if (!postedAt) {
+          return sendError(
+            reply,
+            'uploadedAt must be a valid ISO 8601 datetime for highlight uploads',
+            400,
+            'BAD_REQUEST'
+          );
+        }
+
+        const data = await saveToHighlight({
+          files: input.files,
+          accountId: existingAccount.id,
+          highlightTitle: input.highlightTitle,
+          postedAt
+        });
+
+        return sendSuccess(reply, data);
+      }
 
       if (existingAccount && !postedAt) {
         return sendError(
