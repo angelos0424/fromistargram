@@ -80,6 +80,7 @@ export interface PostsRequest {
   page?: number;
   pageSize?: number;
   type?: string;
+  sort?: 'newest' | 'oldest';
 }
 
 export type PostsResponse = ApiResponse<
@@ -153,6 +154,7 @@ export interface SharedMediaListRequest {
   limit?: number;
   from?: string;
   to?: string;
+  sort?: 'newest' | 'oldest';
 }
 
 export type SharedMediaListResponse = ApiResponse<

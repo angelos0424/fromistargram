@@ -25,6 +25,7 @@ export interface ListSharedMediaParams {
   from?: string;
   to?: string;
   includeDeleted?: boolean;
+  sort?: 'newest' | 'oldest';
 }
 
 export async function createSharedMedia(input: CreateSharedMediaInput) {
@@ -46,6 +47,7 @@ export async function createSharedMedia(input: CreateSharedMediaInput) {
 
 export async function listSharedMedia(params: ListSharedMediaParams) {
   const limit = params.limit ?? 20;
+  const sortDirection = params.sort === 'oldest' ? 'asc' : 'desc';
   const where: PrismaSharedMediaWhereInput = {};
 
   if (!params.includeDeleted) {
@@ -68,7 +70,7 @@ export async function listSharedMedia(params: ListSharedMediaParams) {
 
   const items = await prisma.sharedMedia.findMany({
     where,
-    orderBy: { uploadedAt: 'desc' },
+    orderBy: { uploadedAt: sortDirection },
     take: limit + 1
   });
 

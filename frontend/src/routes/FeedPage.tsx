@@ -21,10 +21,10 @@ import {
 } from '../lib/url/feedSearchParams';
 import { useQuery } from '@tanstack/react-query';
 import { CLIENT_KEY, detailPost, listAccount, listPost, listSharedMedia } from '../lib/api/client';
-import type { Post, SharedMedia } from '../lib/api/types';
+import type { SharedMedia } from '../lib/api/types';
 import SeoHead from '../components/common/SeoHead';
 
-type SortOrder = 'newest' | 'oldest' | 'media';
+type SortOrder = 'newest' | 'oldest';
 
 const FeedPage = () => {
 
@@ -125,9 +125,10 @@ const FeedPage = () => {
       to: dateRange.to ?? undefined,
       page,
       pageSize,
-      type: type === 'All' || type === 'Shared' ? undefined : type
+      type: type === 'All' || type === 'Shared' ? undefined : type,
+      sort: sortOrder
     }),
-    [selectedAccountId, dateRange, page, pageSize, type]
+    [selectedAccountId, dateRange, page, pageSize, type, sortOrder]
   );
 
   const { data: feedResponse, isLoading: feedLoading, error: feedError } = useQuery({
@@ -143,8 +144,8 @@ const FeedPage = () => {
   const modalPost = modalPostResponse?.data ?? null;
 
   const { data: sharedMediaResponse, isLoading: sharedMediaLoading } = useQuery({
-    queryFn: () => listSharedMedia({ limit: pageSize }),
-    queryKey: [CLIENT_KEY, 'sharedMedia', { limit: pageSize }],
+    queryFn: () => listSharedMedia({ limit: pageSize, sort: sortOrder }),
+    queryKey: [CLIENT_KEY, 'sharedMedia', { limit: pageSize, sort: sortOrder }],
     enabled: type === 'Shared'
   });
 
@@ -200,8 +201,8 @@ const FeedPage = () => {
         })
       : feedPosts;
 
-    return [...filtered].sort((a, b) => comparePosts(a, b, sortOrder));
-  }, [accountById, feedPosts, searchNeedle, sortOrder]);
+    return filtered;
+  }, [accountById, feedPosts, searchNeedle]);
 
   const visibleSharedGroups = useMemo(() => {
     const filtered = searchNeedle
@@ -247,6 +248,11 @@ const FeedPage = () => {
     setSearchTerm('');
     setGridColumns(3);
     setSortOrder('newest');
+    setPage(1);
+  };
+
+  const handleSortOrderChange = (nextSortOrder: SortOrder) => {
+    setSortOrder(nextSortOrder);
     setPage(1);
   };
 
@@ -339,7 +345,7 @@ const FeedPage = () => {
           sortOrder={sortOrder}
           onGridColumnsChange={setGridColumns}
           onSearchTermChange={setSearchTerm}
-          onSortOrderChange={setSortOrder}
+          onSortOrderChange={handleSortOrderChange}
         />
       }
       accountStrip={
@@ -420,18 +426,6 @@ const FeedPage = () => {
   );
 };
 
-const comparePosts = (a: Post, b: Post, sortOrder: SortOrder) => {
-  if (sortOrder === 'oldest') {
-    return new Date(a.postedAt).getTime() - new Date(b.postedAt).getTime();
-  }
-
-  if (sortOrder === 'media') {
-    return b.media.length - a.media.length;
-  }
-
-  return new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime();
-};
-
 const compareSharedGroups = (
   a: SharedMedia[],
   b: SharedMedia[],
@@ -439,10 +433,6 @@ const compareSharedGroups = (
 ) => {
   if (sortOrder === 'oldest') {
     return new Date(a[0]?.uploadedAt ?? 0).getTime() - new Date(b[0]?.uploadedAt ?? 0).getTime();
-  }
-
-  if (sortOrder === 'media') {
-    return b.length - a.length;
   }
 
   return new Date(b[0]?.uploadedAt ?? 0).getTime() - new Date(a[0]?.uploadedAt ?? 0).getTime();
@@ -483,16 +473,28 @@ const ArchiveToolbar = ({
       <option value={6}>6열 보기</option>
       <option value={7}>7열 보기</option>
     </select>
-    <select
-      value={sortOrder}
-      onChange={(event) => onSortOrderChange(event.target.value as SortOrder)}
-      className="h-10 w-[112px] rounded-full border border-white/70 bg-white/76 px-3 text-sm font-bold text-[#2D3748] shadow-[0_6px_18px_rgba(45,55,72,0.06)] outline-none transition focus:ring-2 focus:ring-[#B8A4F0]/70 md:w-auto"
+    <div
+      className="flex h-10 rounded-full border border-white/70 bg-white/76 p-1 text-sm font-bold text-[#2D3748] shadow-[0_6px_18px_rgba(45,55,72,0.06)]"
+      role="group"
       aria-label="정렬"
     >
-      <option value="newest">최신순</option>
-      <option value="oldest">오래된순</option>
-      <option value="media">미디어순</option>
-    </select>
+      {[
+        { label: '최신순', value: 'newest' },
+        { label: '오래된순', value: 'oldest' }
+      ].map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onSortOrderChange(option.value as SortOrder)}
+          className={`rounded-full px-3 transition ${sortOrder === option.value
+            ? 'bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] text-white shadow-[0_4px_12px_rgba(126,200,255,0.28)]'
+            : 'text-[#7B8794] hover:text-[#2D3748]'
+            }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
   </div>
 );
 

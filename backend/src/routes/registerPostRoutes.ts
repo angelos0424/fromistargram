@@ -10,7 +10,8 @@ const listQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(60).optional(),
   from: z.string().optional(),
   to: z.string().optional(),
-  page: z.coerce.number().min(1).optional()
+  page: z.coerce.number().min(1).optional(),
+  sort: z.enum(['newest', 'oldest']).optional()
 });
 
 export async function registerPostRoutes(app: FastifyInstance): Promise<void> {
@@ -29,7 +30,8 @@ export async function registerPostRoutes(app: FastifyInstance): Promise<void> {
             from: { type: 'string' },
             to: { type: 'string' },
             page: { type: 'integer', minimum: 1 },
-            type: { type: 'string' }
+            type: { type: 'string' },
+            sort: { type: 'string', enum: ['newest', 'oldest'] }
           },
           additionalProperties: false
         },
@@ -39,7 +41,7 @@ export async function registerPostRoutes(app: FastifyInstance): Promise<void> {
       }
     },
     async (request, reply) => {
-      const { accountId, cursor, limit, from, to, page, type } = listQuerySchema.extend({ type: z.string().optional() }).parse(request.query);
+      const { accountId, cursor, limit, from, to, page, type, sort } = listQuerySchema.extend({ type: z.string().optional() }).parse(request.query);
 
       const result = await listPosts({
         accountId,
@@ -48,7 +50,8 @@ export async function registerPostRoutes(app: FastifyInstance): Promise<void> {
         postedAtFrom: from,
         postedAtTo: to,
         page,
-        type
+        type,
+        sort
       });
 
       return sendSuccess(reply, result.data, 200, {
