@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { MultipartFile } from '@fastify/multipart';
-import { mkdir, writeFile } from 'fs/promises';
+import { access, mkdir, writeFile } from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../db/client.js';
@@ -115,6 +115,50 @@ function parsePostedAt(value?: string): { date: Date; timestampBase: string } | 
 
 function resolveFileExtension(file: MultipartFile): string {
   return path.extname(file.filename ?? '');
+}
+
+async function fileExists(filepath: string): Promise<boolean> {
+  try {
+    await access(filepath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function rejectExistingSourceFiles(filepaths: string[]): Promise<void> {
+  const existingFilepath = (await Promise.all(
+    filepaths.map(async (filepath) => await fileExists(filepath) ? filepath : null)
+  )).find((filepath): filepath is string => filepath !== null);
+
+  if (existingFilepath) {
+    throw new IngestClientError(
+      `Source file already exists: ${path.basename(existingFilepath)}`,
+      409,
+      'CONFLICT'
+    );
+  }
+}
+
+async function writeNewSourceFile(filepath: string, data: Buffer | string): Promise<void> {
+  try {
+    await writeFile(filepath, data, { flag: 'wx' });
+  } catch (error) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'EEXIST'
+    ) {
+      throw new IngestClientError(
+        `Source file already exists: ${path.basename(filepath)}`,
+        409,
+        'CONFLICT'
+      );
+    }
+
+    throw error;
+  }
 }
 
 function getMobileIngestToken(request: FastifyRequest): string | null {
@@ -279,10 +323,8 @@ async function saveToSource(input: {
   const sourceDir = getSourcePath(input.accountId, input.postedAt.date);
   await mkdir(sourceDir, { recursive: true });
 
-  const savedFiles: Array<{ filename: string; filepath: string }> = [];
   const totalFiles = input.files.length;
-
-  for (const [index, entry] of input.files.entries()) {
+  const mediaFiles = input.files.map((entry, index) => {
     const validation = validateFileType(entry.file.mimetype, entry.buffer.length);
     if (!validation.valid) {
       throw new IngestClientError(validation.error || 'Invalid file');
@@ -292,21 +334,32 @@ async function saveToSource(input: {
     const fileSuffix = totalFiles === 1 ? `_UTC${ext}` : `_UTC_${index + 1}${ext}`;
     const filename = `${input.postedAt.timestampBase}${fileSuffix}`;
     const filepath = path.join(sourceDir, filename);
-    await writeFile(filepath, entry.buffer);
-    savedFiles.push({ filename, filepath });
-  }
+    return { filename, filepath, buffer: entry.buffer };
+  });
 
-  let captionFile: string | null = null;
-  if (input.caption !== undefined) {
-    const filename = `${input.postedAt.timestampBase}_UTC.txt`;
-    const filepath = path.join(sourceDir, filename);
-    await writeFile(filepath, input.caption);
-    captionFile = filepath;
-  }
+  const captionPath = input.caption !== undefined
+    ? path.join(sourceDir, `${input.postedAt.timestampBase}_UTC.txt`)
+    : null;
 
   const metadataFilename = `${input.postedAt.timestampBase}_UTC.json`;
   const metadataPath = path.join(sourceDir, metadataFilename);
-  await writeFile(
+  await rejectExistingSourceFiles([
+    ...mediaFiles.map((file) => file.filepath),
+    ...(captionPath ? [captionPath] : []),
+    metadataPath
+  ]);
+
+  const savedFiles: Array<{ filename: string; filepath: string }> = [];
+  for (const file of mediaFiles) {
+    await writeNewSourceFile(file.filepath, file.buffer);
+    savedFiles.push({ filename: file.filename, filepath: file.filepath });
+  }
+
+  if (captionPath !== null && input.caption !== undefined) {
+    await writeNewSourceFile(captionPath, input.caption);
+  }
+
+  await writeNewSourceFile(
     metadataPath,
     JSON.stringify(
       {
@@ -331,7 +384,7 @@ async function saveToSource(input: {
     fileCount: savedFiles.length,
     uploadBatchId: null,
     savedFiles,
-    captionFile,
+    captionFile: captionPath,
     metadataFile: metadataPath,
     shouldRunIndexer: true
   };
