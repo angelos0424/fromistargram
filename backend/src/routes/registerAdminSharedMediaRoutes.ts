@@ -40,7 +40,9 @@ const listQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(60).optional(),
   from: z.string().optional(),
   to: z.string().optional(),
-  includeDeleted: z.coerce.boolean().optional()
+  includeDeleted: z.coerce.boolean().optional(),
+  sort: z.enum(['newest', 'oldest']).optional(),
+  page: z.coerce.number().min(1).optional()
 });
 
 const listQueryJsonSchema = {
@@ -50,7 +52,9 @@ const listQueryJsonSchema = {
     limit: { type: 'integer', minimum: 1, maximum: 60 },
     from: { type: 'string' },
     to: { type: 'string' },
-    includeDeleted: { type: 'boolean' }
+    includeDeleted: { type: 'boolean' },
+    sort: { type: 'string', enum: ['newest', 'oldest'] },
+    page: { type: 'integer', minimum: 1 }
   }
 } as const;
 

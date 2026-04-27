@@ -27,6 +27,7 @@ export const listPost = async (params: PostsRequest) => {
   if (params.page) search.set('page', String(params.page));
   if (params.cursor) search.set('cursor', params.cursor);
   if (params.type) search.set('type', params.type);
+  if (params.sort) search.set('sort', params.sort);
 
   const qs = search.toString() ? `?${search.toString()}` : '';
   const res = await fetchApi.get<PostsResponse>(`/posts${qs}`);
@@ -72,6 +73,8 @@ export const listSharedMedia = async (params: import('./types').SharedMediaListR
   if (params.limit) search.set('limit', String(params.limit));
   if (params.from) search.set('from', params.from);
   if (params.to) search.set('to', params.to);
+  if (params.sort) search.set('sort', params.sort);
+  if (params.page) search.set('page', String(params.page));
 
   const qs = search.toString() ? `?${search.toString()}` : '';
   const res = await fetchApi.get<import('./types').SharedMediaListResponse>(`/shared${qs}`);

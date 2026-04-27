@@ -1,20 +1,26 @@
+import type { CSSProperties } from 'react';
 import type { SharedMedia } from '../../lib/api/types';
 import SharedMediaCard from './SharedMediaCard';
 
 interface SharedMediaGridProps {
+	columns: number;
 	mediaGroups: SharedMedia[][];
 	isLoading?: boolean;
 	onGroupClick: (group: SharedMedia[]) => void;
 }
 
-const SharedMediaGrid = ({ mediaGroups, isLoading, onGroupClick }: SharedMediaGridProps) => {
+const SharedMediaGrid = ({ columns, mediaGroups, isLoading, onGroupClick }: SharedMediaGridProps) => {
+	const gridStyle = {
+		'--archive-columns': columns
+	} as CSSProperties;
+
 	if (isLoading) {
 		return (
-			<div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-				{Array.from({ length: 8 }).map((_, index) => (
+			<div className="archive-grid" style={gridStyle}>
+				{Array.from({ length: 12 }).map((_, index) => (
 					<div
 						key={`skeleton-${index}`}
-						className="aspect-square animate-pulse rounded-xl bg-gradient-to-r from-white/60 via-[rgba(126,200,255,0.2)] to-white/60 dark:from-white/5 dark:via-white/10 dark:to-white/5"
+						className="aspect-[4/5] animate-pulse bg-white/58 shadow-[0_10px_26px_rgba(45,55,72,0.08)] ring-1 ring-white/60"
 					/>
 				))}
 			</div>
@@ -23,10 +29,10 @@ const SharedMediaGrid = ({ mediaGroups, isLoading, onGroupClick }: SharedMediaGr
 
 	if (mediaGroups.length === 0) {
 		return (
-			<div className="flex w-full flex-col items-center justify-center rounded-2xl border border-dashed border-white/60 bg-white/85 px-6 py-16 backdrop-blur-[8px] dark:border-white/10 dark:bg-white/5">
+			<div className="mx-4 flex w-auto flex-col items-center justify-center rounded-[24px] border border-dashed border-white/70 bg-white/66 px-6 py-16 shadow-[0_12px_30px_rgba(45,55,72,0.08)] backdrop-blur sm:mx-0">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
-					className="mb-4 h-16 w-16 text-[#7EC8FF]/50 dark:text-brand-400/50"
+					className="mb-4 h-16 w-16 text-[#B8A4F0]/65"
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke="currentColor"
@@ -38,10 +44,10 @@ const SharedMediaGrid = ({ mediaGroups, isLoading, onGroupClick }: SharedMediaGr
 						d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
 					/>
 				</svg>
-				<p className="text-sm font-medium text-[#2D3748] dark:text-white">
+				<p className="text-sm font-bold text-[#2D3748]">
 					아직 업로드된 미디어가 없습니다
 				</p>
-				<p className="mt-1 text-xs text-[#7B8794] dark:text-slate-400">
+				<p className="mt-1 text-xs text-[#7B8794]">
 					업로드 버튼을 클릭하여 첫 미디어를 추가해보세요
 				</p>
 			</div>
@@ -49,7 +55,7 @@ const SharedMediaGrid = ({ mediaGroups, isLoading, onGroupClick }: SharedMediaGr
 	}
 
 	return (
-		<div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+		<div className="archive-grid" style={gridStyle}>
 			{mediaGroups.map((group) => (
 				<SharedMediaCard
 					key={group[0].id}

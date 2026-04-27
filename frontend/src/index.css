@@ -3,16 +3,39 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 @layer base {
   body {
-    @apply m-0 min-h-screen bg-slate-950 font-sans text-slate-100 antialiased;
-    background: radial-gradient(circle at 20% 20%, #1f2937 0%, #0b1224 45%, #020617 80%);
+    @apply m-0 min-h-screen font-sans text-[#2D3748] antialiased;
+    background:
+      radial-gradient(circle at 15% 18%, rgba(126, 200, 255, 0.22), transparent 34%),
+      radial-gradient(circle at 86% 12%, rgba(184, 164, 240, 0.22), transparent 30%),
+      radial-gradient(circle at 50% 78%, rgba(140, 232, 208, 0.18), transparent 42%),
+      linear-gradient(135deg, #ffd4e5 0%, #d4e4ff 38%, #ffe4d4 68%, #e4d4ff 100%);
+    letter-spacing: 0;
   }
 
   #root {
     @apply min-h-screen;
+  }
+}
+
+@layer components {
+  .archive-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
+    width: 100%;
+  }
+
+  @media (min-width: 640px) {
+    .archive-grid {
+      grid-template-columns: repeat(var(--archive-columns), minmax(0, 290px));
+      gap: 18px;
+      justify-content: center;
+      padding: 14px 0 22px;
+    }
   }
 }

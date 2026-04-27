@@ -46,7 +46,9 @@ const listQuerySchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().min(1).max(60).optional(),
   from: z.string().optional(),
-  to: z.string().optional()
+  to: z.string().optional(),
+  sort: z.enum(['newest', 'oldest']).optional(),
+  page: z.coerce.number().min(1).optional()
 });
 
 const idParamsSchema = z.object({
@@ -226,7 +228,9 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
             cursor: { type: 'string' },
             limit: { type: 'integer', minimum: 1, maximum: 60 },
             from: { type: 'string' },
-            to: { type: 'string' }
+            to: { type: 'string' },
+            sort: { type: 'string', enum: ['newest', 'oldest'] },
+            page: { type: 'integer', minimum: 1 }
           }
         },
         response: {
@@ -260,9 +264,10 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
                 type: 'object',
                 properties: {
                   hasMore: { type: 'boolean' },
-                  nextCursor: { type: 'string', nullable: true }
+                  nextCursor: { type: 'string', nullable: true },
+                  total: { type: 'number' }
                 },
-                required: ['hasMore', 'nextCursor']
+                required: ['hasMore', 'nextCursor', 'total']
               }
             },
             required: ['success', 'data', 'meta']
@@ -301,7 +306,8 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
 
       return sendSuccess(reply, data, 200, {
         hasMore: result.hasMore,
-        nextCursor: result.nextCursor
+        nextCursor: result.nextCursor,
+        total: result.total
       });
     }
   );

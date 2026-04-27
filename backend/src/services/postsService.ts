@@ -11,6 +11,7 @@ export type ListPostsInput = {
   postedAtTo?: string;
   page?: number;
   type?: string;
+  sort?: 'newest' | 'oldest';
 };
 
 export type MediaItem = {
@@ -65,6 +66,7 @@ type PrismaPostWithRelations = {
 
 export async function listPosts(input: ListPostsInput): Promise<ListPostsResponse> {
   const limit = input.limit ?? DEFAULT_LIMIT;
+  const sortDirection = input.sort === 'oldest' ? 'asc' : 'desc';
   const cacheId = cacheKey([
     'posts',
     input.accountId ?? 'all',
@@ -73,7 +75,8 @@ export async function listPosts(input: ListPostsInput): Promise<ListPostsRespons
     limit,
     input.postedAtFrom ?? 'null',
     input.postedAtTo ?? 'null',
-    input.type ?? 'all'
+    input.type ?? 'all',
+    input.sort ?? 'newest'
   ]);
 
   return withCache(cacheId, async () => {
@@ -96,7 +99,7 @@ export async function listPosts(input: ListPostsInput): Promise<ListPostsRespons
 
     const queryArgs: Parameters<typeof prisma.post.findMany>[0] = {
       where,
-      orderBy: { postedAt: 'desc' },
+      orderBy: { postedAt: sortDirection },
       include: {
         media: { orderBy: { orderIndex: 'asc' } },
         tags: { select: { tag: true } },

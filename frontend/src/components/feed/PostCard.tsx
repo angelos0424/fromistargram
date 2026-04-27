@@ -3,87 +3,63 @@ import { getResponsiveImageProps } from '../../lib/utils/image';
 
 interface PostCardProps {
   post: Post;
+  accountName: string;
   onOpen: (postId: string) => void;
 }
 
-const PostCard = ({ post, onOpen }: PostCardProps) => {
+const formatCardDate = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}.${month}.${day}`;
+};
+
+const PostCard = ({ post, accountName, onOpen }: PostCardProps) => {
   const firstMedia = post.media[0];
+  const caption = post.caption || post.textContent || '설명 없음';
+  const postedDate = formatCardDate(post.postedAt);
 
   return (
-    <article className="group relative overflow-hidden rounded-[20px] border border-white/60 bg-white/85 shadow-[0_8px_32px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04)] backdrop-blur-[8px] transition hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(126,200,255,0.2)] dark:rounded-2xl dark:border-white/5 dark:bg-slate-900/70 dark:shadow-lg dark:shadow-slate-950/40 dark:hover:border-brand-400/60 dark:hover:shadow-xl dark:hover:shadow-brand-400/20">
+    <article className="group relative aspect-[4/5] overflow-hidden bg-black shadow-[0_10px_26px_rgba(45,55,72,0.10)] ring-1 ring-white/60 transition duration-200 hover:-translate-y-1 hover:shadow-[0_18px_34px_rgba(126,200,255,0.24)]">
       <button
         type="button"
         onClick={() => onOpen(post.id)}
-        className="flex h-full w-full flex-col text-left"
+        className="block h-full w-full text-left"
       >
-        <div className="relative aspect-square w-full overflow-hidden">
-          {firstMedia ? (
-
-            <img
-              {...getResponsiveImageProps(post.accountId, firstMedia.thumbnailUrl, [300, 600])}
-              alt={(post.caption ?? '게시물 이미지').slice(0, 40)}
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-              loading="lazy"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            />
-
-            // firstMedia.type === 'video' ? (
-            //   <div className="flex h-full w-full items-center justify-center bg-slate-900">
-            //     <svg
-            //       xmlns="http://www.w3.org/2000/svg"
-            //       viewBox="0 0 24 24"
-            //       fill="currentColor"
-            //       className="h-12 w-12 text-white/50"
-            //     >
-            //       <path
-            //         fillRule="evenodd"
-            //         d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z"
-            //         clipRule="evenodd"
-            //       />
-            //     </svg>
-            //   </div>
-            // ) : (
-            //   <img
-            //     {...getResponsiveImageProps(post.accountId, firstMedia.thumbnailUrl, [300, 600])}
-            //     alt={(post.caption ?? '게시물 이미지').slice(0, 40)}
-            //     className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-            //     loading="lazy"
-            //     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            //   />
-            // )
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-slate-900 text-sm text-slate-500">
-              미디어 없음
-            </div>
-          )}
-          <span className="absolute left-3 top-3 rounded-full border border-white/60 bg-white/90 px-2 py-1 text-xs font-medium text-[#7B8794] backdrop-blur-[8px] dark:border-0 dark:bg-black/60 dark:text-white dark:backdrop-blur">
-            {new Intl.DateTimeFormat('ko', {
-              month: '2-digit',
-              day: '2-digit'
-            }).format(new Date(post.postedAt))}
-          </span>
-          {post.media.length > 1 ? (
-            <span className="absolute right-3 top-3 rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] px-2 py-1 text-xs font-semibold text-white shadow-[0_0_8px_rgba(126,200,255,0.4)] backdrop-blur-[8px] dark:border-0 dark:bg-black/60 dark:shadow-none dark:backdrop-blur">
-              +{post.media.length - 1}
-            </span>
-          ) : null}
+        {firstMedia ? (
+          <img
+            {...getResponsiveImageProps(post.accountId, firstMedia.thumbnailUrl, [300, 600])}
+            alt={caption.slice(0, 40)}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+            loading="lazy"
+            sizes="(max-width: 768px) 33vw, 290px"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-neutral-900 text-sm text-neutral-500">
+            미디어 없음
+          </div>
+        )}
+        <div className="absolute left-2 top-2 flex max-w-[calc(100%-88px)] items-center gap-1 truncate rounded-full bg-gradient-to-r from-[#7EC8FF]/92 to-[#B8A4F0]/92 px-2.5 py-1 text-xs font-bold text-white shadow-[0_4px_14px_rgba(0,0,0,0.18)] backdrop-blur">
+          {post.media.length > 1 ? `+${post.media.length - 1}` : post.type}
         </div>
-        <div className="flex flex-1 flex-col gap-2 px-4 py-3">
-          <p className="line-clamp-2 text-sm text-[#2D3748] dark:text-slate-200">
-            {post.caption || '설명 없음'}
+        {postedDate ? (
+          <div className="absolute right-2 top-2 whitespace-nowrap bg-black/48 px-2 py-1 text-[11px] font-bold leading-none text-white shadow-[0_4px_14px_rgba(0,0,0,0.18)] backdrop-blur">
+            {postedDate}
+          </div>
+        ) : null}
+        <div className="absolute bottom-0 left-0 right-0 translate-y-full bg-gradient-to-t from-[#111827] via-[#111827]/88 to-[#111827]/12 px-3 pb-3 pt-12 text-white transition-transform duration-300 group-hover:translate-y-0 group-focus-within:translate-y-0">
+          <p className="line-clamp-1 text-[13px] font-bold leading-tight text-white">
+            {accountName}
           </p>
-          {post.tags?.length ? (
-            <div className="flex flex-wrap gap-1">
-              {post.tags.map((tag) => (
-                <span
-                  key={`${post.id}-${tag}`}
-                  className="rounded-full bg-gradient-to-r from-[rgba(126,200,255,0.15)] to-[rgba(184,164,240,0.1)] border border-white/60 px-2 py-0.5 text-xs text-[#7EC8FF] dark:border-0 dark:bg-white/10 dark:text-brand-200"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          ) : null}
+          <div className="my-2 h-px bg-white/42" />
+          <p className="line-clamp-4 text-[13px] leading-snug">
+            {caption}
+          </p>
         </div>
       </button>
     </article>

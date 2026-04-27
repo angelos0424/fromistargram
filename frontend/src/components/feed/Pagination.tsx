@@ -14,17 +14,17 @@ const Pagination = ({
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="flex flex-col gap-3 rounded-[20px] border border-white/60 bg-white/85 px-4 py-3 text-sm text-[#2D3748] backdrop-blur-[8px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] sm:flex-row sm:items-center sm:justify-between dark:rounded-2xl dark:border-white/5 dark:bg-white/5 dark:text-slate-300">
-      <span className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-slate-200 sm:bg-transparent sm:text-sm sm:font-normal sm:text-slate-300">
-        <span className="hidden h-2 w-2 rounded-full bg-[#7EC8FF] shadow-[0_0_8px_rgba(126,200,255,0.6)] sm:inline-block dark:bg-brand-400 dark:shadow-brand-500/40" aria-hidden />
-        페이지 {page} / {totalPages} · 총 {total}개
+    <div className="mx-4 mt-4 flex flex-col gap-3 rounded-[22px] border border-white/60 bg-white/62 px-4 py-3 text-sm text-[#7B8794] shadow-[0_10px_28px_rgba(45,55,72,0.08)] backdrop-blur-[8px] sm:mx-0 sm:mt-5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      <span className="font-bold">
+        페이지 <b className="text-[#2D3748]">{page}</b> / {totalPages} · 총{' '}
+        <b className="text-[#2D3748]">{total.toLocaleString('ko-KR')}</b>개
       </span>
       <div className="flex flex-wrap items-center justify-end gap-2">
         <button
           type="button"
           onClick={() => onChange(Math.max(1, page - 1))}
           disabled={page === 1}
-          className="rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] px-3 py-1 text-sm text-white shadow-[0_0_8px_rgba(126,200,255,0.3)] transition enabled:hover:shadow-[0_0_12px_rgba(126,200,255,0.5)] disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:enabled:hover:border-brand-400 dark:enabled:hover:bg-brand-400/20"
+          className="h-9 rounded-full border border-white/70 bg-white/76 px-4 text-sm font-bold text-[#2D3748] shadow-[0_4px_14px_rgba(45,55,72,0.05)] transition enabled:hover:-translate-y-0.5 enabled:hover:border-[#B8A4F0]/70 enabled:hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
         >
           이전
         </button>
@@ -32,7 +32,7 @@ const Pagination = ({
           type="button"
           onClick={() => onChange(Math.min(totalPages, page + 1))}
           disabled={page >= totalPages}
-          className="rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] px-3 py-1 text-sm text-white shadow-[0_0_8px_rgba(126,200,255,0.3)] transition enabled:hover:shadow-[0_0_12px_rgba(126,200,255,0.5)] disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:enabled:hover:border-brand-400 dark:enabled:hover:bg-brand-400/20"
+          className="h-9 rounded-full bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] px-4 text-sm font-bold text-white shadow-[0_6px_18px_rgba(126,200,255,0.32)] transition enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_9px_22px_rgba(126,200,255,0.42)] disabled:cursor-not-allowed disabled:grayscale disabled:opacity-45"
         >
           다음
         </button>
