@@ -14,9 +14,8 @@ const Pagination = ({
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="flex flex-col gap-3 rounded-[20px] border border-white/60 bg-white/85 px-4 py-3 text-sm text-[#2D3748] backdrop-blur-[8px] shadow-[0_4px_16px_rgba(0,0,0,0.06)] sm:flex-row sm:items-center sm:justify-between dark:rounded-2xl dark:border-white/5 dark:bg-white/5 dark:text-slate-300">
-      <span className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-slate-200 sm:bg-transparent sm:text-sm sm:font-normal sm:text-slate-300">
-        <span className="hidden h-2 w-2 rounded-full bg-[#7EC8FF] shadow-[0_0_8px_rgba(126,200,255,0.6)] sm:inline-block dark:bg-brand-400 dark:shadow-brand-500/40" aria-hidden />
+    <div className="mx-4 flex flex-col gap-3 border-t border-neutral-200 bg-[#f9f9f9] py-4 text-sm text-neutral-600 sm:mx-0 sm:flex-row sm:items-center sm:justify-between">
+      <span className="font-semibold">
         페이지 {page} / {totalPages} · 총 {total}개
       </span>
       <div className="flex flex-wrap items-center justify-end gap-2">
@@ -24,7 +23,7 @@ const Pagination = ({
           type="button"
           onClick={() => onChange(Math.max(1, page - 1))}
           disabled={page === 1}
-          className="rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] px-3 py-1 text-sm text-white shadow-[0_0_8px_rgba(126,200,255,0.3)] transition enabled:hover:shadow-[0_0_12px_rgba(126,200,255,0.5)] disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:enabled:hover:border-brand-400 dark:enabled:hover:bg-brand-400/20"
+          className="h-8 rounded border border-neutral-300 bg-white px-3 text-sm font-bold text-neutral-700 transition enabled:hover:bg-neutral-50 disabled:opacity-40"
         >
           이전
         </button>
@@ -32,7 +31,7 @@ const Pagination = ({
           type="button"
           onClick={() => onChange(Math.min(totalPages, page + 1))}
           disabled={page >= totalPages}
-          className="rounded-full border border-white/60 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] px-3 py-1 text-sm text-white shadow-[0_0_8px_rgba(126,200,255,0.3)] transition enabled:hover:shadow-[0_0_12px_rgba(126,200,255,0.5)] disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:enabled:hover:border-brand-400 dark:enabled:hover:bg-brand-400/20"
+          className="h-8 rounded bg-neutral-950 px-3 text-sm font-bold text-white transition enabled:hover:bg-neutral-800 disabled:opacity-40"
         >
           다음
         </button>

@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { Account } from '../../lib/api/types';
 import type { DateRange } from '../../state/uiStore';
-import UploadButton from '../common/UploadButton';
 import UploadModal from '../common/UploadModal';
 
 interface FiltersPanelProps {
@@ -11,15 +10,6 @@ interface FiltersPanelProps {
   activeAccount: Account | null;
 }
 
-const formatDate = (value: string) =>
-  new Intl.DateTimeFormat('ko', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(new Date(value));
-
 const FiltersPanel = ({
   dateRange,
   onDateRangeChange,
@@ -28,114 +18,55 @@ const FiltersPanel = ({
 }: FiltersPanelProps) => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
-  const profileHistory = useMemo(
-    () =>
-      activeAccount?.profilePictures
-        ? [...activeAccount.profilePictures].sort(
-          (a, b) =>
-            new Date(b.takenAt).getTime() -
-            new Date(a.takenAt).getTime()
-        )
-        : [],
-    [activeAccount]
-  );
-
   return (
-    <div className="flex h-full flex-col gap-8">
-      <section className="space-y-4 rounded-[20px] border border-white/80 bg-white/95 p-5 shadow-[0_4px_16px_rgba(0,0,0,0.1)] backdrop-blur-[8px] dark:rounded-2xl dark:border-white/5 dark:bg-transparent dark:shadow-none">
-        <header className="space-y-1">
-          <h2 className="text-lg font-semibold text-[#2D3748] dark:text-white">필터</h2>
-          <p className="text-xs text-[#7B8794] dark:text-slate-400">
-            날짜 범위 필터를 적용해 특정 기간의 활동만 조회할 수 있습니다.
-          </p>
-        </header>
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-xs text-[#7B8794] dark:text-slate-400">시작일</span>
-              <input
-                type="date"
-                value={dateRange.from ?? ''}
-                onChange={(event) =>
-                  onDateRangeChange({
-                    from: event.target.value || null,
-                    to: dateRange.to
-                  })
-                }
-                className="rounded-xl border-2 border-white/90 bg-white/98 px-3 py-2.5 text-sm text-[#2D3748] outline-none shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition focus:border-[#7EC8FF] focus:shadow-[0_0_12px_rgba(126,200,255,0.3)] backdrop-blur-[8px] placeholder:text-[#9CA3AF] dark:rounded-lg dark:border-white/10 dark:bg-white/5 dark:text-white dark:shadow-none dark:focus:border-brand-400 dark:focus:bg-white/10 dark:placeholder:text-slate-500"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-xs text-[#7B8794] dark:text-slate-400">종료일</span>
-              <input
-                type="date"
-                value={dateRange.to ?? ''}
-                onChange={(event) =>
-                  onDateRangeChange({
-                    from: dateRange.from,
-                    to: event.target.value || null
-                  })
-                }
-                className="rounded-xl border-2 border-white/90 bg-white/98 px-3 py-2.5 text-sm text-[#2D3748] outline-none shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition focus:border-[#7EC8FF] focus:shadow-[0_0_12px_rgba(126,200,255,0.3)] backdrop-blur-[8px] placeholder:text-[#9CA3AF] dark:rounded-lg dark:border-white/10 dark:bg-white/5 dark:text-white dark:shadow-none dark:focus:border-brand-400 dark:focus:bg-white/10 dark:placeholder:text-slate-500"
-              />
-            </label>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={onReset}
-              className="flex-1 rounded-xl border border-white/60 bg-white/95 px-3 py-2 text-sm font-medium text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition hover:border-[#7EC8FF] hover:bg-gradient-to-r hover:from-[#7EC8FF] hover:to-[#8CE8D0] hover:text-white hover:shadow-[0_4px_16px_rgba(126,200,255,0.35)] dark:rounded-lg dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:shadow-sm dark:hover:border-brand-400 dark:hover:bg-brand-400/10 dark:hover:text-white"
-            >
-              필터 초기화
-            </button>
-            <div className="flex-1 rounded-xl border border-dashed border-white/60 bg-white/85 px-3 py-2 text-xs text-[#7B8794] backdrop-blur-[8px] dark:rounded-lg dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
-              선택된 필터가 자동으로 피드에 반영됩니다.
-            </div>
-          </div>
-        </div>
-      </section>
-      <section className="space-y-4 rounded-[20px] border border-white/80 bg-white/95 p-5 shadow-[0_4px_16px_rgba(0,0,0,0.1)] backdrop-blur-[8px] dark:rounded-2xl dark:border-white/5 dark:bg-transparent dark:shadow-none">
-        <header className="space-y-1">
-          <h2 className="text-lg font-semibold text-[#2D3748] dark:text-white">프로필 히스토리</h2>
-          <p className="text-xs text-[#7B8794] dark:text-slate-400">
-            선택된 계정의 프로필 이미지 변경 이력을 확인할 수 있습니다.
-          </p>
-        </header>
-        {activeAccount ? (
-          profileHistory.length > 0 ? (
-            <ul className="space-y-3">
-              {profileHistory.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex items-center gap-3 rounded-[18px] border border-white/60 bg-white/85 p-3 backdrop-blur-[8px] dark:rounded-xl dark:border-white/5 dark:bg-white/5"
-                >
-                  <img
-                    src={item.url}
-                    alt={`${activeAccount.displayName} 프로필`}
-                    className="h-12 w-12 rounded-full border border-white/60 object-cover shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:border-white/10"
-                    loading="lazy"
-                  />
-                  <span className="text-xs text-[#7B8794] dark:text-slate-300">
-                    {formatDate(item.takenAt)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="rounded-[18px] border border-dashed border-white/60 bg-white/85 px-4 py-6 text-sm text-[#7B8794] backdrop-blur-[8px] dark:rounded-xl dark:border-white/10 dark:bg-transparent dark:text-slate-400">
-              아직 프로필 히스토리 데이터가 없습니다.
-            </div>
-          )
-        ) : (
-          <div className="rounded-[18px] border border-dashed border-white/60 bg-white/85 px-4 py-6 text-sm text-[#7B8794] backdrop-blur-[8px] dark:rounded-xl dark:border-white/10 dark:bg-transparent dark:text-slate-400">
-            계정을 선택하면 프로필 히스토리가 표시됩니다.
-          </div>
-        )}
-
-        <div className="pt-2">
-          <UploadButton onClick={() => setIsUploadModalOpen(true)} />
-        </div>
-      </section>
+    <div className="flex flex-wrap items-center gap-2">
+      <label className="flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-600">
+        시작
+        <input
+          type="date"
+          value={dateRange.from ?? ''}
+          onChange={(event) =>
+            onDateRangeChange({
+              from: event.target.value || null,
+              to: dateRange.to
+            })
+          }
+          className="w-[9.5rem] bg-transparent text-sm font-medium text-neutral-900 outline-none"
+        />
+      </label>
+      <label className="flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-600">
+        종료
+        <input
+          type="date"
+          value={dateRange.to ?? ''}
+          onChange={(event) =>
+            onDateRangeChange({
+              from: dateRange.from,
+              to: event.target.value || null
+            })
+          }
+          className="w-[9.5rem] bg-transparent text-sm font-medium text-neutral-900 outline-none"
+        />
+      </label>
+      {activeAccount ? (
+        <span className="rounded-full bg-neutral-100 px-3 py-1.5 text-sm font-semibold text-neutral-700">
+          @{activeAccount.username ?? activeAccount.id}
+        </span>
+      ) : null}
+      <button
+        type="button"
+        onClick={onReset}
+        className="h-8 rounded-full border border-neutral-200 bg-white px-3 text-sm font-bold text-neutral-700 transition hover:border-red-200 hover:text-red-600"
+      >
+        초기화
+      </button>
+      <button
+        type="button"
+        onClick={() => setIsUploadModalOpen(true)}
+        className="h-8 rounded-full bg-blue-600 px-3 text-sm font-bold text-white transition hover:bg-blue-700"
+      >
+        업로드
+      </button>
 
       <UploadModal
         isOpen={isUploadModalOpen}

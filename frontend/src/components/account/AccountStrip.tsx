@@ -1,6 +1,4 @@
-import { useRef, useState } from 'react';
 import type { Account } from '../../lib/api/types';
-import HighlightList from './HighlightList';
 
 interface AccountStripProps {
   accounts: Account[];
@@ -22,39 +20,40 @@ const AccountChip = ({
     <button
       type="button"
       onClick={onClick}
-      className={`group relative flex min-w-[180px] items-center gap-3 rounded-[20px] border py-2 pl-2 pr-5 text-left transition-all duration-300 ${isActive
-        ? 'border-white/60 bg-gradient-to-br from-[rgba(126,200,255,0.15)] to-[rgba(184,164,240,0.1)] shadow-[0_8px_24px_rgba(126,200,255,0.15)] backdrop-blur-[8px] dark:border-brand-400/50 dark:bg-gradient-to-br dark:from-brand-500/10 dark:to-brand-500/5 dark:shadow-lg dark:shadow-brand-500/10 dark:ring-1 dark:ring-brand-500/20'
-        : 'border-white/80 bg-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.12)] hover:shadow-[0_6px_20px_rgba(126,200,255,0.25)] backdrop-blur-[8px] dark:border-white/5 dark:bg-white/5 dark:shadow-none dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:shadow-md dark:hover:shadow-black/20'
+      className={`group inline-flex min-h-14 min-w-[160px] shrink-0 items-center gap-3 rounded-full border py-2 pl-2 pr-4 text-left transition ${isActive
+        ? 'border-neutral-950 bg-neutral-950 text-white shadow-[0_8px_18px_rgba(0,0,0,0.12)]'
+        : 'border-neutral-200 bg-white text-neutral-900 hover:border-neutral-300 hover:shadow-[0_6px_16px_rgba(0,0,0,0.08)]'
         }`}
     >
-      <div className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 shadow-sm transition-colors ${isActive ? 'border-[#7EC8FF] shadow-[0_0_8px_rgba(126,200,255,0.4)] dark:border-brand-400' : 'border-white/40 group-hover:border-[#7EC8FF] dark:border-white/10 dark:group-hover:border-white/20'
-        }`}>
+      <div
+        className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 bg-neutral-200 transition ${isActive
+          ? 'border-white'
+          : 'border-neutral-100 group-hover:border-neutral-200'
+          }`}
+      >
         {account.latestProfilePicUrl ? (
           <img
             src={account.latestProfilePicUrl ?? undefined}
-            alt={account.displayName}
+            alt={account.displayName ?? account.username ?? account.id}
             className="h-full w-full rounded-full object-cover"
             loading="lazy"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[#B8A4F0] to-[#8CE8D0] dark:bg-slate-800">
-            <span className="text-sm font-bold text-white dark:text-slate-400">
+          <div className="flex h-full w-full items-center justify-center rounded-full bg-neutral-300">
+            <span className="text-sm font-bold text-neutral-700">
               {account.displayName?.[0]?.toUpperCase() ?? account.username?.[0]?.toUpperCase() ?? 'A'}
             </span>
           </div>
         )}
       </div>
-      <div className="flex flex-col overflow-hidden">
-        <span className={`truncate text-sm font-bold transition-colors ${isActive ? 'text-[#2D3748] dark:text-white' : 'text-[#7B8794] dark:text-slate-200 dark:group-hover:text-white'}`}>
-          {account.displayName}
+      <span className="flex min-w-0 flex-col">
+        <span className={`max-w-[7rem] truncate text-sm font-extrabold ${isActive ? 'text-white' : 'text-neutral-950'}`}>
+          {account.displayName ?? account.username ?? account.id}
         </span>
-        <span className={`truncate text-xs ${isActive ? 'text-[#7EC8FF] dark:text-brand-200' : 'text-[#9CA3AF] dark:text-slate-500 dark:group-hover:text-slate-400'}`}>
-          @{account.username}
+        <span className={`max-w-[7rem] truncate text-xs font-semibold ${isActive ? 'text-white/70' : 'text-neutral-500'}`}>
+          @{account.username ?? account.id}
         </span>
-      </div>
-      {isActive && (
-        <div className="absolute inset-0 rounded-[20px] ring-1 ring-inset ring-[#7EC8FF]/30 dark:ring-brand-400/20" />
-      )}
+      </span>
     </button>
   );
 };
@@ -69,12 +68,31 @@ const AllAccountsButton = ({
   <button
     type="button"
     onClick={onClick}
-    className={`group relative flex h-[58px] min-w-[100px] items-center justify-center rounded-[20px] border transition-all duration-300 ${isActive
-      ? 'border-white/60 bg-gradient-to-br from-[rgba(126,200,255,0.15)] to-[rgba(184,164,240,0.1)] text-[#2D3748] shadow-[0_8px_24px_rgba(126,200,255,0.15)] backdrop-blur-[8px] dark:border-brand-400/50 dark:bg-gradient-to-br dark:from-brand-500/10 dark:to-brand-500/5 dark:text-white dark:shadow-lg dark:shadow-brand-500/10 dark:ring-1 dark:ring-brand-500/20'
-      : 'border-white/80 bg-white/90 text-[#7B8794] shadow-[0_4px_16px_rgba(0,0,0,0.12)] hover:shadow-[0_6px_20px_rgba(126,200,255,0.25)] backdrop-blur-[8px] dark:border-white/5 dark:bg-white/5 dark:text-slate-400 dark:shadow-none dark:hover:border-white/10 dark:hover:bg-white/10 dark:hover:text-slate-200 dark:hover:shadow-md dark:hover:shadow-black/20'
+    className={`inline-flex min-h-14 shrink-0 items-center gap-3 rounded-full border py-2 pl-2 pr-4 text-left transition ${isActive
+      ? 'border-neutral-950 bg-neutral-950 text-white shadow-[0_8px_18px_rgba(0,0,0,0.12)]'
+      : 'border-neutral-200 bg-white text-neutral-900 hover:border-neutral-300 hover:shadow-[0_6px_16px_rgba(0,0,0,0.08)]'
       }`}
   >
-    <span className="text-sm font-bold">전체 보기</span>
+    <span
+      className={`grid h-10 w-10 shrink-0 grid-cols-2 gap-0.5 rounded-full border-2 p-1 ${isActive
+        ? 'border-white bg-white/15'
+        : 'border-neutral-100 bg-neutral-100'
+        }`}
+      aria-hidden
+    >
+      <span className="rounded-full bg-[#feda75]" />
+      <span className="rounded-full bg-[#fa7e1e]" />
+      <span className="rounded-full bg-[#d62976]" />
+      <span className="rounded-full bg-[#4f5bd5]" />
+    </span>
+    <span className="flex flex-col">
+      <span className={`text-sm font-extrabold ${isActive ? 'text-white' : 'text-neutral-950'}`}>
+        전체 멤버
+      </span>
+      <span className={`text-xs font-semibold ${isActive ? 'text-white/70' : 'text-neutral-500'}`}>
+        all accounts
+      </span>
+    </span>
   </button>
 );
 
@@ -84,52 +102,13 @@ const AccountStrip = ({
   onSelect,
   isLoading
 }: AccountStripProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragInfo = useRef({ startX: 0, scrollLeft: 0, isDown: false });
-
-  const onMouseDown = (e: React.MouseEvent) => {
-    if (!scrollRef.current) return;
-    dragInfo.current = {
-      startX: e.pageX - scrollRef.current.offsetLeft,
-      scrollLeft: scrollRef.current.scrollLeft,
-      isDown: true
-    };
-  };
-
-  const onMouseUp = () => {
-    dragInfo.current.isDown = false;
-    setIsDragging(false);
-  };
-
-  const onMouseLeave = () => {
-    dragInfo.current.isDown = false;
-    setIsDragging(false);
-  };
-
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (!dragInfo.current.isDown || !scrollRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - dragInfo.current.startX) * 1.5;
-
-    // Threshold to start treating as drag
-    if (Math.abs(walk) > 5 && !isDragging) {
-      setIsDragging(true);
-    }
-
-    if (Math.abs(walk) > 5) {
-      scrollRef.current.scrollLeft = dragInfo.current.scrollLeft - walk;
-    }
-  };
-
   if (isLoading) {
     return (
-      <div className="flex gap-3 overflow-x-auto py-2 scrollbar-hide">
-        {Array.from({ length: 4 }).map((_, index) => (
+      <div className="flex flex-wrap gap-2">
+        {Array.from({ length: 8 }).map((_, index) => (
           <div
             key={`account-skeleton-${index}`}
-            className="h-[58px] w-[180px] shrink-0 animate-pulse rounded-[20px] bg-gradient-to-r from-white/60 via-[rgba(126,200,255,0.2)] to-white/60 backdrop-blur-[8px] dark:rounded-2xl dark:bg-white/5"
+            className="h-14 w-40 animate-pulse rounded-full bg-neutral-100"
           />
         ))}
       </div>
@@ -138,8 +117,8 @@ const AccountStrip = ({
 
   if (accounts.length === 0) {
     return (
-      <div className="flex w-full items-center justify-center rounded-[20px] border border-dashed border-white/60 bg-white/85 px-6 py-8 text-center backdrop-blur-[8px] dark:rounded-2xl dark:border-white/10 dark:bg-white/5">
-        <p className="text-sm text-[#7B8794] dark:text-slate-400">
+      <div className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50 px-4 py-3 text-center">
+        <p className="text-sm text-neutral-500">
           연결된 Instagram 계정이 없습니다.<br />
           관리자에서 계정 데이터를 먼저 준비해 주세요.
         </p>
@@ -148,33 +127,19 @@ const AccountStrip = ({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div
-        ref={scrollRef}
-        className={`flex gap-3 overflow-x-auto pb-2 pt-1 scrollbar-hide cursor-grab active:cursor-grabbing ${isDragging ? 'cursor-grabbing [&>button]:pointer-events-none' : ''}`}
-        onMouseDown={onMouseDown}
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseLeave}
-        onMouseMove={onMouseMove}
-      >
-        <AllAccountsButton
-          isActive={selectedAccountId === null}
-          onClick={() => onSelect(null)}
+    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide md:flex-wrap md:overflow-visible">
+      <AllAccountsButton
+        isActive={selectedAccountId === null}
+        onClick={() => onSelect(null)}
+      />
+      {accounts.map((account) => (
+        <AccountChip
+          key={account.id}
+          account={account}
+          isActive={selectedAccountId === account.id}
+          onClick={() => onSelect(account.id)}
         />
-        {accounts.map((account) => (
-          <AccountChip
-            key={account.id}
-            account={account}
-            isActive={selectedAccountId === account.id}
-            onClick={() => onSelect(account.id)}
-          />
-        ))}
-      </div>
-      {selectedAccountId !== null && (
-        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-          <HighlightList accountId={selectedAccountId} />
-        </div>
-      )}
+      ))}
     </div>
   );
 };

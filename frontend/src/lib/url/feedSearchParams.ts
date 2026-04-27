@@ -27,7 +27,7 @@ export const parseFeedSearchParams = (
   const to = sanitizeDate(params.get('to'));
   const pageParam = params.get('page');
   const parsedPage = pageParam ? Number.parseInt(pageParam, 10) : 1;
-  const type = params.get('type') ?? 'Post';
+  const type = params.get('type') ?? 'All';
 
   return {
     accountId,
@@ -62,7 +62,7 @@ export const mergeFeedSearchParams = (
   applyParam(next, 'from', state.dateRange.from);
   applyParam(next, 'to', state.dateRange.to);
   applyParam(next, 'page', state.page > 1 ? String(state.page) : null);
-  applyParam(next, 'type', state.type === 'Post' ? null : state.type);
+  applyParam(next, 'type', state.type === 'All' ? null : state.type);
 
   return next;
 };

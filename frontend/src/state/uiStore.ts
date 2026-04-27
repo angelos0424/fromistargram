@@ -10,7 +10,7 @@ interface FeedUIState {
   dateRange: DateRange;
   page: number;
   pageSize: number;
-  type: string; // 'Post' | 'Story' | 'Shared'
+  type: string; // 'All' | 'Post' | 'Story' | 'Shared'
   setSelectedAccountId: (accountId: string | null) => void;
   setDateRange: (range: DateRange) => void;
   setPage: (page: number) => void;
@@ -34,7 +34,7 @@ export const useFeedUiStore = create<FeedUIState>((set) => ({
   },
   page: 1,
   pageSize: DEFAULT_PAGE_SIZE,
-  type: 'Post',
+  type: 'All',
   setSelectedAccountId: (selectedAccountId) =>
     set((state) => ({
       selectedAccountId,
@@ -59,7 +59,7 @@ export const useFeedUiStore = create<FeedUIState>((set) => ({
       selectedAccountId: null,
       dateRange: { from: null, to: null },
       page: 1,
-      type: 'Post'
+      type: 'All'
     })),
   hydrateFromQuery: ({ selectedAccountId, dateRange, page, type }) =>
     set((state) => {

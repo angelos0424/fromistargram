@@ -3,16 +3,34 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 @layer base {
   body {
-    @apply m-0 min-h-screen bg-slate-950 font-sans text-slate-100 antialiased;
-    background: radial-gradient(circle at 20% 20%, #1f2937 0%, #0b1224 45%, #020617 80%);
+    @apply m-0 min-h-screen bg-[#f9f9f9] font-sans text-neutral-950 antialiased;
+    letter-spacing: 0;
   }
 
   #root {
     @apply min-h-screen;
+  }
+}
+
+@layer components {
+  .archive-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
+    width: 100%;
+  }
+
+  @media (min-width: 640px) {
+    .archive-grid {
+      grid-template-columns: repeat(var(--archive-columns), minmax(0, 290px));
+      gap: 15px;
+      justify-content: center;
+      padding: 12px 0 18px;
+    }
   }
 }
