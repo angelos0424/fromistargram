@@ -6,6 +6,7 @@ import swaggerUi from '@fastify/swagger-ui';
 import pino from 'pino';
 import { registerApiRoutes } from './routes/index.js';
 import { csrfProtection } from './utils/csrf.js';
+import { getAllowedOrigins, isOriginAllowed } from './utils/origin.js';
 
 export type BuildServerOptions = FastifyServerOptions & {
   enablePrettyLogs?: boolean;
@@ -30,12 +31,9 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
   });
 
   // CORS configuration
-  // Set CORS_ORIGINS env var with comma-separated domains (e.g., "https://example.com,https://app.example.com")
+  // Set CORS_ORIGINS env var with comma-separated domains (e.g., "https://example.com,https://*.example.com")
   // If not set, defaults to restrictive mode in production
-  const corsOrigins = process.env.CORS_ORIGINS;
-  const allowedOrigins = corsOrigins
-    ? corsOrigins.split(',').map((origin) => origin.trim()).filter(Boolean)
-    : [];
+  const allowedOrigins = getAllowedOrigins();
 
   await app.register(cors, {
     origin: (origin, callback) => {
@@ -45,23 +43,11 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
         return;
       }
 
-      // If CORS_ORIGINS is configured, check against whitelist
-      if (allowedOrigins.length > 0) {
-        if (allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error('CORS not allowed'), false);
-        }
-        return;
-      }
-
-      // Development fallback: allow localhost origins
-      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      if (isOriginAllowed(origin, allowedOrigins)) {
         callback(null, true);
         return;
       }
 
-      // No CORS_ORIGINS set and not localhost - deny in production
       callback(new Error('CORS not allowed'), false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],

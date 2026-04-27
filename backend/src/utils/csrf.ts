@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
+import { getAllowedOrigins, isOriginAllowed } from './origin.js';
 
 /**
  * CSRF Protection middleware
@@ -11,27 +12,6 @@ import { FastifyRequest, FastifyReply } from 'fastify';
  */
 
 const STATE_CHANGING_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
-
-function getAllowedOrigins(): string[] {
-  const corsOrigins = process.env.CORS_ORIGINS;
-  if (!corsOrigins) {
-    return [];
-  }
-  return corsOrigins.split(',').map((origin) => origin.trim()).filter(Boolean);
-}
-
-function isOriginAllowed(origin: string | undefined, allowedOrigins: string[]): boolean {
-  if (!origin) {
-    return false;
-  }
-
-  // If no origins configured, allow localhost for development
-  if (allowedOrigins.length === 0) {
-    return origin.includes('localhost') || origin.includes('127.0.0.1');
-  }
-
-  return allowedOrigins.includes(origin);
-}
 
 /**
  * Validate Origin header for state-changing requests
