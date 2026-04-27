@@ -10,6 +10,7 @@ import { registerAdminManualUploadRoutes } from './registerAdminManualUploadRout
 import { registerHighlightRoutes } from './highlights.js';
 import { registerImageProxyRoutes } from './imageProxy.js';
 import { registerSharedMediaRoutes } from './registerSharedMediaRoutes.js';
+import { registerMobileIngestRoutes } from './registerMobileIngestRoutes.js';
 import { requireAdminAuth } from '../utils/auth.js';
 
 export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
@@ -18,6 +19,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   await app.register(registerPostRoutes);
   await app.register(registerMediaRoutes);
   await app.register(registerSharedMediaRoutes);
+  await app.register(registerMobileIngestRoutes);
   await app.register(registerHighlightRoutes);
   await app.register(registerImageProxyRoutes);
 
