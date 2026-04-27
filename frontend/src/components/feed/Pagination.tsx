@@ -14,16 +14,17 @@ const Pagination = ({
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="mx-4 flex flex-col gap-3 border-t border-neutral-200 bg-[#f9f9f9] py-4 text-sm text-neutral-600 sm:mx-0 sm:flex-row sm:items-center sm:justify-between">
-      <span className="font-semibold">
-        페이지 {page} / {totalPages} · 총 {total}개
+    <div className="mx-4 mt-4 flex flex-col gap-3 rounded-[22px] border border-white/60 bg-white/62 px-4 py-3 text-sm text-[#7B8794] shadow-[0_10px_28px_rgba(45,55,72,0.08)] backdrop-blur-[8px] sm:mx-0 sm:mt-5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      <span className="font-bold">
+        페이지 <b className="text-[#2D3748]">{page}</b> / {totalPages} · 총{' '}
+        <b className="text-[#2D3748]">{total.toLocaleString('ko-KR')}</b>개
       </span>
       <div className="flex flex-wrap items-center justify-end gap-2">
         <button
           type="button"
           onClick={() => onChange(Math.max(1, page - 1))}
           disabled={page === 1}
-          className="h-8 rounded border border-neutral-300 bg-white px-3 text-sm font-bold text-neutral-700 transition enabled:hover:bg-neutral-50 disabled:opacity-40"
+          className="h-9 rounded-full border border-white/70 bg-white/76 px-4 text-sm font-bold text-[#2D3748] shadow-[0_4px_14px_rgba(45,55,72,0.05)] transition enabled:hover:-translate-y-0.5 enabled:hover:border-[#B8A4F0]/70 enabled:hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
         >
           이전
         </button>
@@ -31,7 +32,7 @@ const Pagination = ({
           type="button"
           onClick={() => onChange(Math.min(totalPages, page + 1))}
           disabled={page >= totalPages}
-          className="h-8 rounded bg-neutral-950 px-3 text-sm font-bold text-white transition enabled:hover:bg-neutral-800 disabled:opacity-40"
+          className="h-9 rounded-full bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] px-4 text-sm font-bold text-white shadow-[0_6px_18px_rgba(126,200,255,0.32)] transition enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_9px_22px_rgba(126,200,255,0.42)] disabled:cursor-not-allowed disabled:grayscale disabled:opacity-45"
         >
           다음
         </button>
