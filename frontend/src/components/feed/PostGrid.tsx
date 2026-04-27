@@ -1,10 +1,11 @@
 import type { CSSProperties } from 'react';
-import type { Post } from '../../lib/api/types';
+import type { Account, Post } from '../../lib/api/types';
 import PostCard from './PostCard';
 
 interface PostGridProps {
   columns: number;
   posts: Post[];
+  accountsById: Map<string, Account>;
   isLoading: boolean;
   onOpenPost: (postId: string) => void;
 }
@@ -12,6 +13,7 @@ interface PostGridProps {
 const PostGrid = ({
   columns,
   posts,
+  accountsById,
   isLoading,
   onOpenPost
 }: PostGridProps) => {
@@ -25,7 +27,7 @@ const PostGrid = ({
         {Array.from({ length: 12 }).map((_, index) => (
           <div
             key={`post-skeleton-${index}`}
-            className="aspect-[4/5] animate-pulse bg-white/58 shadow-[0_10px_26px_rgba(45,55,72,0.08)] ring-1 ring-white/60 sm:rounded-[22px]"
+            className="aspect-[4/5] animate-pulse bg-white/58 shadow-[0_10px_26px_rgba(45,55,72,0.08)] ring-1 ring-white/60"
           />
         ))}
       </div>
@@ -47,9 +49,19 @@ const PostGrid = ({
 
   return (
     <div className="archive-grid" style={gridStyle}>
-      {posts.map((post) => (
-        <PostCard key={post.id} post={post} onOpen={onOpenPost} />
-      ))}
+      {posts.map((post) => {
+        const account = accountsById.get(post.accountId);
+        const accountName = account?.displayName ?? account?.username ?? post.accountId;
+
+        return (
+          <PostCard
+            key={post.id}
+            post={post}
+            accountName={accountName}
+            onOpen={onOpenPost}
+          />
+        );
+      })}
     </div>
   );
 };

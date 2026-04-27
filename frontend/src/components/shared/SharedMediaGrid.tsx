@@ -20,7 +20,7 @@ const SharedMediaGrid = ({ columns, mediaGroups, isLoading, onGroupClick }: Shar
 				{Array.from({ length: 12 }).map((_, index) => (
 					<div
 						key={`skeleton-${index}`}
-						className="aspect-[4/5] animate-pulse bg-white/58 shadow-[0_10px_26px_rgba(45,55,72,0.08)] ring-1 ring-white/60 sm:rounded-[22px]"
+						className="aspect-[4/5] animate-pulse bg-white/58 shadow-[0_10px_26px_rgba(45,55,72,0.08)] ring-1 ring-white/60"
 					/>
 				))}
 			</div>

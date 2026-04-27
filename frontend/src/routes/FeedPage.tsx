@@ -412,6 +412,7 @@ const FeedPage = () => {
           <PostGrid
             columns={gridColumns}
             posts={visibleFeedPosts}
+            accountsById={accountById}
             isLoading={feedLoading && !feedPosts.length}
             onOpenPost={handleOpenPost}
           />
