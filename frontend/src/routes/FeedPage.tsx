@@ -250,21 +250,6 @@ const FeedPage = () => {
     setPage(1);
   };
 
-  const handleShare = async () => {
-    const url = window.location.href;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'Fromistargram', url });
-        return;
-      } catch {
-        // Fall back to clipboard if the share sheet is dismissed or unavailable.
-      }
-    }
-
-    await navigator.clipboard?.writeText(url);
-  };
-
   const handleOpenPost = (postId: string) => {
     const search = searchParams.toString();
 
@@ -376,8 +361,11 @@ const FeedPage = () => {
       utilityBar={
         <ArchiveUtilityBar
           total={displayedTotal}
-          onReset={handleResetAll}
-          onShare={handleShare}
+          activeType={type}
+          onTypeChange={(nextType) => {
+            setType(nextType);
+            setPage(1);
+          }}
         />
       }
     >
@@ -388,8 +376,6 @@ const FeedPage = () => {
         url={seoUrl}
       />
       <div className="flex flex-col gap-3">
-        <ArchiveTabs activeType={type} onChange={setType} />
-
         {type === 'Shared' ? (
           <SharedMediaGrid
             columns={gridColumns}
@@ -525,7 +511,7 @@ const ArchiveTabs = ({
   ];
 
   return (
-    <div className="flex flex-wrap gap-2 px-4 sm:px-0">
+    <div className="flex flex-wrap gap-2">
       {tabs.map((tab) => (
         <button
           key={tab.label}
@@ -545,37 +531,18 @@ const ArchiveTabs = ({
 
 const ArchiveUtilityBar = ({
   total,
-  onReset,
-  onShare
+  activeType,
+  onTypeChange
 }: {
   total: number;
-  onReset: () => void;
-  onShare: () => void;
+  activeType: string;
+  onTypeChange: (type: string) => void;
 }) => (
-  <div className="grid grid-cols-3 items-center gap-2 sm:flex sm:justify-end">
-    <div className="col-span-3 text-sm font-semibold text-[#7B8794] sm:mr-auto sm:text-[15px]">
+  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="text-sm font-semibold text-[#7B8794] sm:text-[15px]">
       총 <b className="text-base text-[#2D3748]">{total.toLocaleString('ko-KR')}</b>개
     </div>
-    <button
-      type="button"
-      onClick={onShare}
-      className="h-9 rounded-full bg-gradient-to-r from-[#7EC8FF] to-[#8CE8D0] px-4 text-sm font-bold text-white shadow-[0_6px_18px_rgba(126,200,255,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_9px_22px_rgba(126,200,255,0.42)]"
-    >
-      공유
-    </button>
-    <button
-      type="button"
-      onClick={onReset}
-      className="h-9 rounded-full border border-white/70 bg-white/76 px-4 text-sm font-bold text-[#B54B1A] shadow-[0_4px_14px_rgba(45,55,72,0.05)] transition hover:-translate-y-0.5 hover:border-[#fbb244]/70 hover:bg-[#fefaec]"
-    >
-      초기화
-    </button>
-    <a
-      href="/"
-      className="flex h-9 items-center justify-center rounded-full border border-white/70 bg-white/76 px-4 text-sm font-bold text-[#2D3748] shadow-[0_4px_14px_rgba(45,55,72,0.05)] transition hover:-translate-y-0.5 hover:border-[#B8A4F0]/70 hover:bg-white"
-    >
-      메인으로
-    </a>
+    <ArchiveTabs activeType={activeType} onChange={onTypeChange} />
   </div>
 );
 
