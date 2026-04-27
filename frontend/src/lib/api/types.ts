@@ -119,6 +119,7 @@ export interface HighlightMedia {
   filename: string;
   mime: string;
   orderIndex: number;
+  rawUrl: string;
   url: string;
   thumbnailUrl: string;
 }

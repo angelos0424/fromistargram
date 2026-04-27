@@ -4,6 +4,12 @@ import { prisma } from '../db/client.js';
 import { buildImagorUrl } from '../utils/imagor.js';
 import { sendSuccess } from '../utils/response.js';
 
+function buildHighlightMediaUrl(accountId: string, filename: string): string {
+    const safeAccount = encodeURIComponent(accountId);
+    const safePath = filename.split(/[\\/]/g).map((part) => encodeURIComponent(part)).join('/');
+    return `/api/media/${safeAccount}/${safePath}`;
+}
+
 export async function registerHighlightRoutes(app: FastifyInstance) {
     app.get<{ Params: { accountId: string } }>(
         '/api/accounts/:accountId/highlights',
@@ -37,10 +43,11 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
                                                 filename: { type: 'string' },
                                                 mime: { type: 'string' },
                                                 orderIndex: { type: 'number' },
+                                                rawUrl: { type: 'string' },
                                                 url: { type: 'string' },
                                                 thumbnailUrl: { type: 'string' }
                                             },
-                                            required: ['id', 'filename', 'mime', 'orderIndex', 'url', 'thumbnailUrl']
+                                            required: ['id', 'filename', 'mime', 'orderIndex', 'rawUrl', 'url', 'thumbnailUrl']
                                         },
                                         media: {
                                             type: 'array',
@@ -51,10 +58,11 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
                                                     filename: { type: 'string' },
                                                     mime: { type: 'string' },
                                                     orderIndex: { type: 'number' },
+                                                    rawUrl: { type: 'string' },
                                                     url: { type: 'string' },
                                                     thumbnailUrl: { type: 'string' }
                                                 },
-                                                required: ['id', 'filename', 'mime', 'orderIndex', 'url', 'thumbnailUrl']
+                                                required: ['id', 'filename', 'mime', 'orderIndex', 'rawUrl', 'url', 'thumbnailUrl']
                                             }
                                         }
                                     },
@@ -84,18 +92,21 @@ export async function registerHighlightRoutes(app: FastifyInstance) {
             const data = highlights.map((highlight) => {
                 // Map media items to include signed URLs
                 const mapMedia = (m: HighlightMedia) => {
-                    const source = `local:///${accountId}/${m.filename}`;
+                    const source = `local:///source/${accountId}/${m.filename}`;
+                    const mediaUrl = buildHighlightMediaUrl(accountId, m.filename);
+                    const isVideo = m.mime.startsWith('video/');
 
-                    // Full URL (Original or high quality)
-                    const url = buildImagorUrl(source) ?? '';
+                    // Full URL for images, raw stream URL for videos.
+                    const url = isVideo ? mediaUrl : buildImagorUrl(source) ?? mediaUrl;
 
                     // Thumbnail URL (Resized)
                     const thumbnailUrl = buildImagorUrl(source, {
                         resize: { width: 640, type: 'fit' }
-                    }) ?? '';
+                    }) ?? mediaUrl;
 
                     return {
                         ...m,
+                        rawUrl: mediaUrl,
                         url,
                         thumbnailUrl
                     };

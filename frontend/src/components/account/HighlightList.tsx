@@ -50,7 +50,7 @@ const HighlightList = ({ accountId }: HighlightListProps) => {
                         className="flex flex-col items-center gap-2"
                     >
                         <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/90 bg-white/95 p-1 shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition hover:border-[#7EC8FF] hover:shadow-[0_0_12px_rgba(126,200,255,0.4)] backdrop-blur-[8px] dark:border-white/20 dark:bg-white/5 dark:shadow-none dark:hover:border-white/40">
-                            {highlight.coverMedia?.url ? (
+                            {highlight.coverUrl ? (
                                 <div className="h-full w-full overflow-hidden rounded-full">
                                     <img
                                         src={highlight.coverUrl}
