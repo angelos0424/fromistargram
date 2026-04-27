@@ -133,7 +133,8 @@ const FeedPage = () => {
 
   const { data: feedResponse, isLoading: feedLoading, error: feedError } = useQuery({
     queryFn: () => listPost(query),
-    queryKey: [CLIENT_KEY, 'feed', query]
+    queryKey: [CLIENT_KEY, 'feed', query],
+    enabled: type !== 'Shared'
   });
 
   const { data: modalPostResponse, isLoading: modalLoading } = useQuery({
@@ -186,7 +187,7 @@ const FeedPage = () => {
 
   const feedPosts = feedResponse?.data ?? [];
   const totalPosts = feedResponse?.meta?.total ?? 0;
-  const totalSharedMedia = sharedMediaResponse?.meta?.total ?? 0;
+  const totalSharedGroups = sharedMediaResponse?.meta?.total ?? 0;
   const accountById = useMemo(
     () => new Map(accounts.map((account) => [account.id, account])),
     [accounts]
@@ -243,7 +244,7 @@ const FeedPage = () => {
     type === 'Shared'
       ? searchNeedle
         ? visibleSharedGroups.length
-        : totalSharedMedia
+        : totalSharedGroups
       : searchNeedle
         ? visibleFeedPosts.length
         : totalPosts;
@@ -420,7 +421,7 @@ const FeedPage = () => {
         <Pagination
           page={page}
           pageSize={pageSize}
-          total={type === 'Shared' ? totalSharedMedia : totalPosts}
+          total={type === 'Shared' ? totalSharedGroups : totalPosts}
           onChange={setPage}
         />
       </div>

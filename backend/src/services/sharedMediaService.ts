@@ -1,5 +1,6 @@
 import { unlink } from 'fs/promises';
 import path from 'path';
+import type { SharedMedia } from '@prisma/client';
 import { prisma } from '../db/client.js';
 import { getUploadPath } from '../utils/fileUpload.js';
 
@@ -69,6 +70,15 @@ export async function listSharedMedia(params: ListSharedMediaParams) {
     where.id = { lt: params.cursor };
   }
 
+  if (params.page) {
+    return listSharedMediaGroups({
+      limit,
+      page: params.page,
+      sortDirection,
+      where
+    });
+  }
+
   const queryArgs: Parameters<typeof prisma.sharedMedia.findMany>[0] = {
     where,
     orderBy: { uploadedAt: sortDirection },
@@ -94,6 +104,86 @@ export async function listSharedMedia(params: ListSharedMediaParams) {
     nextCursor,
     total
   };
+}
+
+async function listSharedMediaGroups({
+  limit,
+  page,
+  sortDirection,
+  where
+}: {
+  limit: number;
+  page: number;
+  sortDirection: 'asc' | 'desc';
+  where: PrismaSharedMediaWhereInput;
+}) {
+  const candidates = await prisma.sharedMedia.findMany({
+    where,
+    orderBy: { uploadedAt: sortDirection },
+    select: {
+      id: true,
+      uploadBatchId: true,
+      uploadedAt: true
+    }
+  }) as Pick<SharedMedia, 'id' | 'uploadBatchId' | 'uploadedAt'>[];
+
+  const groupKeys: string[] = [];
+  const seen = new Set<string>();
+
+  for (const item of candidates) {
+    const key = getSharedMediaGroupKey(item);
+    if (!seen.has(key)) {
+      seen.add(key);
+      groupKeys.push(key);
+    }
+  }
+
+  const offset = (page - 1) * limit;
+  const pageGroupKeys = groupKeys.slice(offset, offset + limit);
+  const batchIds = pageGroupKeys
+    .filter((key) => key.startsWith('batch:'))
+    .map((key) => key.slice('batch:'.length));
+  const legacyIds = pageGroupKeys
+    .filter((key) => key.startsWith('legacy:'))
+    .map((key) => key.slice('legacy:'.length));
+
+  const pageWhere: PrismaSharedMediaWhereInput = {
+    ...where,
+    OR: [
+      ...(batchIds.length ? [{ uploadBatchId: { in: batchIds } }] : []),
+      ...(legacyIds.length ? [{ id: { in: legacyIds } }] : [])
+    ]
+  };
+
+  const pageItems = pageGroupKeys.length
+    ? await prisma.sharedMedia.findMany({
+        where: pageWhere,
+        orderBy: { uploadedAt: sortDirection }
+      })
+    : [];
+
+  const itemsByGroup = new Map<string, SharedMedia[]>();
+  for (const item of pageItems) {
+    const key = getSharedMediaGroupKey(item);
+    const groupItems = itemsByGroup.get(key) ?? [];
+    groupItems.push(item);
+    itemsByGroup.set(key, groupItems);
+  }
+
+  const data = pageGroupKeys.flatMap((key) => itemsByGroup.get(key) ?? []);
+  const hasMore = offset + limit < groupKeys.length;
+  const nextCursor = hasMore ? data[data.length - 1]?.id ?? null : null;
+
+  return {
+    data,
+    hasMore,
+    nextCursor,
+    total: groupKeys.length
+  };
+}
+
+function getSharedMediaGroupKey(media: Pick<SharedMedia, 'id' | 'uploadBatchId'>) {
+  return media.uploadBatchId ? `batch:${media.uploadBatchId}` : `legacy:${media.id}`;
 }
 
 export async function getSharedMediaById(id: string) {
