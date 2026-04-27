@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { loadAuthentikConfig, type AuthentikConfig } from './config';
 import {
+  isTokenExpired,
   parseIdToken,
   type ParsedIdToken,
   exchangeCodeForTokens,
@@ -53,6 +54,10 @@ const resolveIdentity = (idToken: string | undefined, fallbackIdToken?: string) 
   const resolvedIdToken = idToken ?? fallbackIdToken;
 
   if (!resolvedIdToken) {
+    return null;
+  }
+
+  if (isTokenExpired(resolvedIdToken)) {
     return null;
   }
 
@@ -334,7 +339,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const stored = loadStoredSession();
 
-      if (!stored || stored.expiresAt <= Date.now()) {
+      if (!stored || stored.expiresAt <= Date.now() || isTokenExpired(stored.idToken)) {
         // Try to refresh token if refresh token exists
         if (stored?.refreshToken) {
           try {
@@ -458,7 +463,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
-    return true;
+    return !isTokenExpired(state.idToken.raw);
   }, [state.token, state.idToken, state.expiresAt]);
 
   const value = useMemo<AuthContextValue>(
