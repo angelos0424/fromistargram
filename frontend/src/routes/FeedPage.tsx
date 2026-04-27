@@ -398,7 +398,7 @@ const FeedPage = () => {
             onGroupClick={setActiveMediaGroup}
           />
         ) : feedError ? (
-          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-sm text-red-200">
+          <div className="mx-4 rounded-[22px] border border-red-200/80 bg-white/74 p-6 text-sm font-semibold text-red-600 shadow-[0_10px_26px_rgba(45,55,72,0.08)] backdrop-blur sm:mx-0">
             피드를 불러오는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.
           </div>
         ) : (
@@ -477,18 +477,18 @@ const ArchiveToolbar = ({
   onSearchTermChange: (value: string) => void;
   onSortOrderChange: (value: SortOrder) => void;
 }) => (
-  <div className="grid w-full grid-cols-[1fr_auto] items-center gap-2 md:max-w-[700px] md:grid-cols-[1fr_auto_auto]">
+  <div className="grid w-full grid-cols-[1fr_auto] items-center gap-2 md:max-w-[720px] md:grid-cols-[1fr_auto_auto]">
     <input
       type="search"
       value={searchTerm}
       onChange={(event) => onSearchTermChange(event.target.value)}
       placeholder="본문 내용이나 계정명으로 검색..."
-      className="h-9 min-w-0 rounded-full border-0 bg-neutral-100 px-4 text-sm font-medium text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:bg-neutral-50 focus:ring-2 focus:ring-neutral-300"
+      className="h-10 min-w-0 rounded-full border border-white/70 bg-white/76 px-4 text-sm font-semibold text-[#2D3748] shadow-[0_6px_18px_rgba(45,55,72,0.06)] outline-none transition placeholder:text-[#9CA3AF] focus:bg-white focus:ring-2 focus:ring-[#7EC8FF]/70"
     />
     <select
       value={gridColumns}
       onChange={(event) => onGridColumnsChange(Number(event.target.value))}
-      className="hidden h-9 rounded-full border-0 bg-neutral-100 px-3 text-sm font-bold text-neutral-800 outline-none md:block"
+      className="hidden h-10 rounded-full border border-white/70 bg-white/76 px-3 text-sm font-bold text-[#2D3748] shadow-[0_6px_18px_rgba(45,55,72,0.06)] outline-none transition focus:ring-2 focus:ring-[#8CE8D0]/70 md:block"
       aria-label="그리드 열 수"
     >
       <option value={3}>3열 보기</option>
@@ -500,7 +500,7 @@ const ArchiveToolbar = ({
     <select
       value={sortOrder}
       onChange={(event) => onSortOrderChange(event.target.value as SortOrder)}
-      className="h-9 w-[112px] rounded-full border-0 bg-neutral-100 px-3 text-sm font-bold text-neutral-800 outline-none md:w-auto"
+      className="h-10 w-[112px] rounded-full border border-white/70 bg-white/76 px-3 text-sm font-bold text-[#2D3748] shadow-[0_6px_18px_rgba(45,55,72,0.06)] outline-none transition focus:ring-2 focus:ring-[#B8A4F0]/70 md:w-auto"
       aria-label="정렬"
     >
       <option value="newest">최신순</option>
@@ -531,9 +531,9 @@ const ArchiveTabs = ({
           key={tab.label}
           type="button"
           onClick={() => onChange(tab.type)}
-          className={`h-8 rounded-full border px-3 text-sm font-bold transition ${activeType === tab.type
-            ? 'border-neutral-950 bg-neutral-950 text-white'
-            : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-300'
+          className={`h-9 rounded-full border px-4 text-sm font-bold transition duration-200 ${activeType === tab.type
+            ? 'border-white/80 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] text-white shadow-[0_8px_20px_rgba(126,200,255,0.3)]'
+            : 'border-white/70 bg-white/70 text-[#2D3748] shadow-[0_4px_14px_rgba(45,55,72,0.05)] hover:-translate-y-0.5 hover:border-[#7EC8FF]/70 hover:bg-white'
             }`}
         >
           {tab.label}
@@ -553,26 +553,26 @@ const ArchiveUtilityBar = ({
   onShare: () => void;
 }) => (
   <div className="grid grid-cols-3 items-center gap-2 sm:flex sm:justify-end">
-    <div className="col-span-3 text-sm font-semibold text-neutral-500 sm:mr-auto sm:text-[15px]">
-      총 <b className="text-base text-neutral-950">{total.toLocaleString('ko-KR')}</b>개
+    <div className="col-span-3 text-sm font-semibold text-[#7B8794] sm:mr-auto sm:text-[15px]">
+      총 <b className="text-base text-[#2D3748]">{total.toLocaleString('ko-KR')}</b>개
     </div>
     <button
       type="button"
       onClick={onShare}
-      className="h-8 rounded bg-blue-600 px-3 text-sm font-bold text-white transition hover:bg-blue-700"
+      className="h-9 rounded-full bg-gradient-to-r from-[#7EC8FF] to-[#8CE8D0] px-4 text-sm font-bold text-white shadow-[0_6px_18px_rgba(126,200,255,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_9px_22px_rgba(126,200,255,0.42)]"
     >
       공유
     </button>
     <button
       type="button"
       onClick={onReset}
-      className="h-8 rounded border border-red-200 bg-white px-3 text-sm font-bold text-red-600 transition hover:bg-red-50"
+      className="h-9 rounded-full border border-white/70 bg-white/76 px-4 text-sm font-bold text-[#B54B1A] shadow-[0_4px_14px_rgba(45,55,72,0.05)] transition hover:-translate-y-0.5 hover:border-[#fbb244]/70 hover:bg-[#fefaec]"
     >
       초기화
     </button>
     <a
       href="/"
-      className="flex h-8 items-center justify-center rounded border border-neutral-300 bg-white px-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50"
+      className="flex h-9 items-center justify-center rounded-full border border-white/70 bg-white/76 px-4 text-sm font-bold text-[#2D3748] shadow-[0_4px_14px_rgba(45,55,72,0.05)] transition hover:-translate-y-0.5 hover:border-[#B8A4F0]/70 hover:bg-white"
     >
       메인으로
     </a>

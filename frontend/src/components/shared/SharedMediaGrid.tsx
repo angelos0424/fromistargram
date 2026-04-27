@@ -20,7 +20,7 @@ const SharedMediaGrid = ({ columns, mediaGroups, isLoading, onGroupClick }: Shar
 				{Array.from({ length: 12 }).map((_, index) => (
 					<div
 						key={`skeleton-${index}`}
-						className="aspect-[4/5] animate-pulse bg-neutral-200"
+						className="aspect-[4/5] animate-pulse bg-white/58 shadow-[0_10px_26px_rgba(45,55,72,0.08)] ring-1 ring-white/60 sm:rounded-[22px]"
 					/>
 				))}
 			</div>
@@ -29,10 +29,10 @@ const SharedMediaGrid = ({ columns, mediaGroups, isLoading, onGroupClick }: Shar
 
 	if (mediaGroups.length === 0) {
 		return (
-			<div className="mx-4 flex w-auto flex-col items-center justify-center rounded-lg border border-dashed border-neutral-300 bg-white px-6 py-16 sm:mx-0">
+			<div className="mx-4 flex w-auto flex-col items-center justify-center rounded-[24px] border border-dashed border-white/70 bg-white/66 px-6 py-16 shadow-[0_12px_30px_rgba(45,55,72,0.08)] backdrop-blur sm:mx-0">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
-					className="mb-4 h-16 w-16 text-neutral-300"
+					className="mb-4 h-16 w-16 text-[#B8A4F0]/65"
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke="currentColor"
@@ -44,10 +44,10 @@ const SharedMediaGrid = ({ columns, mediaGroups, isLoading, onGroupClick }: Shar
 						d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
 					/>
 				</svg>
-				<p className="text-sm font-bold text-neutral-950">
+				<p className="text-sm font-bold text-[#2D3748]">
 					아직 업로드된 미디어가 없습니다
 				</p>
-				<p className="mt-1 text-xs text-neutral-500">
+				<p className="mt-1 text-xs text-[#7B8794]">
 					업로드 버튼을 클릭하여 첫 미디어를 추가해보세요
 				</p>
 			</div>

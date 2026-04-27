@@ -8,7 +8,12 @@
 
 @layer base {
   body {
-    @apply m-0 min-h-screen bg-[#f9f9f9] font-sans text-neutral-950 antialiased;
+    @apply m-0 min-h-screen font-sans text-[#2D3748] antialiased;
+    background:
+      radial-gradient(circle at 15% 18%, rgba(126, 200, 255, 0.22), transparent 34%),
+      radial-gradient(circle at 86% 12%, rgba(184, 164, 240, 0.22), transparent 30%),
+      radial-gradient(circle at 50% 78%, rgba(140, 232, 208, 0.18), transparent 42%),
+      linear-gradient(135deg, #ffd4e5 0%, #d4e4ff 38%, #ffe4d4 68%, #e4d4ff 100%);
     letter-spacing: 0;
   }
 
@@ -28,9 +33,9 @@
   @media (min-width: 640px) {
     .archive-grid {
       grid-template-columns: repeat(var(--archive-columns), minmax(0, 290px));
-      gap: 15px;
+      gap: 18px;
       justify-content: center;
-      padding: 12px 0 18px;
+      padding: 14px 0 22px;
     }
   }
 }

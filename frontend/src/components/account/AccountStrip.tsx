@@ -20,15 +20,15 @@ const AccountChip = ({
     <button
       type="button"
       onClick={onClick}
-      className={`group inline-flex min-h-14 min-w-[160px] shrink-0 items-center gap-3 rounded-full border py-2 pl-2 pr-4 text-left transition ${isActive
-        ? 'border-neutral-950 bg-neutral-950 text-white shadow-[0_8px_18px_rgba(0,0,0,0.12)]'
-        : 'border-neutral-200 bg-white text-neutral-900 hover:border-neutral-300 hover:shadow-[0_6px_16px_rgba(0,0,0,0.08)]'
+      className={`group inline-flex min-h-14 min-w-[160px] shrink-0 items-center gap-3 rounded-full border py-2 pl-2 pr-4 text-left transition duration-200 ${isActive
+        ? 'border-white/80 bg-gradient-to-r from-[#7EC8FF] via-[#8CE8D0] to-[#B8A4F0] text-white shadow-[0_10px_26px_rgba(126,200,255,0.36)]'
+        : 'border-white/70 bg-white/78 text-[#2D3748] shadow-[0_5px_18px_rgba(45,55,72,0.06)] hover:-translate-y-0.5 hover:border-[#7EC8FF]/70 hover:bg-white hover:shadow-[0_10px_26px_rgba(126,200,255,0.18)]'
         }`}
     >
       <div
-        className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 bg-neutral-200 transition ${isActive
-          ? 'border-white'
-          : 'border-neutral-100 group-hover:border-neutral-200'
+        className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 bg-white/70 transition ${isActive
+          ? 'border-white shadow-[0_0_0_3px_rgba(255,255,255,0.28)]'
+          : 'border-white group-hover:border-[#7EC8FF]/50'
           }`}
       >
         {account.latestProfilePicUrl ? (
@@ -39,18 +39,18 @@ const AccountChip = ({
             loading="lazy"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-neutral-300">
-            <span className="text-sm font-bold text-neutral-700">
+          <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[#FFD4E5] to-[#D4E4FF]">
+            <span className="text-sm font-bold text-[#2D3748]">
               {account.displayName?.[0]?.toUpperCase() ?? account.username?.[0]?.toUpperCase() ?? 'A'}
             </span>
           </div>
         )}
       </div>
       <span className="flex min-w-0 flex-col">
-        <span className={`max-w-[7rem] truncate text-sm font-extrabold ${isActive ? 'text-white' : 'text-neutral-950'}`}>
+        <span className={`max-w-[7rem] truncate text-sm font-extrabold ${isActive ? 'text-white' : 'text-[#2D3748]'}`}>
           {account.displayName ?? account.username ?? account.id}
         </span>
-        <span className={`max-w-[7rem] truncate text-xs font-semibold ${isActive ? 'text-white/70' : 'text-neutral-500'}`}>
+        <span className={`max-w-[7rem] truncate text-xs font-semibold ${isActive ? 'text-white/78' : 'text-[#7B8794]'}`}>
           @{account.username ?? account.id}
         </span>
       </span>
@@ -68,15 +68,15 @@ const AllAccountsButton = ({
   <button
     type="button"
     onClick={onClick}
-    className={`inline-flex min-h-14 shrink-0 items-center gap-3 rounded-full border py-2 pl-2 pr-4 text-left transition ${isActive
-      ? 'border-neutral-950 bg-neutral-950 text-white shadow-[0_8px_18px_rgba(0,0,0,0.12)]'
-      : 'border-neutral-200 bg-white text-neutral-900 hover:border-neutral-300 hover:shadow-[0_6px_16px_rgba(0,0,0,0.08)]'
+    className={`inline-flex min-h-14 shrink-0 items-center gap-3 rounded-full border py-2 pl-2 pr-4 text-left transition duration-200 ${isActive
+      ? 'border-white/80 bg-gradient-to-r from-[#7EC8FF] via-[#8CE8D0] to-[#B8A4F0] text-white shadow-[0_10px_26px_rgba(126,200,255,0.36)]'
+      : 'border-white/70 bg-white/78 text-[#2D3748] shadow-[0_5px_18px_rgba(45,55,72,0.06)] hover:-translate-y-0.5 hover:border-[#7EC8FF]/70 hover:bg-white hover:shadow-[0_10px_26px_rgba(126,200,255,0.18)]'
       }`}
   >
     <span
       className={`grid h-10 w-10 shrink-0 grid-cols-2 gap-0.5 rounded-full border-2 p-1 ${isActive
-        ? 'border-white bg-white/15'
-        : 'border-neutral-100 bg-neutral-100'
+        ? 'border-white bg-white/20'
+        : 'border-white bg-white/70'
         }`}
       aria-hidden
     >
@@ -86,10 +86,10 @@ const AllAccountsButton = ({
       <span className="rounded-full bg-[#4f5bd5]" />
     </span>
     <span className="flex flex-col">
-      <span className={`text-sm font-extrabold ${isActive ? 'text-white' : 'text-neutral-950'}`}>
+      <span className={`text-sm font-extrabold ${isActive ? 'text-white' : 'text-[#2D3748]'}`}>
         전체 멤버
       </span>
-      <span className={`text-xs font-semibold ${isActive ? 'text-white/70' : 'text-neutral-500'}`}>
+      <span className={`text-xs font-semibold ${isActive ? 'text-white/78' : 'text-[#7B8794]'}`}>
         all accounts
       </span>
     </span>
@@ -108,7 +108,7 @@ const AccountStrip = ({
         {Array.from({ length: 8 }).map((_, index) => (
           <div
             key={`account-skeleton-${index}`}
-            className="h-14 w-40 animate-pulse rounded-full bg-neutral-100"
+            className="h-14 w-40 animate-pulse rounded-full bg-white/60 shadow-[0_6px_18px_rgba(45,55,72,0.06)]"
           />
         ))}
       </div>
@@ -117,8 +117,8 @@ const AccountStrip = ({
 
   if (accounts.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50 px-4 py-3 text-center">
-        <p className="text-sm text-neutral-500">
+      <div className="rounded-2xl border border-dashed border-white/70 bg-white/58 px-4 py-3 text-center shadow-[0_8px_24px_rgba(45,55,72,0.06)]">
+        <p className="text-sm text-[#7B8794]">
           연결된 Instagram 계정이 없습니다.<br />
           관리자에서 계정 데이터를 먼저 준비해 주세요.
         </p>
