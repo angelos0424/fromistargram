@@ -127,14 +127,16 @@ async function fileExists(filepath: string): Promise<boolean> {
 }
 
 async function rejectExistingSourceFiles(filepaths: string[]): Promise<void> {
-  for (const filepath of filepaths) {
-    if (await fileExists(filepath)) {
-      throw new IngestClientError(
-        `Source file already exists: ${path.basename(filepath)}`,
-        409,
-        'CONFLICT'
-      );
-    }
+  const existingFilepath = (await Promise.all(
+    filepaths.map(async (filepath) => await fileExists(filepath) ? filepath : null)
+  )).find((filepath): filepath is string => filepath !== null);
+
+  if (existingFilepath) {
+    throw new IngestClientError(
+      `Source file already exists: ${path.basename(existingFilepath)}`,
+      409,
+      'CONFLICT'
+    );
   }
 }
 
