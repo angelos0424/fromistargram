@@ -18,6 +18,7 @@ export interface CreateSharedMediaInput {
   accountName?: string;
   caption?: string;
   uploadBatchId?: string;
+  uploadedAt?: Date;
 }
 
 export interface ListSharedMediaParams {
@@ -42,7 +43,8 @@ export async function createSharedMedia(input: CreateSharedMediaInput) {
       duration: input.duration,
       accountName: input.accountName,
       caption: input.caption,
-      uploadBatchId: input.uploadBatchId
+      uploadBatchId: input.uploadBatchId,
+      uploadedAt: input.uploadedAt
     }
   });
 }

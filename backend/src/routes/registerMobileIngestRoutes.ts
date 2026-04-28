@@ -26,6 +26,11 @@ type BufferedUploadFile = {
   buffer: Buffer;
 };
 
+type ParsedPostedAt = {
+  date: Date;
+  timestampBase: string;
+};
+
 class IngestClientError extends Error {
   readonly statusCode: number;
   readonly code: string;
@@ -72,8 +77,7 @@ function normalizeAccountName(value?: string): string | null {
     .trim()
     .replace(/^@/, '')
     .toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, '_')
-    .replace(/^_+|_+$/g, '');
+    .replace(/[^a-z0-9._-]+/g, '_');
 
   return normalized || null;
 }
@@ -100,7 +104,18 @@ function toSourceUploadType(contentType: MobileIngestContentType): SourceUploadT
   return contentType === 'STORY' ? 'Story' : 'Post';
 }
 
-function parsePostedAt(value?: string): { date: Date; timestampBase: string } | null {
+function buildTimestampBase(date: Date): string {
+  const yyyy = date.getUTCFullYear();
+  const MM = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(date.getUTCDate()).padStart(2, '0');
+  const HH = String(date.getUTCHours()).padStart(2, '0');
+  const mm = String(date.getUTCMinutes()).padStart(2, '0');
+  const ss = String(date.getUTCSeconds()).padStart(2, '0');
+
+  return `${yyyy}-${MM}-${dd}_${HH}-${mm}-${ss}`;
+}
+
+function parsePostedAt(value?: string): ParsedPostedAt | null {
   if (!value) {
     return null;
   }
@@ -110,21 +125,72 @@ function parsePostedAt(value?: string): { date: Date; timestampBase: string } | 
     return null;
   }
 
-  const yyyy = date.getUTCFullYear();
-  const MM = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(date.getUTCDate()).padStart(2, '0');
-  const HH = String(date.getUTCHours()).padStart(2, '0');
-  const mm = String(date.getUTCMinutes()).padStart(2, '0');
-  const ss = String(date.getUTCSeconds()).padStart(2, '0');
-
   return {
     date,
-    timestampBase: `${yyyy}-${MM}-${dd}_${HH}-${mm}-${ss}`
+    timestampBase: buildTimestampBase(date)
   };
+}
+
+function buildUtcDate(
+  year: string,
+  month: string,
+  day: string,
+  hour: string,
+  minute: string,
+  second: string
+): Date | null {
+  const yyyy = Number(year);
+  const MM = Number(month);
+  const dd = Number(day);
+  const HH = Number(hour);
+  const mm = Number(minute);
+  const ss = Number(second);
+  const date = new Date(Date.UTC(yyyy, MM - 1, dd, HH, mm, ss));
+
+  if (
+    date.getUTCFullYear() !== yyyy ||
+    date.getUTCMonth() !== MM - 1 ||
+    date.getUTCDate() !== dd ||
+    date.getUTCHours() !== HH ||
+    date.getUTCMinutes() !== mm ||
+    date.getUTCSeconds() !== ss
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
+function parsePostedAtFromFilename(filename?: string): ParsedPostedAt | null {
+  const basename = path.basename(filename ?? '');
+
+  const dashed = basename.match(/(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})(?:_UTC)?/i);
+  if (dashed) {
+    const date = buildUtcDate(dashed[1], dashed[2], dashed[3], dashed[4], dashed[5], dashed[6]);
+    return date ? { date, timestampBase: buildTimestampBase(date) } : null;
+  }
+
+  const compact = basename.match(/(?:^|[_-])(\d{4})(\d{2})(\d{2})[_-]?(\d{2})(\d{2})(\d{2})(?:[_-]|\.|$)/);
+  if (compact) {
+    const date = buildUtcDate(compact[1], compact[2], compact[3], compact[4], compact[5], compact[6]);
+    return date ? { date, timestampBase: buildTimestampBase(date) } : null;
+  }
+
+  return null;
 }
 
 function resolveFileExtension(file: MultipartFile): string {
   return path.extname(file.filename ?? '');
+}
+
+function generateSharedFilename(originalFilename: string, postedAt: ParsedPostedAt, index: number, totalFiles: number): string {
+  const ext = path.extname(originalFilename);
+  const unique = randomUUID().slice(0, 8);
+  const fileSuffix = totalFiles === 1
+    ? `_UTC_${unique}${ext}`
+    : `_UTC_${index + 1}_${unique}${ext}`;
+
+  return `${postedAt.timestampBase}${fileSuffix}`;
 }
 
 async function fileExists(filepath: string): Promise<boolean> {
@@ -263,24 +329,31 @@ async function saveToShared(input: {
   files: BufferedUploadFile[];
   accountName: string | null;
   caption?: string;
+  postedAt: ParsedPostedAt | null;
   request: FastifyRequest;
 }) {
   const uploadBatchId = randomUUID();
   const uploadedMedia = [];
+  const fallbackDate = new Date();
 
-  for (const { file, buffer } of input.files) {
+  for (const [index, { file, buffer }] of input.files.entries()) {
     const validation = validateFileType(file.mimetype, buffer.length);
     if (!validation.valid) {
       throw new IngestClientError(validation.error || 'Invalid file');
     }
 
-    const uniqueFilename = generateUniqueFilename(file.filename);
+    const filenamePostedAt = input.postedAt ?? parsePostedAtFromFilename(file.filename);
+    const uploadDate = filenamePostedAt?.date ?? fallbackDate;
+    const uniqueFilename = filenamePostedAt
+      ? generateSharedFilename(file.filename, filenamePostedAt, index, input.files.length)
+      : generateUniqueFilename(file.filename);
     const { size } = await saveUploadedFile(
       {
         ...file,
         toBuffer: async () => buffer
       } as MultipartFile,
-      uniqueFilename
+      uniqueFilename,
+      uploadDate
     );
 
     const media = await createSharedMedia({
@@ -290,10 +363,10 @@ async function saveToShared(input: {
       size,
       accountName: input.accountName ?? undefined,
       caption: uploadedMedia.length === 0 ? input.caption : undefined,
-      uploadBatchId
+      uploadBatchId,
+      uploadedAt: uploadDate
     });
 
-    const uploadDate = new Date(media.uploadedAt);
     const apiBaseUrl = getApiBaseUrl(input.request);
     const yyyyMMdd = formatDateToYYYYMMDD(uploadDate);
     const mediaUrl = buildUploadedMediaUrl(apiBaseUrl, yyyyMMdd, uniqueFilename);
@@ -519,6 +592,7 @@ export async function registerMobileIngestRoutes(app: FastifyInstance): Promise<
           files: input.files,
           accountName: input.accountName,
           caption: input.caption,
+          postedAt,
           request
         });
 
