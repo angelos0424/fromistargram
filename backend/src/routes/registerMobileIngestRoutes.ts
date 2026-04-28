@@ -334,6 +334,7 @@ async function saveToShared(input: {
 }) {
   const uploadBatchId = randomUUID();
   const uploadedMedia = [];
+  const fallbackDate = new Date();
 
   for (const [index, { file, buffer }] of input.files.entries()) {
     const validation = validateFileType(file.mimetype, buffer.length);
@@ -342,7 +343,7 @@ async function saveToShared(input: {
     }
 
     const filenamePostedAt = input.postedAt ?? parsePostedAtFromFilename(file.filename);
-    const uploadDate = filenamePostedAt?.date ?? new Date();
+    const uploadDate = filenamePostedAt?.date ?? fallbackDate;
     const uniqueFilename = filenamePostedAt
       ? generateSharedFilename(file.filename, filenamePostedAt, index, input.files.length)
       : generateUniqueFilename(file.filename);

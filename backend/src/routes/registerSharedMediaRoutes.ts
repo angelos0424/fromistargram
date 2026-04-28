@@ -142,9 +142,9 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
         }
 
         const uploadedMedia = [];
+        const uploadDate = new Date();
 
         for (const { file, buffer } of files) {
-          const uploadDate = new Date();
           app.log.info(`Processing file: ${file.filename}`);
           app.log.info(`File buffer size: ${buffer.length} bytes`);
 

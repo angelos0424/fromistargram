@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
 import { MultipartFile } from '@fastify/multipart';
+import { formatDateToYYYYMMDD } from './dateFormat.js';
 
 const MAX_IMAGE_SIZE = 30 * 1024 * 1024; // 30MB
 const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 50MB
@@ -42,10 +43,7 @@ export function validateFileType(mimetype: string, filesize: number): FileValida
 }
 
 export function getUploadPath(date: Date = new Date()): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const yyyyMMdd = `${year}${month}${day}`;
+  const yyyyMMdd = formatDateToYYYYMMDD(date);
 
   // imagor의 FILE_LOADER_BASE_DIR이 /data이므로 /data/uploaded/에 저장
   const dataRoot = process.env.DATA_ROOT ?? '/data';
