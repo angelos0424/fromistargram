@@ -63,9 +63,10 @@ export function getSourceRootPath(): string {
 
 export async function saveUploadedFile(
   file: MultipartFile,
-  filename: string
+  filename: string,
+  uploadedAt: Date = new Date()
 ): Promise<{ filepath: string; size: number }> {
-  const uploadDir = getUploadPath();
+  const uploadDir = getUploadPath(uploadedAt);
   await mkdir(uploadDir, { recursive: true });
 
   const filepath = path.join(uploadDir, filename);
