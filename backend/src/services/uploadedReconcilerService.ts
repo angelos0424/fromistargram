@@ -3,6 +3,8 @@ import path from 'path';
 import { prisma } from '../db/client.js';
 import { resolveUploadedRoot } from '../utils/sourceRoot.js';
 
+const DB_BATCH_SIZE = 500;
+
 export type UploadedReconcilerStatus = 'idle' | 'running' | 'success' | 'failure';
 
 export type UploadedReconcileOptions = {
@@ -98,47 +100,55 @@ async function runUploadedReconcile(options: UploadedReconcileOptions = {}): Pro
   const orphanCutoffMs = nowMs - cleanOrphanOlderThanDays * 24 * 60 * 60 * 1000;
   const deletedDbCutoff = new Date(nowMs - pruneDeletedDbOlderThanDays * 24 * 60 * 60 * 1000);
 
-  const [uploadedFiles, dbRows] = await Promise.all([
-    collectUploadedFiles(uploadedRoot),
-    prisma.sharedMedia.findMany({
+  const uploadedFiles = await collectUploadedFiles(uploadedRoot);
+  const scannedFiles = uploadedFiles.size;
+
+  let dbRowsScanned = 0;
+  let missingFileRows = 0;
+  let sizeRecalculated = 0;
+  let cursorId: string | undefined;
+
+  while (true) {
+    const dbRows = await prisma.sharedMedia.findMany({
       select: {
         id: true,
         filename: true,
         uploadedAt: true,
-        isDeleted: true,
         size: true
-      }
-    })
-  ]);
-
-  const dbRelativePaths = new Map<string, { id: string; isDeleted: boolean; size: number }>();
-  for (const row of dbRows) {
-    dbRelativePaths.set(getUploadRelativePath(row.uploadedAt, row.filename), {
-      id: row.id,
-      isDeleted: row.isDeleted,
-      size: row.size
+      },
+      orderBy: { id: 'asc' },
+      take: DB_BATCH_SIZE,
+      ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {})
     });
-  }
 
-  let missingFileRows = 0;
-  let sizeRecalculated = 0;
-  for (const [relativePath, row] of dbRelativePaths.entries()) {
-    const fileInfo = uploadedFiles.get(relativePath);
-    if (!fileInfo) {
-      missingFileRows += 1;
-      continue;
+    if (dbRows.length === 0) {
+      break;
     }
 
-    if (recalculateSize) {
-      const fileStats = await stat(fileInfo.absolutePath);
-      if (fileStats.size !== row.size && !dryRun) {
-        await prisma.sharedMedia.update({ where: { id: row.id }, data: { size: Number(fileStats.size) } });
-        sizeRecalculated += 1;
+    dbRowsScanned += dbRows.length;
+    cursorId = dbRows[dbRows.length - 1].id;
+
+    for (const row of dbRows) {
+      const relativePath = getUploadRelativePath(row.uploadedAt, row.filename);
+      const fileInfo = uploadedFiles.get(relativePath);
+      if (!fileInfo) {
+        missingFileRows += 1;
+        continue;
+      }
+
+      uploadedFiles.delete(relativePath);
+
+      if (recalculateSize) {
+        const fileStats = await stat(fileInfo.absolutePath);
+        if (fileStats.size !== row.size && !dryRun) {
+          await prisma.sharedMedia.update({ where: { id: row.id }, data: { size: Number(fileStats.size) } });
+          sizeRecalculated += 1;
+        }
       }
     }
   }
 
-  const orphanCandidates = [...uploadedFiles.entries()].filter(([relativePath]) => !dbRelativePaths.has(relativePath));
+  const orphanCandidates = [...uploadedFiles.entries()];
 
   let orphanFilesDeleted = 0;
   if (!dryRun) {
@@ -147,8 +157,12 @@ async function runUploadedReconcile(options: UploadedReconcileOptions = {}): Pro
         continue;
       }
 
-      await unlink(file.absolutePath);
-      orphanFilesDeleted += 1;
+      try {
+        await unlink(file.absolutePath);
+        orphanFilesDeleted += 1;
+      } catch (error) {
+        console.warn('Failed to delete orphan uploaded file', { path: file.absolutePath, error });
+      }
     }
   }
 
@@ -165,8 +179,8 @@ async function runUploadedReconcile(options: UploadedReconcileOptions = {}): Pro
   }
 
   return {
-    scannedFiles: uploadedFiles.size,
-    dbRowsScanned: dbRows.length,
+    scannedFiles,
+    dbRowsScanned,
     missingFileRows,
     orphanFiles: orphanCandidates.length,
     orphanFilesDeleted,

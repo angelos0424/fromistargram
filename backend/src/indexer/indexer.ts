@@ -180,7 +180,7 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
       );
 
       if (missingTagNames.length > 0) {
-        await (prisma.tag as any).createMany({
+        await prisma.tag.createMany({
           data: missingTagNames.map((name) => ({ name })),
           skipDuplicates: true
         });
@@ -195,7 +195,7 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
     }
 
     for (const post of postsToSync) {
-      await (prisma.$transaction as any)(async (tx: any) => {
+      await prisma.$transaction(async (tx) => {
         await tx.post.upsert({
           where: { id: post.id },
           create: {
@@ -241,7 +241,7 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
           .map((tagName) => tagNameToId.get(tagName))
           .filter((value): value is number => value !== undefined);
         if (tagIds.length > 0) {
-          await (tx.postTag as any).createMany({
+          await tx.postTag.createMany({
             data: tagIds.map((tagId) => ({ postId: post.id, tagId })),
             skipDuplicates: true
           });
@@ -253,27 +253,41 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
 
     const existingProfilePics = await prisma.profilePic.findMany({
       where: { accountId: account.id },
-      select: { id: true }
+      select: { id: true, takenAt: true, filename: true }
     });
-    const existingProfilePicIds = new Set(existingProfilePics.map((item) => item.id));
+    const existingProfilePicsById = new Map(existingProfilePics.map((item) => [item.id, item]));
+    const existingProfilePicIds = new Set(existingProfilePicsById.keys());
     const snapshotProfilePicIds = new Set(account.profilePictures.map((item) => item.id));
     const removedProfilePicIds = [...existingProfilePicIds].filter((id) => !snapshotProfilePicIds.has(id));
     if (removedProfilePicIds.length > 0) {
       await prisma.profilePic.deleteMany({ where: { id: { in: removedProfilePicIds } } });
     }
 
-    const addedProfilePics = account.profilePictures.filter((picture) => !existingProfilePicIds.has(picture.id));
-    if (addedProfilePics.length > 0) {
-      await prisma.profilePic.createMany({
-        data: addedProfilePics.map((picture) => ({
-          id: picture.id,
-          accountId: picture.accountId,
-          takenAt: picture.takenAt,
-          filename: picture.filename
-        })),
-        skipDuplicates: true
-      });
-      stats.profilePicsCreated += addedProfilePics.length;
+    for (const picture of account.profilePictures) {
+      const existingPicture = existingProfilePicsById.get(picture.id);
+      if (!existingPicture) {
+        await prisma.profilePic.create({
+          data: {
+            id: picture.id,
+            accountId: picture.accountId,
+            takenAt: picture.takenAt,
+            filename: picture.filename
+          }
+        });
+        stats.profilePicsCreated += 1;
+        continue;
+      }
+
+      if (existingPicture.filename !== picture.filename || existingPicture.takenAt.getTime() !== picture.takenAt.getTime()) {
+        await prisma.profilePic.update({
+          where: { id: picture.id },
+          data: {
+            takenAt: picture.takenAt,
+            filename: picture.filename
+          }
+        });
+        stats.profilePicsCreated += 1;
+      }
     }
 
     // Sync Highlights

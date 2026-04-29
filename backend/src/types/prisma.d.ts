@@ -206,16 +206,20 @@ declare module '@prisma/client' {
     profilePic: {
       deleteMany(...args: any[]): Promise<any>;
       createMany(...args: any[]): Promise<any>;
+      create(...args: any[]): Promise<ProfilePic>;
       findMany(...args: any[]): Promise<ProfilePic[]>;
+      update(...args: any[]): Promise<ProfilePic>;
     };
     tag: {
       findMany(...args: any[]): Promise<Tag[]>;
       upsert(...args: any[]): Promise<Tag>;
+      createMany(...args: any[]): Promise<any>;
       count(...args: any[]): Promise<number>;
     };
     postTag: {
       deleteMany(...args: any[]): Promise<any>;
       create(...args: any[]): Promise<PostTag>;
+      createMany(...args: any[]): Promise<any>;
     };
     postText: {
       upsert(...args: any[]): Promise<PostText>;
@@ -237,7 +241,7 @@ declare module '@prisma/client' {
       create(...args: any[]): Promise<HighlightMedia>;
     }
 
-    $transaction<T>(handler: (client: PrismaClient) => Promise<T>): Promise<T>;
+    $transaction<T>(handler: (client: PrismaClient) => Promise<T>, options?: { timeout?: number }): Promise<T>;
     $transaction<T>(operations: any[]): Promise<T>;
   }
 }

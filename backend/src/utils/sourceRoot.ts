@@ -11,7 +11,7 @@ export function resolveSourceRoot(): string {
     return path.resolve(dataRoot, 'source');
   }
 
-  return path.resolve('/root');
+  return path.resolve('/data/source');
 }
 
 export function resolveSourceAccountPath(accountId: string): string {
