@@ -6,7 +6,7 @@ import { lookup } from 'mime-types';
 import { z } from 'zod';
 import { sendFileWithRange } from '../utils/range.js';
 import { prisma } from '../db/client.js';
-import { getSourceRootPath } from '../utils/fileUpload.js';
+import { resolveSourceRoot } from '../utils/sourceRoot.js';
 
 const paramsSchema = z.object({
   account: z.string().min(1),
@@ -91,7 +91,7 @@ async function resolveAccountForFilename(filename: string): Promise<{ accountId:
 }
 
 export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
-  const dataRoot = process.env.CRAWL_OUTPUT_DIR ?? getSourceRootPath();
+  const dataRoot = resolveSourceRoot();
 
   app.get(
     '/api/media/:account/*',

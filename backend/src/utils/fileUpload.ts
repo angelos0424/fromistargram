@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
 import { MultipartFile } from '@fastify/multipart';
 import { formatDateToYYYYMMDD } from './dateFormat.js';
+import { resolveSourceAccountPath } from './sourceRoot.js';
 
 const MAX_IMAGE_SIZE = 30 * 1024 * 1024; // 30MB
 const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 50MB
@@ -51,12 +52,7 @@ export function getUploadPath(date: Date = new Date()): string {
 }
 
 export function getSourcePath(accountId: string, _date: Date = new Date()): string {
-  return path.join(getSourceRootPath(), accountId);
-}
-
-export function getSourceRootPath(): string {
-  const dataRoot = process.env.DATA_ROOT ?? '/data';
-  return path.join(dataRoot, 'source');
+  return resolveSourceAccountPath(accountId);
 }
 
 export async function saveUploadedFile(
