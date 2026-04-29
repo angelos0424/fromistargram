@@ -18,6 +18,20 @@ export interface IndexerStatus {
   lastError: string | null;
 }
 
+export interface UploadedReconcilerResult {
+  scannedFiles: number;
+  dbRowsScanned: number;
+  missingFileRows: number;
+  orphanFiles: number;
+  orphanFilesDeleted: number;
+  deletedDbRowsPruned: number;
+  sizeRecalculated: number;
+}
+
+export interface UploadedReconcilerStatus extends IndexerStatus {
+  lastResult: UploadedReconcilerResult | null;
+}
+
 export interface TablePreview {
   key: string;
   label: string;

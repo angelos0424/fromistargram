@@ -1,6 +1,9 @@
+import { mkdir } from 'fs/promises';
+import path from 'path';
 import { prisma } from '../db/client.js';
-import { cacheKey, cacheTtlSeconds, withCache } from '../utils/cache.js';
+import { cacheKey, cacheTtlSeconds, clearCache, withCache } from '../utils/cache.js';
 import { buildImagorUrl } from '../utils/imagor.js';
+import { resolveSourceAccountPath, resolveSourceRoot } from '../utils/sourceRoot.js';
 
 export type AccountSummary = {
   id: string;
@@ -29,6 +32,45 @@ export type Account = AccountSummary & {
     takenAt: string;
   }[];
 };
+
+export type CreateAccountInput = {
+  id: string;
+};
+
+const ACCOUNT_ID_PATTERN = /^[A-Za-z0-9._-]+$/;
+
+function normalizeAccountId(id: string): string {
+  return id.trim().replace(/^@+/, '');
+}
+
+function assertValidAccountId(id: string): void {
+  if (!id || id.length > 128) {
+    throw new Error('Account id must be between 1 and 128 characters.');
+  }
+
+  if (
+    !ACCOUNT_ID_PATTERN.test(id) ||
+    id.includes('..') ||
+    id.includes('/') ||
+    id.includes('\\') ||
+    path.isAbsolute(id)
+  ) {
+    throw new Error('Account id can only contain letters, numbers, dots, underscores, and hyphens.');
+  }
+}
+
+function resolveSafeAccountPath(accountId: string): string {
+  const sourceRoot = resolveSourceRoot();
+  const accountPath = resolveSourceAccountPath(accountId);
+  const isInsideRoot =
+    accountPath === sourceRoot || accountPath.startsWith(`${sourceRoot}${path.sep}`);
+
+  if (!isInsideRoot) {
+    throw new Error('Account path escapes source root.');
+  }
+
+  return accountPath;
+}
 
 export async function getAccount(id: string): Promise<Account | null> {
   const key = cacheKey(['accounts', id]);
@@ -152,6 +194,37 @@ export async function listAccounts(): Promise<Account[]> {
   );
 }
 
+export async function createAccount(input: CreateAccountInput): Promise<Account> {
+  const id = normalizeAccountId(input.id);
+  assertValidAccountId(id);
+
+  const existing = await prisma.account.findUnique({ where: { id } });
+  if (existing) {
+    throw new Error('Account already exists.');
+  }
+
+  await mkdir(resolveSafeAccountPath(id), { recursive: true });
+
+  await prisma.account.upsert({
+    where: { id },
+    create: {
+      id,
+      lastIndexedAt: null,
+      latestProfilePicUrl: null
+    },
+    update: {}
+  });
+
+  await clearCache();
+
+  const account = await getAccount(id);
+  if (!account) {
+    throw new Error('Failed to load created account.');
+  }
+
+  return account;
+}
+
 export async function deleteAccount(id: string): Promise<boolean> {
   const account = await prisma.account.findUnique({ where: { id } });
   if (!account) {
@@ -159,5 +232,6 @@ export async function deleteAccount(id: string): Promise<boolean> {
   }
 
   await prisma.account.delete({ where: { id } });
+  await clearCache();
   return true;
 }

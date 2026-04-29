@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { fetchDatabaseOverview } from '../services/databaseInspectService.js';
-import { deleteAccount } from '../services/accountsService.js';
+import { createAccount, deleteAccount } from '../services/accountsService.js';
+import { AccountSchema } from './schemas.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 
 const tablePreviewSchema = {
@@ -52,6 +53,55 @@ const errorResponseSchema = {
 } as const;
 
 export async function registerAdminDatabaseRoutes(app: FastifyInstance): Promise<void> {
+  app.post(
+    '/api/admin/db/accounts',
+    {
+      schema: {
+        tags: ['AdminDatabase'],
+        body: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', minLength: 1 }
+          },
+          required: ['id'],
+          additionalProperties: false
+        },
+        response: {
+          201: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', const: true },
+              data: AccountSchema
+            },
+            required: ['success', 'data'],
+            additionalProperties: false
+          },
+          400: errorResponseSchema,
+          409: errorResponseSchema,
+          500: errorResponseSchema
+        }
+      }
+    },
+    async (request, reply) => {
+      const { id } = request.body as { id: string };
+      try {
+        const account = await createAccount({ id });
+        return sendSuccess(reply, account, 201);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Account already exists.') {
+          return sendError(reply, error.message, 409, 'ACCOUNT_ALREADY_EXISTS');
+        }
+
+        if (error instanceof Error && error.message.startsWith('Account id')) {
+          return sendError(reply, error.message, 400, 'BAD_REQUEST');
+        }
+
+        request.log.error(error, 'Failed to create account');
+        return sendError(reply, 'Failed to create account');
+      }
+    }
+  );
+
   app.get(
     '/api/admin/db-overview',
     {

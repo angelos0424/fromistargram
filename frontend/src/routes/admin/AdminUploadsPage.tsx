@@ -3,7 +3,12 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import AdminSectionCard from '../../components/admin/AdminSectionCard';
 import { ADMIN_KEY } from '../../lib/api/admin/consts';
 import { listAccount } from '../../lib/api/client';
-import { fetchIndexerStatus, requestIndexerRun } from '../../lib/api/admin/indexer';
+import {
+  fetchIndexerStatus,
+  fetchUploadedReconcilerStatus,
+  requestIndexerRun,
+  requestUploadedReconcilerRun
+} from '../../lib/api/admin/indexer';
 import { deleteSharedMedia, listSharedMedia, updateSharedMedia } from '../../lib/api/admin/sharedMedia';
 import { uploadAdminMedia } from '../../lib/api/admin/uploads';
 import type { AdminSharedMedia } from '../../lib/api/admin/types';
@@ -49,6 +54,11 @@ const AdminUploadsPage = () => {
     queryFn: () => fetchIndexerStatus().then((res) => res.data)
   });
 
+  const { data: uploadedReconcilerStatus } = useQuery({
+    queryKey: [ADMIN_KEY, 'uploaded-reconciler'],
+    queryFn: () => fetchUploadedReconcilerStatus().then((res) => res.data)
+  });
+
   const { mutate: runIndexerMutate, isPending: isIndexerRunPending } = useMutation({
     mutationKey: [ADMIN_KEY, 'indexer', 'run'],
     mutationFn: () => requestIndexerRun().then((res) => res.data),
@@ -57,6 +67,16 @@ const AdminUploadsPage = () => {
       void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'shared-media'] });
     }
   });
+
+  const { mutate: runUploadedReconcilerMutate, isPending: isUploadedReconcilerRunPending } =
+    useMutation({
+      mutationKey: [ADMIN_KEY, 'uploaded-reconciler', 'run'],
+      mutationFn: () => requestUploadedReconcilerRun({ dryRun: false }).then((res) => res.data),
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'uploaded-reconciler'] });
+        void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'shared-media'] });
+      }
+    });
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useInfiniteQuery({
@@ -157,8 +177,8 @@ const AdminUploadsPage = () => {
   return (
     <div className="space-y-6">
       <AdminSectionCard
-        title="인덱서"
-        description="업로드된 미디어를 DB에 반영하기 위해 인덱서를 실행합니다."
+        title="Source 인덱서"
+        description="/data/source를 스캔해 계정/게시물/미디어/하이라이트를 동기화합니다."
         actions={
           <button
             type="button"
@@ -190,6 +210,52 @@ const AdminUploadsPage = () => {
             <span className="text-xs uppercase tracking-wide text-slate-400">오류</span>
             <p className="mt-1 text-slate-100">
               {indexerStatus?.lastError ?? '없음'}
+            </p>
+          </div>
+        </div>
+      </AdminSectionCard>
+      <AdminSectionCard
+        title="Uploaded Reconciler"
+        description="/data/uploaded와 SharedMedia 정합성을 점검하고 orphan/오래된 삭제 항목을 정리합니다."
+        actions={
+          <button
+            type="button"
+            onClick={() => runUploadedReconcilerMutate()}
+            className="rounded bg-brand-500/80 px-3 py-1 text-xs font-semibold text-slate-950 transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:bg-slate-600"
+            disabled={isUploadedReconcilerRunPending || uploadedReconcilerStatus?.running}
+          >
+            Reconciler 실행
+          </button>
+        }
+      >
+        <div className="grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
+          <div>
+            <span className="text-xs uppercase tracking-wide text-slate-400">상태</span>
+            <p className="mt-1 font-semibold text-slate-100">
+              {uploadedReconcilerStatus?.status ?? '알 수 없음'}
+              {uploadedReconcilerStatus?.running ? ' (실행 중)' : ''}
+            </p>
+          </div>
+          <div>
+            <span className="text-xs uppercase tracking-wide text-slate-400">최근 실행</span>
+            <p className="mt-1 text-slate-100">
+              {uploadedReconcilerStatus?.lastFinishedAt
+                ? new Date(uploadedReconcilerStatus.lastFinishedAt).toLocaleString()
+                : '기록 없음'}
+            </p>
+          </div>
+          <div className="sm:col-span-2">
+            <span className="text-xs uppercase tracking-wide text-slate-400">결과</span>
+            <p className="mt-1 text-slate-100">
+              {uploadedReconcilerStatus?.lastResult
+                ? `missing: ${uploadedReconcilerStatus.lastResult.missingFileRows}, orphan: ${uploadedReconcilerStatus.lastResult.orphanFiles}, orphan deleted: ${uploadedReconcilerStatus.lastResult.orphanFilesDeleted}`
+                : '기록 없음'}
+            </p>
+          </div>
+          <div className="sm:col-span-2">
+            <span className="text-xs uppercase tracking-wide text-slate-400">오류</span>
+            <p className="mt-1 text-slate-100">
+              {uploadedReconcilerStatus?.lastError ?? '없음'}
             </p>
           </div>
         </div>

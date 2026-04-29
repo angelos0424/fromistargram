@@ -2,9 +2,9 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import { prisma } from '../db/client.js';
 import { clearCache } from '../utils/cache.js';
-import { getSourceRootPath } from '../utils/fileUpload.js';
+import { resolveSourceRoot } from '../utils/sourceRoot.js';
 import { scanDataRoot } from './fileSystemScanner.js';
-import { IndexerSnapshot } from './types.js';
+import { IndexedPost, IndexerSnapshot } from './types.js';
 
 export type IndexerOptions = {
   dataRoot?: string;
@@ -12,15 +12,75 @@ export type IndexerOptions = {
 
 export type IndexerResult = {
   accountsCreated: number;
-  postsCreated: number;
-  mediaCreated: number;
+  postsCreated: number; // 신규 + 갱신 반영 건수
+  mediaCreated: number; // 신규 + 갱신 반영 건수
   profilePicsCreated: number;
   tagsCreated: number;
 };
 
+function sortTags(tags: string[]): string[] {
+  return [...tags].sort((a, b) => a.localeCompare(b));
+}
+
+function serializePost(post: IndexedPost): string {
+  return JSON.stringify({
+    postedAt: post.postedAt.toISOString(),
+    caption: post.caption ?? null,
+    hasText: post.hasText,
+    type: post.type,
+    textContent: post.textContent ?? '',
+    tags: sortTags(post.tags),
+    media: post.media
+      .map((item) => ({
+        orderIndex: item.orderIndex,
+        filename: item.filename,
+        mime: item.mime,
+        width: item.width ?? null,
+        height: item.height ?? null,
+        duration: item.duration ?? null
+      }))
+      .sort((a, b) => a.orderIndex - b.orderIndex || a.filename.localeCompare(b.filename))
+  });
+}
+
+function serializeExistingPost(post: {
+  postedAt: Date;
+  caption: string | null;
+  hasText: boolean;
+  type: string;
+  postText?: { content: string } | null;
+  tags: { tag: { name: string } }[];
+  media: {
+    orderIndex: number;
+    filename: string;
+    mime: string;
+    width: number | null;
+    height: number | null;
+    duration: number | null;
+  }[];
+}): string {
+  return JSON.stringify({
+    postedAt: post.postedAt.toISOString(),
+    caption: post.caption ?? null,
+    hasText: post.hasText,
+    type: post.type,
+    textContent: post.postText?.content ?? '',
+    tags: sortTags(post.tags.map((item) => item.tag.name)),
+    media: post.media
+      .map((item) => ({
+        orderIndex: item.orderIndex,
+        filename: item.filename,
+        mime: item.mime,
+        width: item.width ?? null,
+        height: item.height ?? null,
+        duration: item.duration ?? null
+      }))
+      .sort((a, b) => a.orderIndex - b.orderIndex || a.filename.localeCompare(b.filename))
+  });
+}
+
 export async function buildSnapshot(options: IndexerOptions = {}): Promise<IndexerSnapshot> {
-  const dataRoot =
-    options.dataRoot ?? process.env.CRAWL_OUTPUT_DIR ?? getSourceRootPath();
+  const dataRoot = options.dataRoot ?? resolveSourceRoot();
   const resolvedRoot = path.resolve(dataRoot);
 
   try {
@@ -69,28 +129,73 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
       }
     });
 
-    // Account의 기존 Post ID 목록 조회
-    const existingPostIds = await prisma.post.findMany({
+    const snapshotPostIds = new Set(account.posts.map((post) => post.id));
+    const existingPosts = await prisma.post.findMany({
       where: { accountId: account.id },
-      select: { id: true }
-    }).then(posts => posts.map(p => p.id));
+      include: {
+        media: true,
+        postText: true,
+        tags: {
+          include: {
+            tag: true
+          }
+        }
+      }
+    });
 
-    // 기존 Post 및 관련 데이터 삭제 (FK 제약 우회를 위해 관련 데이터 먼저 삭제)
-    if (existingPostIds.length > 0) {
-      await prisma.postText.deleteMany({ where: { postId: { in: existingPostIds } } });
-      await prisma.postTag.deleteMany({ where: { postId: { in: existingPostIds } } });
-      await prisma.media.deleteMany({ where: { postId: { in: existingPostIds } } });
-      await prisma.post.deleteMany({ where: { accountId: account.id } });
+    const existingPostsById = new Map(existingPosts.map((post) => [post.id, post]));
+    const deletedPostIds = existingPosts
+      .filter((post) => !snapshotPostIds.has(post.id))
+      .map((post) => post.id);
+
+    if (deletedPostIds.length > 0) {
+      await prisma.post.deleteMany({ where: { id: { in: deletedPostIds } } });
     }
 
-    // 모든 Post 생성/업데이트
-    for (const post of account.posts) {
-      await (prisma.$transaction as any)(async (tx: any) => {
-        // 기존 Post의 관련 데이터 삭제 (중복 방지)
-        await tx.postText.deleteMany({ where: { postId: post.id } });
-        await tx.postTag.deleteMany({ where: { postId: post.id } });
-        await tx.media.deleteMany({ where: { postId: post.id } });
+    const postsToSync = account.posts.filter((post) => {
+      const existing = existingPostsById.get(post.id);
+      if (!existing) {
+        return true;
+      }
 
+      return serializePost(post) !== serializeExistingPost(existing);
+    });
+
+    const tagNames = new Set<string>();
+    for (const post of postsToSync) {
+      for (const tag of post.tags) {
+        tagNames.add(tag);
+      }
+    }
+
+    let tagNameToId = new Map<string, number>();
+    if (tagNames.size > 0) {
+      const names = [...tagNames];
+      const existingTags = await prisma.tag.findMany({
+        where: { name: { in: names } },
+        select: { id: true, name: true }
+      });
+      const missingTagNames = names.filter(
+        (name) => !existingTags.some((existingTag) => existingTag.name === name)
+      );
+
+      if (missingTagNames.length > 0) {
+        await (prisma.tag as any).createMany({
+          data: missingTagNames.map((name) => ({ name })),
+          skipDuplicates: true
+        });
+        stats.tagsCreated += missingTagNames.length;
+      }
+
+      const resolvedTags = await prisma.tag.findMany({
+        where: { name: { in: names } },
+        select: { id: true, name: true }
+      });
+      tagNameToId = new Map(resolvedTags.map((tag) => [tag.name, tag.id]));
+    }
+
+    for (const post of postsToSync) {
+      await (prisma.$transaction as any)(async (tx: any) => {
         await tx.post.upsert({
           where: { id: post.id },
           create: {
@@ -108,9 +213,14 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
             type: post.type
           }
         });
-        stats.postsCreated += 1;
 
-        // Media 생성
+        await tx.postText.upsert({
+          where: { postId: post.id },
+          create: { postId: post.id, content: post.textContent ?? '' },
+          update: { content: post.textContent ?? '' }
+        });
+
+        await tx.media.deleteMany({ where: { postId: post.id } });
         if (post.media.length > 0) {
           await tx.media.createMany({
             data: post.media.map((media) => ({
@@ -121,47 +231,49 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
               width: media.width,
               height: media.height,
               duration: media.duration
-            })),
-            skipDuplicates: true
+            }))
           });
           stats.mediaCreated += post.media.length;
         }
 
-        // Tag 처리
-        for (const tagName of post.tags) {
-          let tag = await tx.tag.findUnique({ where: { name: tagName } });
-          if (!tag) {
-            tag = await tx.tag.create({ data: { name: tagName } });
-            stats.tagsCreated += 1;
-          }
-
-          await tx.postTag.upsert({
-            where: { postId_tagId: { postId: post.id, tagId: tag.id } },
-            create: { postId: post.id, tagId: tag.id },
-            update: {}
+        await tx.postTag.deleteMany({ where: { postId: post.id } });
+        const tagIds = post.tags
+          .map((tagName) => tagNameToId.get(tagName))
+          .filter((value): value is number => value !== undefined);
+        if (tagIds.length > 0) {
+          await (tx.postTag as any).createMany({
+            data: tagIds.map((tagId) => ({ postId: post.id, tagId })),
+            skipDuplicates: true
           });
         }
-
-        // PostText 생성
-        await tx.postText.upsert({
-          where: { postId: post.id },
-          create: { postId: post.id, content: post.textContent ?? '' },
-          update: { content: post.textContent ?? '' }
-        });
       }, { timeout: 30000 });
+
+      stats.postsCreated += 1;
     }
 
-    await prisma.profilePic.deleteMany({ where: { accountId: account.id } });
-    if (account.profilePictures.length > 0) {
-      const profilePicResult = await prisma.profilePic.createMany({
-        data: account.profilePictures.map((picture) => ({
+    const existingProfilePics = await prisma.profilePic.findMany({
+      where: { accountId: account.id },
+      select: { id: true }
+    });
+    const existingProfilePicIds = new Set(existingProfilePics.map((item) => item.id));
+    const snapshotProfilePicIds = new Set(account.profilePictures.map((item) => item.id));
+    const removedProfilePicIds = [...existingProfilePicIds].filter((id) => !snapshotProfilePicIds.has(id));
+    if (removedProfilePicIds.length > 0) {
+      await prisma.profilePic.deleteMany({ where: { id: { in: removedProfilePicIds } } });
+    }
+
+    const addedProfilePics = account.profilePictures.filter((picture) => !existingProfilePicIds.has(picture.id));
+    if (addedProfilePics.length > 0) {
+      await prisma.profilePic.createMany({
+        data: addedProfilePics.map((picture) => ({
           id: picture.id,
           accountId: picture.accountId,
           takenAt: picture.takenAt,
           filename: picture.filename
-        }))
+        })),
+        skipDuplicates: true
       });
-      stats.profilePicsCreated += profilePicResult.count ?? account.profilePictures.length;
+      stats.profilePicsCreated += addedProfilePics.length;
     }
 
     // Sync Highlights
@@ -210,6 +322,18 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
           data: { coverMediaId: cover.id }
         });
       }
+    }
+
+    const existingHighlights = await prisma.highlight.findMany({
+      where: { accountId: account.id },
+      select: { id: true, title: true }
+    });
+    const snapshotHighlightTitles = new Set(account.highlights.map((highlight) => highlight.title));
+    const removedHighlightIds = existingHighlights
+      .filter((highlight) => !snapshotHighlightTitles.has(highlight.title))
+      .map((highlight) => highlight.id);
+    if (removedHighlightIds.length > 0) {
+      await prisma.highlight.deleteMany({ where: { id: { in: removedHighlightIds } } });
     }
   }
 

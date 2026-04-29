@@ -1,8 +1,13 @@
-import { useMemo } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import AdminSectionCard from '../../components/admin/AdminSectionCard';
+import { CLIENT_KEY } from '../../lib/api/client';
 import { ADMIN_KEY } from '../../lib/api/admin/consts';
-import { deleteDatabaseAccount, fetchDatabaseOverview } from '../../lib/api/admin/database';
+import {
+  createDatabaseAccount,
+  deleteDatabaseAccount,
+  fetchDatabaseOverview
+} from '../../lib/api/admin/database';
 import type { TablePreview } from '../../lib/api/admin/types';
 
 const formatValue = (value: unknown) => {
@@ -113,6 +118,102 @@ const TablePreviewCard = ({ table }: { table: TablePreview }) => {
   );
 };
 
+const getMutationErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error === 'object' && error !== null && 'response' in error) {
+    const data = (error as { response?: { data?: { error?: { message?: string } } } }).response
+      ?.data;
+    if (data?.error?.message) {
+      return data.error.message;
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
+const AccountCreateCard = () => {
+  const queryClient = useQueryClient();
+  const [accountId, setAccountId] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
+
+  const createAccountMutation = useMutation({
+    mutationFn: createDatabaseAccount,
+    onSuccess: (response) => {
+      setAccountId('');
+      setFormError(null);
+      setFormSuccess(`${response.data.id} 계정을 추가했습니다.`);
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'database', 'overview'] });
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'accounts'] });
+      void queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'statistics'] });
+      void queryClient.invalidateQueries({ queryKey: [CLIENT_KEY, 'accounts'] });
+    },
+    onError: (error) => {
+      setFormSuccess(null);
+      setFormError(getMutationErrorMessage(error, '계정 추가에 실패했습니다.'));
+    }
+  });
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFormError(null);
+    setFormSuccess(null);
+
+    const trimmed = accountId.trim();
+    if (!trimmed) {
+      setFormError('계정 ID를 입력해 주세요.');
+      return;
+    }
+
+    createAccountMutation.mutate(trimmed);
+  };
+
+  return (
+    <AdminSectionCard
+      title="계정 추가"
+      description="수동 업로드와 인덱서가 사용할 계정을 미리 등록합니다."
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <label className="flex flex-col gap-2 text-sm text-slate-300">
+          계정 ID
+          <input
+            type="text"
+            value={accountId}
+            onChange={(event) => setAccountId(event.target.value)}
+            placeholder="fromis_9"
+            className="rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-brand-400 focus:outline-none"
+          />
+        </label>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            disabled={createAccountMutation.isPending}
+            className="rounded bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {createAccountMutation.isPending ? '추가 중...' : '계정 추가'}
+          </button>
+          <span className="text-xs text-slate-400">
+            영문, 숫자, 점, 밑줄, 하이픈을 사용할 수 있습니다.
+          </span>
+        </div>
+        {formError && (
+          <div className="rounded border border-red-500/60 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+            {formError}
+          </div>
+        )}
+        {formSuccess && (
+          <div className="rounded border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+            {formSuccess}
+          </div>
+        )}
+      </form>
+    </AdminSectionCard>
+  );
+};
+
 const AdminDatabasePage = () => {
   const { data, isPending, isError } = useQuery({
     queryKey: [ADMIN_KEY, 'database', 'overview'],
@@ -137,6 +238,8 @@ const AdminDatabasePage = () => {
           총 {data.tables.length}개 테이블의 상태를 확인할 수 있습니다.
         </p>
       </AdminSectionCard>
+
+      <AccountCreateCard />
 
       {data.tables.map((table) => (
         <TablePreviewCard key={table.key} table={table} />

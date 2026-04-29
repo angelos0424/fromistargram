@@ -107,7 +107,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
       ? Number(process.hrtime.bigint() - metricsStart) / 1_000_000
       : reply.getResponseTime();
 
-    const routePath = request.routerPath ?? request.url;
+    const routePath = request.routeOptions.url ?? request.url;
 
     request.log.info(
       {

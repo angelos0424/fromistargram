@@ -25,6 +25,7 @@ export async function fetchDatabaseOverview(): Promise<DatabaseOverview> {
     ] = await Promise.all([
       client.account.findMany({
         orderBy: { updatedAt: 'desc' },
+        take: 5,
         select: {
           id: true,
           lastIndexedAt: true,
