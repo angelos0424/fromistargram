@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { MultipartFile } from '@fastify/multipart';
-import { mkdir, readFile, writeFile } from 'fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../db/client.js';
@@ -198,8 +198,14 @@ function toComparableBuffer(data: Buffer | string): Buffer {
 }
 
 async function isExistingFileIdentical(filepath: string, data: Buffer | string): Promise<boolean> {
+  const buffer = toComparableBuffer(data);
+  const existingStats = await stat(filepath);
+  if (existingStats.size !== buffer.length) {
+    return false;
+  }
+
   const existing = await readFile(filepath);
-  return existing.equals(toComparableBuffer(data));
+  return existing.equals(buffer);
 }
 
 async function ensureSourceFileCanBeWritten(filepath: string, data: Buffer | string): Promise<void> {
@@ -242,7 +248,6 @@ export async function writeSourceFileAllowingIdenticalOverwrite(
       error.code === 'EEXIST'
     ) {
       await ensureSourceFileCanBeWritten(filepath, data);
-      await writeFile(filepath, data);
       return;
     }
 
@@ -464,7 +469,9 @@ async function saveToSource(input: {
     }
   ];
 
-  await Promise.all(sourceFiles.map((file) => ensureSourceFileCanBeWritten(file.filepath, file.data)));
+  for (const file of sourceFiles) {
+    await ensureSourceFileCanBeWritten(file.filepath, file.data);
+  }
 
   const savedFiles: Array<{ filename: string; filepath: string }> = [];
   for (const file of mediaFiles) {
