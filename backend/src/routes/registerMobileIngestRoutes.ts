@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { MultipartFile } from '@fastify/multipart';
-import { access, mkdir, writeFile } from 'fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../db/client.js';
@@ -193,30 +193,51 @@ function generateSharedFilename(originalFilename: string, postedAt: ParsedPosted
   return `${postedAt.timestampBase}${fileSuffix}`;
 }
 
-async function fileExists(filepath: string): Promise<boolean> {
-  try {
-    await access(filepath);
-    return true;
-  } catch {
+function toComparableBuffer(data: Buffer | string): Buffer {
+  return Buffer.isBuffer(data) ? data : Buffer.from(data);
+}
+
+async function isExistingFileIdentical(filepath: string, data: Buffer | string): Promise<boolean> {
+  const buffer = toComparableBuffer(data);
+  const existingStats = await stat(filepath);
+  if (existingStats.size !== buffer.length) {
     return false;
   }
+
+  const existing = await readFile(filepath);
+  return existing.equals(buffer);
 }
 
-async function rejectExistingSourceFiles(filepaths: string[]): Promise<void> {
-  const existingFilepath = (await Promise.all(
-    filepaths.map(async (filepath) => await fileExists(filepath) ? filepath : null)
-  )).find((filepath): filepath is string => filepath !== null);
+async function ensureSourceFileCanBeWritten(filepath: string, data: Buffer | string): Promise<void> {
+  try {
+    const isIdentical = await isExistingFileIdentical(filepath, data);
+    if (isIdentical) {
+      return;
+    }
+  } catch (error) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'ENOENT'
+    ) {
+      return;
+    }
 
-  if (existingFilepath) {
-    throw new IngestClientError(
-      `Source file already exists: ${path.basename(existingFilepath)}`,
-      409,
-      'CONFLICT'
-    );
+    throw error;
   }
+
+  throw new IngestClientError(
+    `Source file already exists with different content: ${path.basename(filepath)}`,
+    409,
+    'CONFLICT'
+  );
 }
 
-async function writeNewSourceFile(filepath: string, data: Buffer | string): Promise<void> {
+export async function writeSourceFileAllowingIdenticalOverwrite(
+  filepath: string,
+  data: Buffer | string
+): Promise<void> {
   try {
     await writeFile(filepath, data, { flag: 'wx' });
   } catch (error) {
@@ -226,11 +247,8 @@ async function writeNewSourceFile(filepath: string, data: Buffer | string): Prom
       'code' in error &&
       error.code === 'EEXIST'
     ) {
-      throw new IngestClientError(
-        `Source file already exists: ${path.basename(filepath)}`,
-        409,
-        'CONFLICT'
-      );
+      await ensureSourceFileCanBeWritten(filepath, data);
+      return;
     }
 
     throw error;
@@ -431,34 +449,41 @@ async function saveToSource(input: {
 
   const metadataFilename = `${input.postedAt.timestampBase}_UTC.json`;
   const metadataPath = path.join(sourceDir, metadataFilename);
-  await rejectExistingSourceFiles([
-    ...mediaFiles.map((file) => file.filepath),
-    ...(captionPath ? [captionPath] : []),
-    metadataPath
-  ]);
+  const metadataContent = JSON.stringify(
+    {
+      instaloader: {
+        node_type: input.type === 'Story' ? 'StoryItem' : 'Post'
+      }
+    },
+    null,
+    2
+  );
+  const sourceFiles = [
+    ...mediaFiles.map((file) => ({ filepath: file.filepath, data: file.buffer })),
+    ...(captionPath !== null && input.caption !== undefined
+      ? [{ filepath: captionPath, data: input.caption }]
+      : []),
+    {
+      filepath: metadataPath,
+      data: metadataContent
+    }
+  ];
+
+  for (const file of sourceFiles) {
+    await ensureSourceFileCanBeWritten(file.filepath, file.data);
+  }
 
   const savedFiles: Array<{ filename: string; filepath: string }> = [];
   for (const file of mediaFiles) {
-    await writeNewSourceFile(file.filepath, file.buffer);
+    await writeSourceFileAllowingIdenticalOverwrite(file.filepath, file.buffer);
     savedFiles.push({ filename: file.filename, filepath: file.filepath });
   }
 
   if (captionPath !== null && input.caption !== undefined) {
-    await writeNewSourceFile(captionPath, input.caption);
+    await writeSourceFileAllowingIdenticalOverwrite(captionPath, input.caption);
   }
 
-  await writeNewSourceFile(
-    metadataPath,
-    JSON.stringify(
-      {
-        instaloader: {
-          node_type: input.type === 'Story' ? 'StoryItem' : 'Post'
-        }
-      },
-      null,
-      2
-    )
-  );
+  await writeSourceFileAllowingIdenticalOverwrite(metadataPath, metadataContent);
 
   const postId = `${input.postedAt.timestampBase}_UTC`;
   const apiBaseUrl = getApiBaseUrl(input.request);
