@@ -1,5 +1,9 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { mkdtemp, readFile, rm, writeFile } from 'fs/promises';
+import os from 'os';
+import path from 'path';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { buildServer, type BuildServerOptions } from '../../server.js';
+import { writeSourceFileAllowingIdenticalOverwrite } from '../registerMobileIngestRoutes.js';
 
 vi.mock('../../db/client.js', () => ({
   prisma: {}
@@ -107,5 +111,52 @@ describe('Post routes contract', () => {
   it('returns 404 when post is missing', async () => {
     const response = await app.inject({ method: 'GET', url: '/api/posts/unknown' });
     expect(response.statusCode).toBe(404);
+  });
+});
+
+describe('mobile ingest source file writes', () => {
+  let tempDir: string | null = null;
+
+  async function createTempFilePath(filename: string): Promise<string> {
+    tempDir = await mkdtemp(path.join(os.tmpdir(), 'fromistargram-mobile-ingest-'));
+    return path.join(tempDir, filename);
+  }
+
+  afterEach(async () => {
+    if (tempDir) {
+      await rm(tempDir, { recursive: true, force: true });
+      tempDir = null;
+    }
+  });
+
+  it('writes a new source file', async () => {
+    const filepath = await createTempFilePath('new.jpg');
+
+    await writeSourceFileAllowingIdenticalOverwrite(filepath, Buffer.from('image-data'));
+
+    await expect(readFile(filepath, 'utf8')).resolves.toBe('image-data');
+  });
+
+  it('allows overwriting an existing source file when content is identical', async () => {
+    const filepath = await createTempFilePath('same.jpg');
+    await writeFile(filepath, Buffer.from('same-image-data'));
+
+    await writeSourceFileAllowingIdenticalOverwrite(filepath, Buffer.from('same-image-data'));
+
+    await expect(readFile(filepath, 'utf8')).resolves.toBe('same-image-data');
+  });
+
+  it('rejects an existing source file when content differs', async () => {
+    const filepath = await createTempFilePath('different.jpg');
+    await writeFile(filepath, Buffer.from('old-image-data'));
+
+    await expect(
+      writeSourceFileAllowingIdenticalOverwrite(filepath, Buffer.from('new-image-data'))
+    ).rejects.toMatchObject({
+      code: 'CONFLICT',
+      statusCode: 409
+    });
+
+    await expect(readFile(filepath, 'utf8')).resolves.toBe('old-image-data');
   });
 });
