@@ -1,4 +1,6 @@
+import { createReadStream } from 'fs';
 import { readdir, readFile } from 'fs/promises';
+import { createHash } from 'node:crypto';
 import path from 'path';
 import { lookup } from 'mime-types';
 import { extractHashtags } from '../utils/hashtags.js';
@@ -17,23 +19,147 @@ const TEXT_REGEX = /^(?<timestamp>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})_UTC\.txt$
 const PROFILE_REGEX = /^(?<timestamp>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})_UTC_profile_pic\.(?<extension>[a-zA-Z0-9]+)$/;
 const COVER_REGEX = /^(?<timestamp>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})_UTC_cover\.(?<extension>[a-zA-Z0-9]+)$/;
 
+type AccumulatedMedia = IndexedMedia & {
+  contentHash: string;
+};
+
 function parseTimestamp(timestamp: string): Date {
   const [datePart, timePart] = timestamp.split('_');
   const normalizedTime = timePart.replace(/-/g, ':');
   return new Date(`${datePart}T${normalizedTime}Z`);
 }
 
+function formatKstDateKey(date: Date): string {
+  const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  const year = kstDate.getUTCFullYear();
+  const month = String(kstDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(kstDate.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function buildStoryGroupId(accountId: string, dateKey: string): string {
+  return `${dateKey}_KST_story_${accountId}`;
+}
+
+function mergeTextContent(current: string | null, next: string | null): string | null {
+  if (!next) {
+    return current;
+  }
+
+  if (!current) {
+    return next;
+  }
+
+  return `${current.trimEnd()}\n\n${next}`;
+}
+
+async function hashFile(filepath: string): Promise<string> {
+  const hash = createHash('sha256');
+  for await (const chunk of createReadStream(filepath)) {
+    hash.update(chunk);
+  }
+
+  return hash.digest('hex');
+}
+
 type PostAccumulator = {
   id: string;
   accountId: string;
   postedAt: Date;
-  media: IndexedMedia[];
+  media: AccumulatedMedia[];
   textContent: string | null;
   hasText: boolean;
   tags: Set<string>;
   caption: string | null;
   type: string;
 };
+
+function mergeStoryIntoGroup(group: PostAccumulator, story: PostAccumulator): void {
+  if (story.postedAt.getTime() > group.postedAt.getTime()) {
+    group.postedAt = story.postedAt;
+  }
+
+  const existingHashes = new Set(group.media.map((media) => media.contentHash));
+  for (const media of story.media) {
+    if (existingHashes.has(media.contentHash)) {
+      continue;
+    }
+
+    existingHashes.add(media.contentHash);
+    group.media.push(media);
+  }
+  group.textContent = mergeTextContent(group.textContent, story.textContent);
+  group.caption = mergeTextContent(group.caption, story.caption);
+  group.hasText = group.hasText || story.hasText;
+  story.tags.forEach((tag) => group.tags.add(tag));
+}
+
+function groupStoriesByDay(posts: PostAccumulator[]): PostAccumulator[] {
+  const groupedPosts: PostAccumulator[] = [];
+  const storyGroups = new Map<string, PostAccumulator>();
+
+  for (const post of posts) {
+    if (post.type !== 'Story') {
+      groupedPosts.push(post);
+      continue;
+    }
+
+    const dateKey = formatKstDateKey(post.postedAt);
+    const groupKey = `${post.accountId}:${dateKey}`;
+    const existingGroup = storyGroups.get(groupKey);
+    if (existingGroup) {
+      mergeStoryIntoGroup(existingGroup, post);
+      continue;
+    }
+
+    const group: PostAccumulator = {
+      ...post,
+      id: buildStoryGroupId(post.accountId, dateKey),
+      media: [...post.media],
+      tags: new Set(post.tags)
+    };
+    storyGroups.set(groupKey, group);
+    groupedPosts.push(group);
+  }
+
+  return groupedPosts;
+}
+
+function getMediaTimestamp(filename: string): string {
+  const match = path.basename(filename).match(MEDIA_REGEX);
+  return match?.groups?.timestamp ?? '';
+}
+
+function compareIndexedMedia(a: IndexedMedia, b: IndexedMedia, postType: string): number {
+  if (postType === 'Story') {
+    return getMediaTimestamp(a.filename).localeCompare(getMediaTimestamp(b.filename)) ||
+      a.orderIndex - b.orderIndex ||
+      a.filename.localeCompare(b.filename);
+  }
+
+  return a.orderIndex - b.orderIndex || a.filename.localeCompare(b.filename);
+}
+
+function toIndexedPost(post: PostAccumulator): IndexedPost {
+  const media = [...post.media]
+    .sort((a, b) => compareIndexedMedia(a, b, post.type))
+    .map(({ contentHash: _contentHash, ...item }, index) => ({
+      ...item,
+      orderIndex: index
+    }));
+
+  return {
+    id: post.id,
+    accountId: post.accountId,
+    postedAt: post.postedAt,
+    media,
+    caption: post.caption,
+    hasText: post.hasText,
+    textContent: post.textContent,
+    tags: Array.from(post.tags),
+    type: post.type
+  };
+}
 
 async function scanAccount(dataRoot: string, accountId: string): Promise<AccountSnapshot> {
   const accountDir = path.join(dataRoot, accountId);
@@ -204,7 +330,8 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
         mime: typeof mime === 'string' ? mime : 'application/octet-stream',
         width: null,
         height: null,
-        duration: null
+        duration: null,
+        contentHash: await hashFile(absolutePath)
       });
       continue;
     }
@@ -221,19 +348,9 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
     }
   }
 
-  const posts: IndexedPost[] = Array.from(postMap.values())
+  const posts: IndexedPost[] = groupStoriesByDay(Array.from(postMap.values()))
     .sort((a, b) => b.postedAt.getTime() - a.postedAt.getTime())
-    .map((post) => ({
-      id: post.id,
-      accountId: post.accountId,
-      postedAt: post.postedAt,
-      media: [...post.media].sort((a, b) => a.orderIndex - b.orderIndex),
-      caption: post.caption,
-      hasText: post.hasText,
-      textContent: post.textContent,
-      tags: Array.from(post.tags),
-      type: post.type
-    }));
+    .map(toIndexedPost);
 
   profilePictures.sort((a, b) => a.takenAt.getTime() - b.takenAt.getTime());
 
