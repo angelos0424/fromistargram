@@ -20,7 +20,8 @@ const PROFILE_REGEX = /^(?<timestamp>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})_UTC_pr
 const COVER_REGEX = /^(?<timestamp>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})_UTC_cover\.(?<extension>[a-zA-Z0-9]+)$/;
 
 type AccumulatedMedia = IndexedMedia & {
-  contentHash: string;
+  contentHash?: string;
+  sourcePath: string;
 };
 
 function parseTimestamp(timestamp: string): Date {
@@ -30,10 +31,16 @@ function parseTimestamp(timestamp: string): Date {
 }
 
 function formatKstDateKey(date: Date): string {
-  const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
-  const year = kstDate.getUTCFullYear();
-  const month = String(kstDate.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(kstDate.getUTCDate()).padStart(2, '0');
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const year = values.year;
+  const month = values.month;
+  const day = values.day;
   return `${year}-${month}-${day}`;
 }
 
@@ -81,7 +88,7 @@ function mergeStoryIntoGroup(group: PostAccumulator, story: PostAccumulator): vo
 
   const existingHashes = new Set(group.media.map((media) => media.contentHash));
   for (const media of story.media) {
-    if (existingHashes.has(media.contentHash)) {
+    if (media.contentHash && existingHashes.has(media.contentHash)) {
       continue;
     }
 
@@ -94,9 +101,19 @@ function mergeStoryIntoGroup(group: PostAccumulator, story: PostAccumulator): vo
   story.tags.forEach((tag) => group.tags.add(tag));
 }
 
+function compareStoryAccumulators(a: PostAccumulator, b: PostAccumulator): number {
+  return a.postedAt.getTime() - b.postedAt.getTime() || a.id.localeCompare(b.id);
+}
+
 function groupStoriesByDay(posts: PostAccumulator[]): PostAccumulator[] {
   const groupedPosts: PostAccumulator[] = [];
-  const storyGroups = new Map<string, PostAccumulator>();
+  const storyGroups = new Map<
+    string,
+    {
+      dateKey: string;
+      stories: PostAccumulator[];
+    }
+  >();
 
   for (const post of posts) {
     if (post.type !== 'Story') {
@@ -108,17 +125,30 @@ function groupStoriesByDay(posts: PostAccumulator[]): PostAccumulator[] {
     const groupKey = `${post.accountId}:${dateKey}`;
     const existingGroup = storyGroups.get(groupKey);
     if (existingGroup) {
-      mergeStoryIntoGroup(existingGroup, post);
+      existingGroup.stories.push(post);
       continue;
     }
 
+    storyGroups.set(groupKey, {
+      dateKey,
+      stories: [post]
+    });
+  }
+
+  for (const { dateKey, stories } of storyGroups.values()) {
+    const sortedStories = [...stories].sort(compareStoryAccumulators);
+    const [firstStory, ...remainingStories] = sortedStories;
     const group: PostAccumulator = {
-      ...post,
-      id: buildStoryGroupId(post.accountId, dateKey),
-      media: [...post.media],
-      tags: new Set(post.tags)
+      ...firstStory,
+      id: buildStoryGroupId(firstStory.accountId, dateKey),
+      media: [...firstStory.media],
+      tags: new Set(firstStory.tags)
     };
-    storyGroups.set(groupKey, group);
+
+    for (const story of remainingStories) {
+      mergeStoryIntoGroup(group, story);
+    }
+
     groupedPosts.push(group);
   }
 
@@ -143,7 +173,7 @@ function compareIndexedMedia(a: IndexedMedia, b: IndexedMedia, postType: string)
 function toIndexedPost(post: PostAccumulator): IndexedPost {
   const media = [...post.media]
     .sort((a, b) => compareIndexedMedia(a, b, post.type))
-    .map(({ contentHash: _contentHash, ...item }, index) => ({
+    .map(({ contentHash: _contentHash, sourcePath: _sourcePath, ...item }, index) => ({
       ...item,
       orderIndex: index
     }));
@@ -331,7 +361,7 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
         width: null,
         height: null,
         duration: null,
-        contentHash: await hashFile(absolutePath)
+        sourcePath: absolutePath
       });
       continue;
     }
@@ -348,7 +378,18 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
     }
   }
 
-  const posts: IndexedPost[] = groupStoriesByDay(Array.from(postMap.values()))
+  const accumulatedPosts = Array.from(postMap.values());
+  await Promise.all(
+    accumulatedPosts
+      .filter((post) => post.type === 'Story')
+      .flatMap((post) =>
+        post.media.map(async (media) => {
+          media.contentHash = await hashFile(media.sourcePath);
+        })
+      )
+  );
+
+  const posts: IndexedPost[] = groupStoriesByDay(accumulatedPosts)
     .sort((a, b) => b.postedAt.getTime() - a.postedAt.getTime())
     .map(toIndexedPost);
 
