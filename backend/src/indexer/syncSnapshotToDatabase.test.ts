@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const prismaMock = {
+  $transaction: vi.fn(),
   account: {
     findUnique: vi.fn(),
     upsert: vi.fn()
@@ -57,6 +58,7 @@ describe('syncSnapshotToDatabase', () => {
     prismaMock.profilePic.update.mockResolvedValue({});
     prismaMock.highlight.findMany.mockResolvedValue([]);
     prismaMock.highlight.deleteMany.mockResolvedValue({ count: 0 });
+    prismaMock.$transaction.mockImplementation(async (operations: unknown[]) => await Promise.all(operations));
     clearCacheMock.mockResolvedValue(undefined);
   });
 
@@ -131,6 +133,13 @@ describe('syncSnapshotToDatabase', () => {
     expect(prismaMock.postText.deleteMany).toHaveBeenCalledWith(childDeleteFilter);
     expect(prismaMock.postTag.deleteMany).toHaveBeenCalledWith(childDeleteFilter);
     expect(prismaMock.post.deleteMany).toHaveBeenCalledWith({ where: { id: { in: ['removed_post'] } } });
+    expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
+    expect(prismaMock.$transaction).toHaveBeenCalledWith([
+      prismaMock.media.deleteMany.mock.results[0].value,
+      prismaMock.postText.deleteMany.mock.results[0].value,
+      prismaMock.postTag.deleteMany.mock.results[0].value,
+      prismaMock.post.deleteMany.mock.results[0].value
+    ]);
 
     const mediaDeleteOrder = prismaMock.media.deleteMany.mock.invocationCallOrder[0];
     const postTextDeleteOrder = prismaMock.postText.deleteMany.mock.invocationCallOrder[0];

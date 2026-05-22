@@ -20,7 +20,8 @@ const PROFILE_REGEX = /^(?<timestamp>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})_UTC_pr
 const COVER_REGEX = /^(?<timestamp>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})_UTC_cover\.(?<extension>[a-zA-Z0-9]+)$/;
 
 type AccumulatedMedia = IndexedMedia & {
-  contentHash: string;
+  contentHash?: string;
+  sourcePath: string;
 };
 
 function parseTimestamp(timestamp: string): Date {
@@ -87,7 +88,7 @@ function mergeStoryIntoGroup(group: PostAccumulator, story: PostAccumulator): vo
 
   const existingHashes = new Set(group.media.map((media) => media.contentHash));
   for (const media of story.media) {
-    if (existingHashes.has(media.contentHash)) {
+    if (media.contentHash && existingHashes.has(media.contentHash)) {
       continue;
     }
 
@@ -172,7 +173,7 @@ function compareIndexedMedia(a: IndexedMedia, b: IndexedMedia, postType: string)
 function toIndexedPost(post: PostAccumulator): IndexedPost {
   const media = [...post.media]
     .sort((a, b) => compareIndexedMedia(a, b, post.type))
-    .map(({ contentHash: _contentHash, ...item }, index) => ({
+    .map(({ contentHash: _contentHash, sourcePath: _sourcePath, ...item }, index) => ({
       ...item,
       orderIndex: index
     }));
@@ -360,7 +361,7 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
         width: null,
         height: null,
         duration: null,
-        contentHash: await hashFile(absolutePath)
+        sourcePath: absolutePath
       });
       continue;
     }
@@ -378,6 +379,16 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
   }
 
   const accumulatedPosts = Array.from(postMap.values());
+  await Promise.all(
+    accumulatedPosts
+      .filter((post) => post.type === 'Story')
+      .flatMap((post) =>
+        post.media.map(async (media) => {
+          media.contentHash = await hashFile(media.sourcePath);
+        })
+      )
+  );
+
   const posts: IndexedPost[] = groupStoriesByDay(accumulatedPosts)
     .sort((a, b) => b.postedAt.getTime() - a.postedAt.getTime())
     .map(toIndexedPost);
