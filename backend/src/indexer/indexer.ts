@@ -149,6 +149,9 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
       .map((post) => post.id);
 
     if (deletedPostIds.length > 0) {
+      await prisma.media.deleteMany({ where: { postId: { in: deletedPostIds } } });
+      await prisma.postText.deleteMany({ where: { postId: { in: deletedPostIds } } });
+      await prisma.postTag.deleteMany({ where: { postId: { in: deletedPostIds } } });
       await prisma.post.deleteMany({ where: { id: { in: deletedPostIds } } });
     }
 
