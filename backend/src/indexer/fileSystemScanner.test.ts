@@ -31,6 +31,33 @@ afterEach(async () => {
   tempRoots = [];
 });
 
+describe('scanDataRoot profile photos', () => {
+  it('indexes profile-photo filenames without creating post media', async () => {
+    const dataRoot = await createDataRoot();
+    const accountDir = path.join(dataRoot, 'openai');
+    await mkdir(accountDir);
+    await writeFile(
+      path.join(accountDir, '2026-08-09_03-34-56_UTC_profile_pic.jpg'),
+      'profile bytes'
+    );
+
+    const snapshot = await scanDataRoot(dataRoot);
+
+    expect(snapshot.accounts[0]).toMatchObject({
+      id: 'openai',
+      posts: [],
+      profilePictures: [
+        {
+          id: 'openai_2026-08-09_03-34-56',
+          accountId: 'openai',
+          filename: '2026-08-09_03-34-56_UTC_profile_pic.jpg',
+          takenAt: new Date('2026-08-09T03:34:56.000Z')
+        }
+      ]
+    });
+  });
+});
+
 describe('scanDataRoot story grouping', () => {
   it('groups stories by KST date, deduplicates media, and merges text chronologically', async () => {
     const dataRoot = await createDataRoot();

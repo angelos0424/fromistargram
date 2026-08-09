@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { MultipartFile } from '@fastify/multipart';
-import { mkdir, readFile, stat, writeFile } from 'fs/promises';
+import { mkdir, readFile, readdir, realpath, stat, writeFile } from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../db/client.js';
@@ -16,6 +16,7 @@ import {
 } from '../utils/fileUpload.js';
 import { formatDateToYYYYMMDD } from '../utils/dateFormat.js';
 import { sendError, sendSuccess } from '../utils/response.js';
+import { resolveSourceRoot } from '../utils/sourceRoot.js';
 
 type MobileIngestContentType = 'POST' | 'STORY' | 'REEL' | 'HIGHLIGHT';
 type SourceUploadType = 'Post' | 'Story';
@@ -30,6 +31,31 @@ type ParsedPostedAt = {
   date: Date;
   timestampBase: string;
 };
+
+const PROFILE_PHOTO_MAX_BYTES = 30 * 1024 * 1024;
+const PROFILE_PHOTO_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
+const profilePhotoWriteQueues = new Map<string, Promise<void>>();
+
+async function withProfilePhotoWriteLock<T>(
+  logicalKey: string,
+  operation: () => Promise<T>
+): Promise<T> {
+  const previous = profilePhotoWriteQueues.get(logicalKey) ?? Promise.resolve();
+  const result = previous.catch(() => undefined).then(operation);
+  const settled = result.then(
+    () => undefined,
+    () => undefined
+  );
+  profilePhotoWriteQueues.set(logicalKey, settled);
+
+  try {
+    return await result;
+  } finally {
+    if (profilePhotoWriteQueues.get(logicalKey) === settled) {
+      profilePhotoWriteQueues.delete(logicalKey);
+    }
+  }
+}
 
 class IngestClientError extends Error {
   readonly statusCode: number;
@@ -129,6 +155,29 @@ function parsePostedAt(value?: string): ParsedPostedAt | null {
     date,
     timestampBase: buildTimestampBase(date)
   };
+}
+
+const ISO_DATETIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-](\d{2}):(\d{2}))$/;
+
+function parseCapturedAt(value?: string): ParsedPostedAt | null {
+  const match = value?.match(ISO_DATETIME_PATTERN);
+  if (!value || !match) {
+    return null;
+  }
+
+  if (!buildUtcDate(match[1], match[2], match[3], match[4], match[5], match[6])) {
+    return null;
+  }
+
+  if (match[7] !== 'Z') {
+    const offsetHours = Number(match[8]);
+    const offsetMinutes = Number(match[9]);
+    if (offsetHours > 14 || offsetMinutes > 59 || (offsetHours === 14 && offsetMinutes !== 0)) {
+      return null;
+    }
+  }
+
+  return parsePostedAt(value);
 }
 
 function buildUtcDate(
@@ -343,6 +392,182 @@ async function readMobileIngestForm(request: FastifyRequest): Promise<{
   return { files, accountName, uploadedAt, contentType, caption, highlightTitle };
 }
 
+async function readProfilePhotoIngestForm(request: FastifyRequest): Promise<{
+  files: BufferedUploadFile[];
+  accountName: string | null;
+  capturedAt?: string;
+}> {
+  const files: BufferedUploadFile[] = [];
+  let accountName: string | null = null;
+  let capturedAt: string | undefined;
+
+  try {
+    for await (const part of request.parts({
+      limits: {
+        files: 1,
+        fileSize: PROFILE_PHOTO_MAX_BYTES,
+        fields: 2,
+        parts: 3
+      }
+    })) {
+      if (part.type === 'file') {
+        if (part.fieldname !== 'file' && part.fieldname !== 'files') {
+          throw new IngestClientError('Unexpected file field name');
+        }
+
+        files.push({
+          file: part as MultipartFile,
+          buffer: await part.toBuffer()
+        });
+        continue;
+      }
+
+      const value = (part as { value?: string }).value ?? '';
+      if (part.fieldname === 'accountName') {
+        accountName = normalizeAccountName(value);
+      } else if (part.fieldname === 'capturedAt') {
+        capturedAt = value;
+      }
+    }
+  } catch (error) {
+    const code =
+      typeof error === 'object' && error !== null && 'code' in error
+        ? String(error.code)
+        : '';
+    if (
+      code === 'FST_REQ_FILE_TOO_LARGE' ||
+      code === 'FST_FILES_LIMIT' ||
+      code === 'FST_FIELDS_LIMIT' ||
+      code === 'FST_PARTS_LIMIT'
+    ) {
+      throw new IngestClientError(
+        'Exactly one profile image up to 30MB is required',
+        413,
+        'PAYLOAD_TOO_LARGE'
+      );
+    }
+    throw error;
+  }
+
+  return { files, accountName, capturedAt };
+}
+
+function detectProfilePhotoType(buffer: Buffer): {
+  extension: '.jpg' | '.png' | '.gif' | '.webp';
+  mimeType: string;
+} {
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return { extension: '.jpg', mimeType: 'image/jpeg' };
+  }
+  if (
+    buffer.length >= 8 &&
+    buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+  ) {
+    return { extension: '.png', mimeType: 'image/png' };
+  }
+  if (
+    buffer.length >= 6 &&
+    (buffer.subarray(0, 6).toString('ascii') === 'GIF87a' ||
+      buffer.subarray(0, 6).toString('ascii') === 'GIF89a')
+  ) {
+    return { extension: '.gif', mimeType: 'image/gif' };
+  }
+  if (
+    buffer.length >= 12 &&
+    buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
+    buffer.subarray(8, 12).toString('ascii') === 'WEBP'
+  ) {
+    return { extension: '.webp', mimeType: 'image/webp' };
+  }
+
+  throw new IngestClientError('Profile photo bytes are not a supported image');
+}
+
+function resolveProfilePhotoType(file: BufferedUploadFile): {
+  extension: '.jpg' | '.png' | '.gif' | '.webp';
+  mimeType: string;
+} {
+  const detected = detectProfilePhotoType(file.buffer);
+  const declaredMime = file.file.mimetype === 'image/jpg' ? 'image/jpeg' : file.file.mimetype;
+  if (declaredMime !== detected.mimeType) {
+    throw new IngestClientError('Profile photo MIME type does not match its file contents');
+  }
+  return detected;
+}
+
+async function saveProfilePhoto(input: {
+  file: BufferedUploadFile;
+  accountId: string;
+  capturedAt: ParsedPostedAt;
+  request: FastifyRequest;
+}) {
+  const detectedType = resolveProfilePhotoType(input.file);
+  const validation = validateFileType(detectedType.mimeType, input.file.buffer.length);
+  if (!validation.valid) {
+    throw new IngestClientError(validation.error || 'Invalid file');
+  }
+
+  const filenamePrefix = `${input.capturedAt.timestampBase}_UTC_profile_pic`;
+  const sourceDir = getSourcePath(input.accountId, input.capturedAt.date);
+  await mkdir(sourceDir, { recursive: true });
+
+  const [realSourceRoot, realSourceDir] = await Promise.all([
+    realpath(resolveSourceRoot()),
+    realpath(sourceDir)
+  ]);
+  if (
+    realSourceDir !== realSourceRoot &&
+    !realSourceDir.startsWith(`${realSourceRoot}${path.sep}`)
+  ) {
+    throw new IngestClientError('Profile photo target escapes the source root');
+  }
+
+  const logicalKey = `${input.accountId}:${input.capturedAt.timestampBase}`;
+  const saved = await withProfilePhotoWriteLock(logicalKey, async () => {
+    const existingProfileFiles = (await readdir(sourceDir)).filter((name) => {
+      return (
+        name.startsWith(`${filenamePrefix}.`) &&
+        PROFILE_PHOTO_EXTENSIONS.has(path.extname(name).toLowerCase())
+      );
+    });
+
+    if (existingProfileFiles.length > 1) {
+      throw new IngestClientError(
+        `Multiple profile photos already exist for timestamp: ${input.capturedAt.timestampBase}`,
+        409,
+        'CONFLICT'
+      );
+    }
+
+    const filename =
+      existingProfileFiles[0] ?? `${filenamePrefix}${detectedType.extension}`;
+    const filepath = path.join(sourceDir, filename);
+    if (existingProfileFiles.length === 1) {
+      await ensureSourceFileCanBeWritten(filepath, input.file.buffer);
+    } else {
+      await writeSourceFileAllowingIdenticalOverwrite(filepath, input.file.buffer);
+    }
+    return { filename };
+  });
+
+  const apiBaseUrl = getApiBaseUrl(input.request);
+  const archiveUrl = apiBaseUrl
+    ? `${apiBaseUrl}/api/media/${encodeURIComponent(input.accountId)}/${encodeURIComponent(saved.filename)}`
+    : null;
+
+  return {
+    storageTarget: 'SOURCE' as StorageTarget,
+    accountId: input.accountId,
+    postId: null,
+    archiveUrl,
+    uploadedAt: input.capturedAt.date.toISOString(),
+    fileCount: 1,
+    uploadBatchId: null,
+    filename: saved.filename,
+    shouldRunIndexer: true
+  };
+}
+
 async function saveToShared(input: {
   files: BufferedUploadFile[];
   accountName: string | null;
@@ -544,6 +769,63 @@ async function saveToHighlight(input: {
 }
 
 export async function registerMobileIngestRoutes(app: FastifyInstance): Promise<void> {
+  app.post('/api/mobile/profile-photo-ingest', async (request, reply) => {
+    if (!requireMobileIngestAuth(request, reply)) {
+      return reply;
+    }
+
+    try {
+      const input = await readProfilePhotoIngestForm(request);
+      if (input.files.length !== 1) {
+        return sendError(reply, 'Exactly one image file is required', 400, 'BAD_REQUEST');
+      }
+
+      if (!input.accountName || input.accountName.length > 128 || input.accountName.includes('..')) {
+        return sendError(reply, 'A valid accountName is required', 400, 'BAD_REQUEST');
+      }
+
+      const capturedAt = parseCapturedAt(input.capturedAt);
+      if (!capturedAt) {
+        return sendError(
+          reply,
+          'capturedAt must be a valid ISO 8601 datetime',
+          400,
+          'BAD_REQUEST'
+        );
+      }
+
+      const existingAccount = await prisma.account.findUnique({
+        where: { id: input.accountName },
+        select: { id: true }
+      });
+      if (!existingAccount) {
+        return sendError(reply, 'Account not found for profile photo upload', 404, 'NOT_FOUND');
+      }
+
+      const data = await saveProfilePhoto({
+        file: input.files[0],
+        accountId: existingAccount.id,
+        capturedAt,
+        request
+      });
+
+      scheduleIndexerRun('mobile-profile-photo-ingest');
+      if (process.env.NODE_ENV === 'test') {
+        await triggerIndexerRun('mobile-profile-photo-ingest');
+      }
+
+      return sendSuccess(reply, data);
+    } catch (error) {
+      request.log.error(error, 'Mobile profile photo ingest failed');
+      const message = error instanceof Error ? error.message : 'Mobile profile photo ingest failed';
+      if (error instanceof IngestClientError) {
+        return sendError(reply, message, error.statusCode, error.code);
+      }
+
+      return sendError(reply, 'Mobile profile photo ingest failed');
+    }
+  });
+
   app.post('/api/mobile/instagram-ingest', async (request, reply) => {
     if (!requireMobileIngestAuth(request, reply)) {
       return reply;
