@@ -1,6 +1,6 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import multipart from '@fastify/multipart';
-import { mkdtemp, readdir, readFile, rm } from 'fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -216,6 +216,22 @@ describe('POST /api/mobile/profile-photo-ingest', () => {
     ]);
   });
 
+  it('reuses an identical legacy .jpeg file without creating a parallel .jpg', async () => {
+    const accountDir = path.join(sourceRoot!, 'test_user');
+    const legacyFilename = '2026-08-09_03-34-56_UTC_profile_pic.jpeg';
+    await mkdir(accountDir, { recursive: true });
+    await writeFile(path.join(accountDir, legacyFilename), JPEG_A);
+
+    const response = await injectProfilePhoto([...validFields]);
+
+    expect(response.statusCode).toBe(200);
+    expect(await readdir(accountDir)).toEqual([legacyFilename]);
+    expect(response.json()).toMatchObject({
+      success: true,
+      data: { filename: legacyFilename }
+    });
+  });
+
   it('serializes concurrent writes for one logical account timestamp', async () => {
     const [jpegResponse, pngResponse] = await Promise.all([
       injectProfilePhoto([...validFields]),
@@ -250,6 +266,22 @@ describe('POST /api/mobile/profile-photo-ingest', () => {
     expect(noFile.statusCode).toBe(400);
     expect(multipleFiles.statusCode).toBe(413);
     expect(mocks.scheduleIndexerRun).not.toHaveBeenCalled();
+  });
+
+  it('maps excess multipart fields to a bounded client error', async () => {
+    const response = await injectProfilePhoto([
+      validFields[0],
+      validFields[1],
+      { name: 'unexpected', value: 'extra' },
+      validFields[2]
+    ]);
+
+    expect(response.statusCode).toBe(413);
+    expect(response.json()).toMatchObject({
+      success: false,
+      error: { code: 'PAYLOAD_TOO_LARGE' }
+    });
+    expect(mocks.findUnique).not.toHaveBeenCalled();
   });
 
   it('rejects MIME-spoofed and mismatched image payloads', async () => {

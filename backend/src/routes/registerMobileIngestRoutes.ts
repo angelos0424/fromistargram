@@ -33,7 +33,7 @@ type ParsedPostedAt = {
 };
 
 const PROFILE_PHOTO_MAX_BYTES = 30 * 1024 * 1024;
-const PROFILE_PHOTO_EXTENSIONS = new Set(['.jpg', '.png', '.gif', '.webp']);
+const PROFILE_PHOTO_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
 const profilePhotoWriteQueues = new Map<string, Promise<void>>();
 
 async function withProfilePhotoWriteLock<T>(
@@ -437,6 +437,7 @@ async function readProfilePhotoIngestForm(request: FastifyRequest): Promise<{
     if (
       code === 'FST_REQ_FILE_TOO_LARGE' ||
       code === 'FST_FILES_LIMIT' ||
+      code === 'FST_FIELDS_LIMIT' ||
       code === 'FST_PARTS_LIMIT'
     ) {
       throw new IngestClientError(
