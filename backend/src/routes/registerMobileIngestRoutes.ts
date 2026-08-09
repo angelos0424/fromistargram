@@ -131,6 +131,29 @@ function parsePostedAt(value?: string): ParsedPostedAt | null {
   };
 }
 
+const ISO_DATETIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-](\d{2}):(\d{2}))$/;
+
+function parseCapturedAt(value?: string): ParsedPostedAt | null {
+  const match = value?.match(ISO_DATETIME_PATTERN);
+  if (!value || !match) {
+    return null;
+  }
+
+  if (!buildUtcDate(match[1], match[2], match[3], match[4], match[5], match[6])) {
+    return null;
+  }
+
+  if (match[7] !== 'Z') {
+    const offsetHours = Number(match[8]);
+    const offsetMinutes = Number(match[9]);
+    if (offsetHours > 14 || offsetMinutes > 59 || (offsetHours === 14 && offsetMinutes !== 0)) {
+      return null;
+    }
+  }
+
+  return parsePostedAt(value);
+}
+
 function buildUtcDate(
   year: string,
   month: string,
@@ -343,6 +366,94 @@ async function readMobileIngestForm(request: FastifyRequest): Promise<{
   return { files, accountName, uploadedAt, contentType, caption, highlightTitle };
 }
 
+async function readProfilePhotoIngestForm(request: FastifyRequest): Promise<{
+  files: BufferedUploadFile[];
+  accountName: string | null;
+  capturedAt?: string;
+}> {
+  const files: BufferedUploadFile[] = [];
+  let accountName: string | null = null;
+  let capturedAt: string | undefined;
+
+  for await (const part of request.parts()) {
+    if (part.type === 'file') {
+      if (part.fieldname !== 'file' && part.fieldname !== 'files') {
+        throw new IngestClientError('Unexpected file field name');
+      }
+
+      files.push({
+        file: part as MultipartFile,
+        buffer: await part.toBuffer()
+      });
+      continue;
+    }
+
+    const value = (part as { value?: string }).value ?? '';
+    if (part.fieldname === 'accountName') {
+      accountName = normalizeAccountName(value);
+    } else if (part.fieldname === 'capturedAt') {
+      capturedAt = value;
+    }
+  }
+
+  return { files, accountName, capturedAt };
+}
+
+function resolveProfilePhotoExtension(file: MultipartFile): string {
+  const originalExtension = path.extname(file.filename ?? '').toLowerCase();
+  const allowedByMime: Record<string, string[]> = {
+    'image/jpeg': ['.jpg', '.jpeg'],
+    'image/jpg': ['.jpg', '.jpeg'],
+    'image/png': ['.png'],
+    'image/gif': ['.gif'],
+    'image/webp': ['.webp']
+  };
+  const allowedExtensions = allowedByMime[file.mimetype];
+
+  if (!allowedExtensions) {
+    throw new IngestClientError('Profile photo must be an image');
+  }
+
+  return allowedExtensions.includes(originalExtension) ? originalExtension : allowedExtensions[0];
+}
+
+async function saveProfilePhoto(input: {
+  file: BufferedUploadFile;
+  accountId: string;
+  capturedAt: ParsedPostedAt;
+  request: FastifyRequest;
+}) {
+  const validation = validateFileType(input.file.file.mimetype, input.file.buffer.length);
+  if (!validation.valid) {
+    throw new IngestClientError(validation.error || 'Invalid file');
+  }
+
+  const extension = resolveProfilePhotoExtension(input.file.file);
+  const filename = `${input.capturedAt.timestampBase}_UTC_profile_pic${extension}`;
+  const sourceDir = getSourcePath(input.accountId, input.capturedAt.date);
+  const filepath = path.join(sourceDir, filename);
+
+  await mkdir(sourceDir, { recursive: true });
+  await writeSourceFileAllowingIdenticalOverwrite(filepath, input.file.buffer);
+
+  const apiBaseUrl = getApiBaseUrl(input.request);
+  const archiveUrl = apiBaseUrl
+    ? `${apiBaseUrl}/api/media/${encodeURIComponent(input.accountId)}/${encodeURIComponent(filename)}`
+    : null;
+
+  return {
+    storageTarget: 'SOURCE' as StorageTarget,
+    accountId: input.accountId,
+    postId: null,
+    archiveUrl,
+    uploadedAt: input.capturedAt.date.toISOString(),
+    fileCount: 1,
+    uploadBatchId: null,
+    savedFiles: [{ filename, filepath }],
+    shouldRunIndexer: true
+  };
+}
+
 async function saveToShared(input: {
   files: BufferedUploadFile[];
   accountName: string | null;
@@ -544,6 +655,63 @@ async function saveToHighlight(input: {
 }
 
 export async function registerMobileIngestRoutes(app: FastifyInstance): Promise<void> {
+  app.post('/api/mobile/profile-photo-ingest', async (request, reply) => {
+    if (!requireMobileIngestAuth(request, reply)) {
+      return reply;
+    }
+
+    try {
+      const input = await readProfilePhotoIngestForm(request);
+      if (input.files.length !== 1) {
+        return sendError(reply, 'Exactly one image file is required', 400, 'BAD_REQUEST');
+      }
+
+      if (!input.accountName || input.accountName.length > 128 || input.accountName.includes('..')) {
+        return sendError(reply, 'A valid accountName is required', 400, 'BAD_REQUEST');
+      }
+
+      const capturedAt = parseCapturedAt(input.capturedAt);
+      if (!capturedAt) {
+        return sendError(
+          reply,
+          'capturedAt must be a valid ISO 8601 datetime',
+          400,
+          'BAD_REQUEST'
+        );
+      }
+
+      const existingAccount = await prisma.account.findUnique({
+        where: { id: input.accountName },
+        select: { id: true }
+      });
+      if (!existingAccount) {
+        return sendError(reply, 'Account not found for profile photo upload', 404, 'NOT_FOUND');
+      }
+
+      const data = await saveProfilePhoto({
+        file: input.files[0],
+        accountId: existingAccount.id,
+        capturedAt,
+        request
+      });
+
+      scheduleIndexerRun('mobile-profile-photo-ingest');
+      if (process.env.NODE_ENV === 'test') {
+        await triggerIndexerRun('mobile-profile-photo-ingest');
+      }
+
+      return sendSuccess(reply, data);
+    } catch (error) {
+      request.log.error(error, 'Mobile profile photo ingest failed');
+      const message = error instanceof Error ? error.message : 'Mobile profile photo ingest failed';
+      if (error instanceof IngestClientError) {
+        return sendError(reply, message, error.statusCode, error.code);
+      }
+
+      return sendError(reply, 'Mobile profile photo ingest failed');
+    }
+  });
+
   app.post('/api/mobile/instagram-ingest', async (request, reply) => {
     if (!requireMobileIngestAuth(request, reply)) {
       return reply;
