@@ -29,6 +29,18 @@ const originalMobileIngestToken = process.env.MOBILE_INGEST_TOKEN;
 const originalNodeEnv = process.env.NODE_ENV;
 let app: FastifyInstance | null = null;
 let sourceRoot: string | null = null;
+const JPEG_A = Buffer.concat([
+  Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+  Buffer.from('profile-photo-a')
+]);
+const JPEG_B = Buffer.concat([
+  Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+  Buffer.from('profile-photo-b')
+]);
+const PNG_A = Buffer.concat([
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  Buffer.from('profile-photo-png')
+]);
 
 function multipartPayload(parts: Array<
   | { name: string; value: string }
@@ -111,7 +123,7 @@ describe('POST /api/mobile/profile-photo-ingest', () => {
       name: 'file',
       filename: 'avatar.JPG',
       contentType: 'image/jpeg',
-      data: Buffer.from('profile-photo-bytes')
+      data: JPEG_A
     }
   ] as const;
 
@@ -136,8 +148,9 @@ describe('POST /api/mobile/profile-photo-ingest', () => {
     const accountDir = path.join(sourceRoot!, 'test_user');
     const files = await readdir(accountDir);
     expect(files).toEqual(['2026-08-09_03-34-56_UTC_profile_pic.jpg']);
-    expect(await readFile(path.join(accountDir, files[0]))).toEqual(Buffer.from('profile-photo-bytes'));
-    expect(response.json()).toMatchObject({
+    expect(await readFile(path.join(accountDir, files[0]))).toEqual(JPEG_A);
+    const responseBody = response.json();
+    expect(responseBody).toMatchObject({
       success: true,
       data: {
         accountId: 'test_user',
@@ -147,6 +160,8 @@ describe('POST /api/mobile/profile-photo-ingest', () => {
         archiveUrl: 'http://localhost:80/api/media/test_user/2026-08-09_03-34-56_UTC_profile_pic.jpg'
       }
     });
+    expect(responseBody.data).not.toHaveProperty('savedFiles');
+    expect(JSON.stringify(responseBody)).not.toContain(sourceRoot!);
   });
 
   it('is idempotent for identical bytes and rejects conflicting bytes at the same second', async () => {
@@ -158,7 +173,7 @@ describe('POST /api/mobile/profile-photo-ingest', () => {
         name: 'file',
         filename: 'avatar.jpg',
         contentType: 'image/jpeg',
-        data: Buffer.from('different-profile-photo-bytes')
+        data: JPEG_B
       }
     ]);
 
@@ -170,6 +185,54 @@ describe('POST /api/mobile/profile-photo-ingest', () => {
       error: { code: 'CONFLICT' }
     });
     expect(mocks.scheduleIndexerRun).toHaveBeenCalledTimes(2);
+  });
+
+  it('is idempotent across filename extensions and rejects a different format at the same second', async () => {
+    const first = await injectProfilePhoto([...validFields]);
+    const renamedRetry = await injectProfilePhoto([
+      ...validFields.slice(0, 2),
+      {
+        name: 'file',
+        filename: 'avatar.jpeg',
+        contentType: 'image/jpg',
+        data: JPEG_A
+      }
+    ]);
+    const crossFormatConflict = await injectProfilePhoto([
+      ...validFields.slice(0, 2),
+      {
+        name: 'file',
+        filename: 'avatar.png',
+        contentType: 'image/png',
+        data: PNG_A
+      }
+    ]);
+
+    expect(first.statusCode).toBe(200);
+    expect(renamedRetry.statusCode).toBe(200);
+    expect(crossFormatConflict.statusCode).toBe(409);
+    expect(await readdir(path.join(sourceRoot!, 'test_user'))).toEqual([
+      '2026-08-09_03-34-56_UTC_profile_pic.jpg'
+    ]);
+  });
+
+  it('serializes concurrent writes for one logical account timestamp', async () => {
+    const [jpegResponse, pngResponse] = await Promise.all([
+      injectProfilePhoto([...validFields]),
+      injectProfilePhoto([
+        ...validFields.slice(0, 2),
+        {
+          name: 'file',
+          filename: 'avatar.png',
+          contentType: 'image/png',
+          data: PNG_A
+        }
+      ])
+    ]);
+
+    expect([jpegResponse.statusCode, pngResponse.statusCode].sort()).toEqual([200, 409]);
+    expect((await readdir(path.join(sourceRoot!, 'test_user'))).length).toBe(1);
+    expect(mocks.scheduleIndexerRun).toHaveBeenCalledTimes(1);
   });
 
   it('rejects zero or multiple files', async () => {
@@ -185,7 +248,51 @@ describe('POST /api/mobile/profile-photo-ingest', () => {
     ]);
 
     expect(noFile.statusCode).toBe(400);
-    expect(multipleFiles.statusCode).toBe(400);
+    expect(multipleFiles.statusCode).toBe(413);
+    expect(mocks.scheduleIndexerRun).not.toHaveBeenCalled();
+  });
+
+  it('rejects MIME-spoofed and mismatched image payloads', async () => {
+    const spoofed = await injectProfilePhoto([
+      ...validFields.slice(0, 2),
+      {
+        name: 'file',
+        filename: 'fake.jpg',
+        contentType: 'image/jpeg',
+        data: Buffer.from('not-an-image')
+      }
+    ]);
+    const mismatched = await injectProfilePhoto([
+      ...validFields.slice(0, 2),
+      {
+        name: 'file',
+        filename: 'avatar.jpg',
+        contentType: 'image/jpeg',
+        data: PNG_A
+      }
+    ]);
+
+    expect(spoofed.statusCode).toBe(400);
+    expect(mismatched.statusCode).toBe(400);
+    expect(mocks.scheduleIndexerRun).not.toHaveBeenCalled();
+  });
+
+  it('rejects a profile image larger than the route-specific 30MB limit', async () => {
+    const oversized = Buffer.concat([
+      Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+      Buffer.alloc(30 * 1024 * 1024, 1)
+    ]);
+    const response = await injectProfilePhoto([
+      ...validFields.slice(0, 2),
+      {
+        name: 'file',
+        filename: 'oversized.jpg',
+        contentType: 'image/jpeg',
+        data: oversized
+      }
+    ]);
+
+    expect(response.statusCode).toBe(413);
     expect(mocks.scheduleIndexerRun).not.toHaveBeenCalled();
   });
 
