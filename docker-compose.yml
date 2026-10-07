@@ -52,7 +52,7 @@ services:
       FILE_RESULT_STORAGE_BASE_DIR: '/result'
       FILE_RESULT_STORAGE_MKDIR_PERMISSION: 0755 # optional
       FILE_RESULT_STORAGE_WRITE_PERMISSION: 0666 # optional
-      HTTP_LOADER_ALLOWED_SOURCES: 'https://fromistargram.ddunddun.shop'
+      HTTP_LOADER_ALLOWED_SOURCES: 'https://fromistargram.ddunddun.xyz'
       PORT: 8000
       IMAGOR_UNSAFE: 0
       IMAGOR_BASE_DIR: '/data'
@@ -74,7 +74,7 @@ services:
       FILE_RESULT_STORAGE_BASE_DIR: '/result'
       FILE_RESULT_STORAGE_MKDIR_PERMISSION: 0755 # optional
       FILE_RESULT_STORAGE_WRITE_PERMISSION: 0666 # optional
-      HTTP_LOADER_ALLOWED_SOURCES: 'https://fromistargram.ddunddun.shop'
+      HTTP_LOADER_ALLOWED_SOURCES: 'https://fromistargram.ddunddun.xyz'
       PORT: 8000
       IMAGOR_UNSAFE: 0
       IMAGOR_BASE_DIR: '/data'
