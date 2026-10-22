@@ -73,6 +73,7 @@ export interface Post {
 }
 
 export interface PostsRequest {
+  search?: string;
   accountId?: string;
   cursor?: string;
   from?: string;
@@ -151,6 +152,7 @@ export interface SharedMedia {
 }
 
 export interface SharedMediaListRequest {
+  search?: string;
   cursor?: string;
   limit?: number;
   from?: string;

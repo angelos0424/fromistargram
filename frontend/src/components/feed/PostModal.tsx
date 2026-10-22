@@ -1,9 +1,7 @@
 import {
   useEffect,
   useMemo,
-  useRef,
-  useState,
-  type MouseEvent
+  useState
 } from 'react';
 import type { Account, Post } from '../../lib/api/types';
 import { copyToClipboard, sharePost } from '../../lib/share/sharePost';
@@ -12,6 +10,7 @@ import PostMediaCarousel from '../post/PostMediaCarousel';
 import ProfileHistoryTimeline from '../post/ProfileHistoryTimeline';
 import { getResponsiveImageProps } from '../../lib/utils/image';
 import VideoPlayer from '../post/VideoPlayer';
+import Dialog from '../common/Dialog';
 
 interface PostModalProps {
   post: Post | null;
@@ -20,9 +19,6 @@ interface PostModalProps {
   isLoading: boolean;
   onClose: () => void;
 }
-
-const FOCUSABLE_SELECTORS =
-  'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
 const PostModal = ({
   post,
@@ -39,79 +35,13 @@ const PostModal = ({
   const [isProfileHistoryOpen, setProfileHistoryOpen] = useState(false);
   const [isFullScreen, setFullScreen] = useState(false);
 
-  const dialogRef = useRef<HTMLDivElement | null>(null);
-  const lastFocusedElementRef = useRef<Element | null>(null);
-
-  useEffect(() => {
-    if (!isOpen) {
-      document.body.style.overflow = '';
-      if (lastFocusedElementRef.current instanceof HTMLElement) {
-        lastFocusedElementRef.current.focus();
-      }
-      return;
-    }
-
-    lastFocusedElementRef.current = document.activeElement;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        if (isFullScreen) {
-          setFullScreen(false);
-        } else {
-          onClose();
-        }
-        return;
-      }
-
-      if (event.key === 'Tab' && dialogRef.current) {
-        const focusable = Array.from(
-          dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTORS)
-        );
-        if (!focusable.length) {
-          event.preventDefault();
-          return;
-        }
-
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-
-        if (event.shiftKey) {
-          if (document.activeElement === first) {
-            event.preventDefault();
-            last.focus();
-          }
-        } else if (document.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, onClose, isFullScreen]);
-
   useEffect(() => {
     setActiveIndex(0);
     setCaptionExpanded(false);
     setShareFeedback(null);
     setFullScreen(false);
-  }, [post?.id]);
+    setProfileHistoryOpen(false);
+  }, [post?.id, isOpen]);
 
   useEffect(() => {
     setSelectedProfileId(null);
@@ -178,12 +108,6 @@ const PostModal = ({
     setShareFeedback('링크가 복사되었습니다.');
   };
 
-  const handleBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      onClose();
-    }
-  };
-
   if (!isOpen) {
     return null;
   }
@@ -193,20 +117,13 @@ const PostModal = ({
 
   return (
     <>
-      <div
+      <Dialog
+        isOpen={isOpen}
+        onClose={onClose}
+        labelledBy="post-detail-title"
         className="fixed inset-0 z-50 flex items-end justify-center bg-gradient-to-br from-[rgba(255,212,229,0.3)] via-[rgba(212,228,255,0.3)] to-[rgba(228,212,255,0.3)] px-3 py-4 backdrop-blur-[12px] sm:items-center sm:px-6 sm:py-8 dark:bg-black/70 dark:backdrop-blur"
-        onMouseDown={handleBackdropClick}
+        panelClassName="flex h-[90vh] max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-[24px] border border-white/60 bg-white/95 shadow-[0_16px_48px_rgba(0,0,0,0.12)] backdrop-blur-[8px] focus:outline-none dark:rounded-3xl dark:border-white/10 dark:bg-slate-950 dark:shadow-2xl dark:shadow-black/60"
       >
-        <div
-          ref={dialogRef}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="post-detail-title"
-          className="flex h-[90vh] max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-[24px] border border-white/60 bg-white/95 shadow-[0_16px_48px_rgba(0,0,0,0.12)] backdrop-blur-[8px] focus:outline-none dark:rounded-3xl dark:border-white/10 dark:bg-slate-950 dark:shadow-2xl dark:shadow-black/60"
-          tabIndex={-1}
-          onMouseDown={(event) => event.stopPropagation()}
-          onClick={(event) => event.stopPropagation()}
-        >
           <header className="flex flex-col gap-3 border-b border-white/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 shrink-0 dark:border-white/10">
             <div className="flex flex-col gap-1">
               <h3 id="post-detail-title" className="text-lg font-semibold text-[#2D3748] dark:text-white">
@@ -221,7 +138,7 @@ const PostModal = ({
             <button
               type="button"
               onClick={onClose}
-              className="self-end rounded-full border border-white/60 bg-white/95 px-4 py-2 text-sm text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition hover:bg-gradient-to-r hover:from-[#FFB8D4] hover:to-[#D4C4FF] hover:text-white hover:shadow-[0_4px_16px_rgba(255,184,212,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFB8D4] sm:self-auto dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:shadow-sm dark:hover:border-brand-400 dark:hover:bg-brand-400/20 dark:hover:text-white dark:focus-visible:ring-brand-400"
+              className="self-end rounded-full border border-white/60 bg-white/95 px-4 py-2 text-sm text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition hover:bg-gradient-to-r hover:from-[#FFB8D4] hover:to-[#D4C4FF] hover:text-[#2D3748] hover:shadow-[0_4px_16px_rgba(255,184,212,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFB8D4] sm:self-auto dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:shadow-sm dark:hover:border-brand-400 dark:hover:bg-brand-400/20 dark:hover:text-white dark:focus-visible:ring-brand-400"
               aria-label="게시물 상세 닫기"
             >
               닫기
@@ -314,7 +231,7 @@ const PostModal = ({
                       <button
                         type="button"
                         onClick={handleShare}
-                        className="flex-1 rounded-full border border-white/60 bg-white/95 px-4 py-2 text-sm font-semibold text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition hover:bg-gradient-to-r hover:from-[#7EC8FF] hover:to-[#8CE8D0] hover:text-white hover:shadow-[0_4px_16px_rgba(126,200,255,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-brand-400 dark:bg-brand-400/20 dark:text-white dark:shadow-none dark:hover:bg-brand-400/30 dark:focus-visible:ring-brand-400"
+                        className="flex-1 rounded-full border border-white/60 bg-white/95 px-4 py-2 text-sm font-semibold text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition hover:bg-gradient-to-r hover:from-[#7EC8FF] hover:to-[#8CE8D0] hover:text-[#2D3748] hover:shadow-[0_4px_16px_rgba(126,200,255,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-brand-400 dark:bg-brand-400/20 dark:text-white dark:shadow-none dark:hover:bg-brand-400/30 dark:focus-visible:ring-brand-400"
                       >
                         공유하기
                       </button>
@@ -340,24 +257,19 @@ const PostModal = ({
               )}
             </aside>
           </div>
-        </div>
-      </div>
+      </Dialog>
 
       {isProfileHistoryOpen && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-gradient-to-br from-[rgba(255,212,229,0.4)] via-[rgba(212,228,255,0.4)] to-[rgba(228,212,255,0.4)] px-4 backdrop-blur-[12px] dark:bg-black/80 dark:backdrop-blur-sm"
-          onClick={() => setProfileHistoryOpen(false)}
+        <Dialog isOpen={isProfileHistoryOpen} onClose={() => setProfileHistoryOpen(false)} labelledBy="profile-history-title"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm"
+          panelClassName="max-h-[calc(100dvh-1.5rem)] w-full max-w-md space-y-4 overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl outline-none dark:bg-slate-900"
         >
-          <div
-            className="w-full max-w-md space-y-4 rounded-[24px] border border-white/60 bg-white/95 p-6 shadow-[0_16px_48px_rgba(0,0,0,0.12)] backdrop-blur-[8px] dark:rounded-3xl dark:border-white/10 dark:bg-slate-900 dark:shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-[#2D3748] dark:text-white">프로필 히스토리</h3>
+              <h3 id="profile-history-title" className="text-lg font-semibold text-[#2D3748] dark:text-white">프로필 히스토리</h3>
               <button
                 type="button"
                 onClick={() => setProfileHistoryOpen(false)}
-                className="rounded-full border border-white/60 bg-white/95 px-3 py-1 text-xs text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition hover:bg-gradient-to-r hover:from-[#FFB8D4] hover:to-[#D4C4FF] hover:text-white hover:shadow-[0_0_8px_rgba(255,184,212,0.3)] dark:border-white/10 dark:bg-white/10 dark:text-slate-300 dark:shadow-none dark:hover:bg-white/20 dark:hover:text-white"
+                className="rounded-full border border-white/60 bg-white/95 px-3 py-1 text-xs text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition hover:bg-gradient-to-r hover:from-[#FFB8D4] hover:to-[#D4C4FF] hover:text-[#2D3748] hover:shadow-[0_0_8px_rgba(255,184,212,0.3)] dark:border-white/10 dark:bg-white/10 dark:text-slate-300 dark:shadow-none dark:hover:bg-white/20 dark:hover:text-white"
               >
                 닫기
               </button>
@@ -367,14 +279,13 @@ const PostModal = ({
               selectedId={selectedProfileId}
               onSelect={setSelectedProfileId}
             />
-          </div>
-        </div>
+        </Dialog>
       )}
 
       {isFullScreen && post?.media[activeIndex] && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-sm"
-          onClick={() => setFullScreen(false)}
+        <Dialog isOpen={isFullScreen} onClose={() => setFullScreen(false)} label="미디어 전체화면"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95"
+          panelClassName="relative flex h-full w-full items-center justify-center outline-none"
         >
           <button
             onClick={() => setFullScreen(false)}
@@ -405,7 +316,7 @@ const PostModal = ({
               />
             )}
           </div>
-        </div>
+        </Dialog>
       )}
     </>
   );

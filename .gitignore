@@ -46,3 +46,9 @@ log
 **/*.test.tsx.snap
 **/*.js
 **/*.toml
+
+# Keep source regression tests and their snapshots in version control.
+!backend/src/**/*.test.ts
+!frontend/src/**/*.test.ts
+!frontend/src/**/*.test.tsx
+!frontend/src/**/__snapshots__/*.snap

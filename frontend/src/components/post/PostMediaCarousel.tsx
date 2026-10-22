@@ -133,6 +133,11 @@ const PostMediaCarousel = ({
         ) : (
           <div className="text-sm text-[#7B8794] dark:text-slate-400">표시할 미디어가 없습니다.</div>
         )}
+        {onMediaClick && activeMedia && (
+          <button type="button" onClick={onMediaClick} className="ui-button absolute right-3 top-3 bg-slate-900/90 px-3 py-2 text-sm font-semibold text-white" aria-label="미디어 전체화면 열기">
+            전체화면
+          </button>
+        )}
         {media.length > 1 ? (
           <div className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/60 bg-white/90 px-3 py-1 text-xs font-medium text-[#2D3748] shadow-[0_4px_12px_rgba(0,0,0,0.08)] backdrop-blur-[8px] dark:border-white/10 dark:bg-black/60 dark:text-white dark:shadow-lg dark:shadow-black/40">
             {slideLabel}
@@ -142,7 +147,7 @@ const PostMediaCarousel = ({
           <>
             <button
               type="button"
-              className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-white/95 text-lg text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition hover:bg-gradient-to-r hover:from-[#7EC8FF] hover:to-[#B8A4F0] hover:text-white hover:shadow-[0_4px_16px_rgba(126,200,255,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/20 dark:bg-black/40 dark:text-white dark:shadow-none dark:hover:border-brand-400 dark:hover:text-brand-200 dark:focus-visible:ring-brand-400"
+              className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-white/95 text-lg text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition hover:bg-gradient-to-r hover:from-[#7EC8FF] hover:to-[#B8A4F0] hover:text-[#2D3748] hover:shadow-[0_4px_16px_rgba(126,200,255,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/20 dark:bg-black/40 dark:text-white dark:shadow-none dark:hover:border-brand-400 dark:hover:text-brand-200 dark:focus-visible:ring-brand-400"
               onClick={() => onActiveIndexChange(Math.max(0, activeIndex - 1))}
               disabled={activeIndex === 0}
               aria-label="이전 미디어"
@@ -151,7 +156,7 @@ const PostMediaCarousel = ({
             </button>
             <button
               type="button"
-              className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-white/95 text-lg text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition hover:bg-gradient-to-r hover:from-[#7EC8FF] hover:to-[#B8A4F0] hover:text-white hover:shadow-[0_4px_16px_rgba(126,200,255,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/20 dark:bg-black/40 dark:text-white dark:shadow-none dark:hover:border-brand-400 dark:hover:text-brand-200 dark:focus-visible:ring-brand-400"
+              className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-white/95 text-lg text-[#7B8794] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition hover:bg-gradient-to-r hover:from-[#7EC8FF] hover:to-[#B8A4F0] hover:text-[#2D3748] hover:shadow-[0_4px_16px_rgba(126,200,255,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7EC8FF] dark:border-white/20 dark:bg-black/40 dark:text-white dark:shadow-none dark:hover:border-brand-400 dark:hover:text-brand-200 dark:focus-visible:ring-brand-400"
               onClick={() =>
                 onActiveIndexChange(Math.min(media.length - 1, activeIndex + 1))
               }

@@ -1,4 +1,6 @@
-export const THUMB_BASE_URL = 'https://fromistargram.ddunddun.xyz/api/image-proxy';
+import { SITE_URL } from '../site';
+
+export const THUMB_BASE_URL = `${SITE_URL}/api/image-proxy`;
 
 type ResizeType = 'fit' | 'fill' | 'auto';
 

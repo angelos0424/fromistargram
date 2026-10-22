@@ -27,7 +27,7 @@ const FileDropZone = ({ onSelect }: FileDropZoneProps) => {
 				클릭하여 파일 선택
 			</p>
 			<p className="mt-1 text-xs text-[#7B8794] dark:text-slate-400">
-				이미지 (최대 30MB) 또는 비디오 (최대 50MB)
+				최대 10개 · 이미지당 30MB · 동영상 및 전체 합계 200MB
 			</p>
 		</button>
 	);

@@ -1,4 +1,5 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useRef, useState } from 'react';
+import { isAxiosError } from 'axios';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import AdminSectionCard from '../../components/admin/AdminSectionCard';
 import { ADMIN_KEY } from '../../lib/api/admin/consts';
@@ -14,7 +15,7 @@ import { uploadAdminMedia } from '../../lib/api/admin/uploads';
 import type { AdminSharedMedia } from '../../lib/api/admin/types';
 import type { Account } from '../../lib/api/types';
 
-const DEFAULT_POSTED_AT = '2026-03-13T12:04:27.000Z';
+const currentPostedAt = () => new Date().toISOString();
 
 const parsePostedAt = (input: string) => {
   const parsed = new Date(input);
@@ -30,10 +31,11 @@ const AdminUploadsPage = () => {
   const queryClient = useQueryClient();
   const [limit] = useState(50);
   const [accountId, setAccountId] = useState('');
-  const [postedAt, setPostedAt] = useState(DEFAULT_POSTED_AT);
+  const [postedAt, setPostedAt] = useState(currentPostedAt);
   const [caption, setCaption] = useState('');
   const [postType, setPostType] = useState<'Post' | 'Story'>('Post');
   const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
@@ -82,11 +84,11 @@ const AdminUploadsPage = () => {
     useInfiniteQuery({
       queryKey: [ADMIN_KEY, 'shared-media'],
       queryFn: ({ pageParam }: { pageParam?: string }) => listSharedMedia({ cursor: pageParam, limit }),
-      getNextPageParam: (lastPage: any) => lastPage.nextCursor ?? undefined,
+      getNextPageParam: (lastPage) => lastPage.meta.hasMore ? lastPage.meta.nextCursor ?? undefined : undefined,
       initialPageParam: undefined,
     });
 
-  const mediaItems = data?.pages.flatMap((page: any) => page.data) ?? [];
+  const mediaItems = data?.pages.flatMap((page) => page.data) ?? [];
 
   const updateMutation = useMutation({
     mutationFn: ({ id, caption }: { id: string; caption: string }) =>
@@ -115,14 +117,19 @@ const AdminUploadsPage = () => {
     onSuccess: () => {
       setFormError(null);
       setFormSuccess('업로드가 완료되었습니다.');
-      setPostedAt(DEFAULT_POSTED_AT);
+      setPostedAt(currentPostedAt());
       setCaption('');
       setFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       queryClient.invalidateQueries({ queryKey: [ADMIN_KEY, 'shared-media'] });
     },
     onError: (error: Error) => {
       setFormSuccess(null);
-      setFormError(error.message || '업로드에 실패했습니다.');
+      setFormError(
+        isAxiosError(error)
+          ? error.response?.data?.error?.message ?? '업로드에 실패했습니다.'
+          : error.message || '업로드에 실패했습니다.'
+      );
     }
   });
 
@@ -162,7 +169,7 @@ const AdminUploadsPage = () => {
 
     const parsedDate = parsePostedAt(postedAt);
     if (!parsedDate) {
-      setFormError('게시일시는 ISO 8601 형식으로 입력해 주세요. (예: 2026-03-13T12:04:27.000Z)');
+      setFormError('게시일시는 ISO 8601 형식으로 입력해 주세요. (예: 2026-10-23T03:00:00.000Z)');
       return;
     }
 
@@ -262,7 +269,7 @@ const AdminUploadsPage = () => {
       </AdminSectionCard>
       <AdminSectionCard
         title="수동 업로드"
-        description="관리자가 직접 업로드할 콘텐츠를 등록합니다."
+        description="원본이 게시된 실제 시각을 확인해 등록해 주세요. 같은 경로에 다른 파일이 있으면 업로드가 거절됩니다."
       >
         <form onSubmit={handleUploadSubmit} className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -288,7 +295,7 @@ const AdminUploadsPage = () => {
                 type="text"
                 value={postedAt}
                 onChange={(event) => setPostedAt(event.target.value)}
-                placeholder="2026-03-13T12:04:27.000Z"
+                placeholder="게시된 실제 시각을 입력하세요"
                 className="rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-brand-400 focus:outline-none"
               />
             </label>
@@ -307,6 +314,7 @@ const AdminUploadsPage = () => {
               파일 선택 (이미지/비디오)
               <input
                 type="file"
+                ref={fileInputRef}
                 multiple
                 accept="image/*,video/*"
                 onChange={(event) => {
