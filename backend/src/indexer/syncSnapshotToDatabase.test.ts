@@ -1,12 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const prismaMock = {
+  $transaction: vi.fn(),
   account: {
     findUnique: vi.fn(),
     upsert: vi.fn()
   },
   post: {
     findMany: vi.fn(),
+    deleteMany: vi.fn()
+  },
+  media: {
+    deleteMany: vi.fn()
+  },
+  postText: {
+    deleteMany: vi.fn()
+  },
+  postTag: {
     deleteMany: vi.fn()
   },
   profilePic: {
@@ -39,12 +49,16 @@ describe('syncSnapshotToDatabase', () => {
     prismaMock.account.upsert.mockResolvedValue({});
     prismaMock.post.findMany.mockResolvedValue([]);
     prismaMock.post.deleteMany.mockResolvedValue({ count: 0 });
+    prismaMock.media.deleteMany.mockResolvedValue({ count: 0 });
+    prismaMock.postText.deleteMany.mockResolvedValue({ count: 0 });
+    prismaMock.postTag.deleteMany.mockResolvedValue({ count: 0 });
     prismaMock.profilePic.findMany.mockResolvedValue([]);
     prismaMock.profilePic.deleteMany.mockResolvedValue({ count: 0 });
     prismaMock.profilePic.create.mockResolvedValue({});
     prismaMock.profilePic.update.mockResolvedValue({});
     prismaMock.highlight.findMany.mockResolvedValue([]);
     prismaMock.highlight.deleteMany.mockResolvedValue({ count: 0 });
+    prismaMock.$transaction.mockImplementation(async (operations: unknown[]) => await Promise.all(operations));
     clearCacheMock.mockResolvedValue(undefined);
   });
 
@@ -86,5 +100,53 @@ describe('syncSnapshotToDatabase', () => {
       }
     });
     expect(result.profilePicsSynced).toBe(1);
+  });
+
+  it('deletes post children before deleting posts removed from the snapshot', async () => {
+    const { syncSnapshotToDatabase } = await import('./indexer.js');
+    prismaMock.post.findMany.mockResolvedValue([
+      {
+        id: 'removed_post',
+        postedAt: new Date('2026-05-01T00:00:00.000Z'),
+        caption: null,
+        hasText: false,
+        type: 'Story',
+        media: [],
+        postText: null,
+        tags: []
+      }
+    ]);
+
+    await syncSnapshotToDatabase({
+      accounts: [
+        {
+          id: 'account_1',
+          profilePictures: [],
+          posts: [],
+          highlights: []
+        }
+      ]
+    });
+
+    const childDeleteFilter = { where: { postId: { in: ['removed_post'] } } };
+    expect(prismaMock.media.deleteMany).toHaveBeenCalledWith(childDeleteFilter);
+    expect(prismaMock.postText.deleteMany).toHaveBeenCalledWith(childDeleteFilter);
+    expect(prismaMock.postTag.deleteMany).toHaveBeenCalledWith(childDeleteFilter);
+    expect(prismaMock.post.deleteMany).toHaveBeenCalledWith({ where: { id: { in: ['removed_post'] } } });
+    expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
+    expect(prismaMock.$transaction).toHaveBeenCalledWith([
+      prismaMock.media.deleteMany.mock.results[0].value,
+      prismaMock.postText.deleteMany.mock.results[0].value,
+      prismaMock.postTag.deleteMany.mock.results[0].value,
+      prismaMock.post.deleteMany.mock.results[0].value
+    ]);
+
+    const mediaDeleteOrder = prismaMock.media.deleteMany.mock.invocationCallOrder[0];
+    const postTextDeleteOrder = prismaMock.postText.deleteMany.mock.invocationCallOrder[0];
+    const postTagDeleteOrder = prismaMock.postTag.deleteMany.mock.invocationCallOrder[0];
+    const postDeleteOrder = prismaMock.post.deleteMany.mock.invocationCallOrder[0];
+    expect(mediaDeleteOrder).toBeLessThan(postDeleteOrder);
+    expect(postTextDeleteOrder).toBeLessThan(postDeleteOrder);
+    expect(postTagDeleteOrder).toBeLessThan(postDeleteOrder);
   });
 });

@@ -31,7 +31,7 @@ const FiltersPanel = ({
               to: dateRange.to
             })
           }
-          className="w-[9.5rem] bg-transparent text-sm font-medium text-[#2D3748] outline-none"
+          className="w-[9.5rem] bg-transparent text-sm font-medium text-[#2D3748] ui-input"
         />
       </label>
       <label className="flex items-center gap-2 rounded-full border border-white/70 bg-white/72 px-3 py-1.5 text-xs font-semibold text-[#7B8794] shadow-[0_4px_14px_rgba(45,55,72,0.05)]">
@@ -45,7 +45,7 @@ const FiltersPanel = ({
               to: event.target.value || null
             })
           }
-          className="w-[9.5rem] bg-transparent text-sm font-medium text-[#2D3748] outline-none"
+          className="w-[9.5rem] bg-transparent text-sm font-medium text-[#2D3748] ui-input"
         />
       </label>
       {activeAccount ? (
@@ -63,7 +63,7 @@ const FiltersPanel = ({
       <button
         type="button"
         onClick={() => setIsUploadModalOpen(true)}
-        className="h-8 rounded-full bg-gradient-to-r from-[#7EC8FF] to-[#8CE8D0] px-3 text-sm font-bold text-white shadow-[0_6px_18px_rgba(126,200,255,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_9px_22px_rgba(126,200,255,0.42)]"
+        className="h-8 rounded-full ui-pastel-action px-3 text-sm font-bold shadow-[0_6px_18px_rgba(126,200,255,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_9px_22px_rgba(126,200,255,0.42)]"
       >
         업로드
       </button>

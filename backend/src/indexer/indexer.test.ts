@@ -67,4 +67,116 @@ describe('buildSnapshot', () => {
       ]
     });
   });
+
+  it('groups story media from the same KST day into one indexed post', async () => {
+    const dataRoot = await createTempDataRoot();
+    const accountDir = path.join(dataRoot, 'test_account');
+    await mkdir(accountDir, { recursive: true });
+
+    await writeFile(path.join(accountDir, '2026-05-01_15-30-00_UTC.jpg'), 'story-one');
+    await writeFile(
+      path.join(accountDir, '2026-05-01_15-30-00_UTC.json'),
+      JSON.stringify({ instaloader: { node_type: 'StoryItem' } })
+    );
+    await writeFile(path.join(accountDir, '2026-05-02_03-00-00_UTC.jpg'), 'story-two');
+    await writeFile(
+      path.join(accountDir, '2026-05-02_03-00-00_UTC.json'),
+      JSON.stringify({ instaloader: { node_type: 'StoryItem' } })
+    );
+    await writeFile(path.join(accountDir, '2026-05-02_16-00-00_UTC.jpg'), 'story-three');
+    await writeFile(
+      path.join(accountDir, '2026-05-02_16-00-00_UTC.json'),
+      JSON.stringify({ instaloader: { node_type: 'StoryItem' } })
+    );
+
+    const snapshot = await buildSnapshot({ dataRoot });
+    const posts = snapshot.accounts[0].posts;
+
+    expect(posts).toHaveLength(2);
+    expect(posts[0]).toMatchObject({
+      id: '2026-05-03_KST_story_test_account',
+      type: 'Story',
+      postedAt: new Date('2026-05-02T16:00:00.000Z'),
+      media: [
+        {
+          filename: '2026-05-02_16-00-00_UTC.jpg',
+          orderIndex: 0
+        }
+      ]
+    });
+    expect(posts[1]).toMatchObject({
+      id: '2026-05-02_KST_story_test_account',
+      type: 'Story',
+      postedAt: new Date('2026-05-02T03:00:00.000Z'),
+      media: [
+        {
+          filename: '2026-05-01_15-30-00_UTC.jpg',
+          orderIndex: 0
+        },
+        {
+          filename: '2026-05-02_03-00-00_UTC.jpg',
+          orderIndex: 1
+        }
+      ]
+    });
+  });
+
+  it('keeps regular post media ordered by filename index', async () => {
+    const dataRoot = await createTempDataRoot();
+    const accountDir = path.join(dataRoot, 'test_account');
+    await mkdir(accountDir, { recursive: true });
+
+    await writeFile(path.join(accountDir, '2026-05-01_01-00-00_UTC_2.jpg'), '');
+    await writeFile(path.join(accountDir, '2026-05-01_01-00-00_UTC_1.jpg'), '');
+
+    const snapshot = await buildSnapshot({ dataRoot });
+    const media = snapshot.accounts[0].posts[0].media;
+
+    expect(media).toMatchObject([
+      {
+        filename: '2026-05-01_01-00-00_UTC_1.jpg',
+        orderIndex: 0
+      },
+      {
+        filename: '2026-05-01_01-00-00_UTC_2.jpg',
+        orderIndex: 1
+      }
+    ]);
+  });
+
+  it('deduplicates identical story media in the same KST day', async () => {
+    const dataRoot = await createTempDataRoot();
+    const accountDir = path.join(dataRoot, 'test_account');
+    await mkdir(accountDir, { recursive: true });
+
+    await writeFile(path.join(accountDir, '2026-05-01_01-00-00_UTC.jpg'), 'same-bytes');
+    await writeFile(
+      path.join(accountDir, '2026-05-01_01-00-00_UTC.json'),
+      JSON.stringify({ instaloader: { node_type: 'StoryItem' } })
+    );
+    await writeFile(path.join(accountDir, '2026-05-01_03-00-00_UTC.jpg'), 'same-bytes');
+    await writeFile(
+      path.join(accountDir, '2026-05-01_03-00-00_UTC.json'),
+      JSON.stringify({ instaloader: { node_type: 'StoryItem' } })
+    );
+    await writeFile(path.join(accountDir, '2026-05-01_05-00-00_UTC.jpg'), 'different-bytes');
+    await writeFile(
+      path.join(accountDir, '2026-05-01_05-00-00_UTC.json'),
+      JSON.stringify({ instaloader: { node_type: 'StoryItem' } })
+    );
+
+    const snapshot = await buildSnapshot({ dataRoot });
+    const media = snapshot.accounts[0].posts[0].media;
+
+    expect(media).toMatchObject([
+      {
+        filename: '2026-05-01_01-00-00_UTC.jpg',
+        orderIndex: 0
+      },
+      {
+        filename: '2026-05-01_05-00-00_UTC.jpg',
+        orderIndex: 1
+      }
+    ]);
+  });
 });

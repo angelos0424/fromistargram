@@ -20,6 +20,7 @@ export const getAccount = (id: string) =>
 
 export const listPost = async (params: PostsRequest) => {
   const search = new URLSearchParams();
+  if (params.search) search.set('search', params.search);
   if (params.accountId) search.set('accountId', params.accountId);
   if (params.from) search.set('from', params.from);
   if (params.to) search.set('to', params.to);
@@ -69,6 +70,7 @@ export const uploadSharedMedia = async (
 
 export const listSharedMedia = async (params: import('./types').SharedMediaListRequest) => {
   const search = new URLSearchParams();
+  if (params.search) search.set('search', params.search);
   if (params.cursor) search.set('cursor', params.cursor);
   if (params.limit) search.set('limit', String(params.limit));
   if (params.from) search.set('from', params.from);

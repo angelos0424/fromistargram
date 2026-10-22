@@ -2,6 +2,7 @@ import { unlink } from 'fs/promises';
 import path from 'path';
 import type { SharedMedia } from '@prisma/client';
 import { prisma } from '../db/client.js';
+import { buildDateRange } from '../utils/dateRange.js';
 import { getUploadPath } from '../utils/fileUpload.js';
 
 // Extract Prisma types from client instance
@@ -29,6 +30,7 @@ export interface ListSharedMediaParams {
   includeDeleted?: boolean;
   sort?: 'newest' | 'oldest';
   page?: number;
+  search?: string;
 }
 
 export async function createSharedMedia(input: CreateSharedMediaInput) {
@@ -59,36 +61,43 @@ export async function listSharedMedia(params: ListSharedMediaParams) {
   }
 
   if (params.from || params.to) {
-    where.uploadedAt = {};
-    if (params.from) {
-      where.uploadedAt.gte = new Date(params.from);
-    }
-    if (params.to) {
-      where.uploadedAt.lte = new Date(params.to);
-    }
+    where.uploadedAt = buildDateRange(params.from, params.to);
   }
 
-  if (params.cursor) {
-    where.id = { lt: params.cursor };
+  // Select groups by matching members, then return the complete matching group.
+  const groupWhere = { ...where };
+  const search = params.search?.trim();
+  if (search) {
+    const contains = { contains: search, mode: 'insensitive' as const };
+    where.OR = [
+      { caption: contains },
+      { accountName: contains },
+      { originalName: contains },
+      { filename: contains }
+    ];
   }
 
+  // Page-based group browsing takes precedence when both pagination modes are
+  // supplied; cursor pagination is used only for individual media listings.
   if (params.page) {
     return listSharedMediaGroups({
       limit,
       page: params.page,
       sortDirection,
-      where
+      where,
+      groupWhere
     });
   }
 
   const queryArgs: Parameters<typeof prisma.sharedMedia.findMany>[0] = {
     where,
-    orderBy: { uploadedAt: sortDirection },
+    orderBy: [{ uploadedAt: sortDirection }, { id: sortDirection }],
     take: limit + 1
   };
 
-  if (params.page && params.page > 1) {
-    queryArgs.skip = (params.page - 1) * limit;
+  if (params.cursor) {
+    queryArgs.cursor = { id: params.cursor };
+    queryArgs.skip = 1;
   }
 
   const [items, total] = await Promise.all([
@@ -112,16 +121,18 @@ async function listSharedMediaGroups({
   limit,
   page,
   sortDirection,
-  where
+  where,
+  groupWhere
 }: {
   limit: number;
   page: number;
   sortDirection: 'asc' | 'desc';
   where: PrismaSharedMediaWhereInput;
+  groupWhere: PrismaSharedMediaWhereInput;
 }) {
   const candidates = await prisma.sharedMedia.findMany({
     where,
-    orderBy: { uploadedAt: sortDirection },
+    orderBy: [{ uploadedAt: sortDirection }, { id: sortDirection }],
     select: {
       id: true,
       uploadBatchId: true,
@@ -150,17 +161,21 @@ async function listSharedMediaGroups({
     .map((key) => key.slice('legacy:'.length));
 
   const pageWhere: PrismaSharedMediaWhereInput = {
-    ...where,
-    OR: [
-      ...(batchIds.length ? [{ uploadBatchId: { in: batchIds } }] : []),
-      ...(legacyIds.length ? [{ id: { in: legacyIds } }] : [])
+    AND: [
+      groupWhere,
+      {
+        OR: [
+          ...(batchIds.length ? [{ uploadBatchId: { in: batchIds } }] : []),
+          ...(legacyIds.length ? [{ id: { in: legacyIds } }] : [])
+        ]
+      }
     ]
   };
 
   const pageItems = pageGroupKeys.length
     ? await prisma.sharedMedia.findMany({
         where: pageWhere,
-        orderBy: { uploadedAt: sortDirection }
+        orderBy: [{ uploadedAt: sortDirection }, { id: sortDirection }]
       })
     : [];
 

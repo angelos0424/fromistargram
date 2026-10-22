@@ -1,6 +1,7 @@
 import { mkdir } from 'fs/promises';
 import path from 'path';
 import { prisma } from '../db/client.js';
+import type { Account as PrismaAccount } from '@prisma/client';
 import { cacheKey, cacheTtlSeconds, clearCache, withCache } from '../utils/cache.js';
 import { buildImagorUrl } from '../utils/imagor.js';
 import { resolveSourceAccountPath, resolveSourceRoot } from '../utils/sourceRoot.js';
@@ -14,12 +15,7 @@ export type AccountSummary = {
   postCount: number;
 };
 
-type AccountRow = {
-  id: string;
-  latestProfilePicUrl: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  lastIndexedAt: Date | null;
+type AccountRow = PrismaAccount & {
   _count: { posts: number };
 };
 
@@ -87,7 +83,7 @@ export async function getAccount(id: string): Promise<Account | null> {
             select: { posts: true }
           }
         }
-      });
+      }) as AccountRow | null;
 
       if (!account) {
         return null;
@@ -124,7 +120,7 @@ export async function getAccount(id: string): Promise<Account | null> {
         lastIndexedAt: account.lastIndexedAt
           ? account.lastIndexedAt.toISOString()
           : null,
-        postCount: account.posts?.length ?? 0,
+        postCount: account._count.posts,
         username: account.id,
         displayName: account.id,
         profilePictures: profilePictures ?? []
@@ -149,7 +145,7 @@ export async function listAccounts(): Promise<Account[]> {
             select: { posts: true }
           }
         }
-      });
+      }) as AccountRow[];
 
       return accounts.map((account) => {
         let profileUrl = account.latestProfilePicUrl;
@@ -183,7 +179,7 @@ export async function listAccounts(): Promise<Account[]> {
           lastIndexedAt: account.lastIndexedAt
             ? account.lastIndexedAt.toISOString()
             : null,
-          postCount: account.posts?.length ?? 0,
+          postCount: account._count.posts,
           username: account.id,
           displayName: account.id,
           profilePictures: profilePictures ?? []

@@ -1,196 +1,131 @@
 import { useState, useRef, useEffect } from 'react';
+import { isAxiosError } from 'axios';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { uploadSharedMedia, CLIENT_KEY } from '../../lib/api/client';
 import FileDropZone from './upload/FileDropZone';
 import PreviewGrid from './upload/PreviewGrid';
 import CaptionInput from './upload/CaptionInput';
+import Dialog from './Dialog';
 
 interface UploadModalProps {
-	isOpen: boolean;
-	onClose: () => void;
-	onSuccess?: () => void;
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
 }
+interface Selection { file: File; preview: string }
+const fileKey = (file: File) => JSON.stringify([file.name, file.size, file.type, file.lastModified]);
 
 const UploadModal = ({ isOpen, onClose, onSuccess }: UploadModalProps) => {
-	const [files, setFiles] = useState<File[]>([]);
-	const [accountName, setAccountName] = useState('');
-	const [caption, setCaption] = useState('');
-	const [previews, setPreviews] = useState<string[]>([]);
-	const fileInputRef = useRef<HTMLInputElement>(null);
-	const queryClient = useQueryClient();
+  const [selection, setSelection] = useState<Selection[]>([]);
+  const selectionRef = useRef<Selection[]>([]);
+  const [accountName, setAccountName] = useState('');
+  const [caption, setCaption] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
-	// Cleanup object URLs when component unmounts or previews change
-	useEffect(() => {
-		// Cleanup function that runs when previews change or component unmounts
-		return () => {
-			previews.forEach((url) => URL.revokeObjectURL(url));
-		};
-	}, [previews]);
+  const replaceSelection = (next: Selection[]) => {
+    selectionRef.current = next;
+    setSelection(next);
+  };
+  const resetForm = () => {
+    selectionRef.current.forEach(({ preview }) => URL.revokeObjectURL(preview));
+    replaceSelection([]);
+    setAccountName('');
+    setCaption('');
+    setError(null);
+  };
+  useEffect(() => () => {
+    selectionRef.current.forEach(({ preview }) => URL.revokeObjectURL(preview));
+  }, []);
+  useEffect(() => {
+    if (!isOpen) resetForm();
+  }, [isOpen]);
 
-	const uploadMutation = useMutation({
-		mutationFn: () =>
-			uploadSharedMedia(files, caption || undefined, accountName || undefined),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: [CLIENT_KEY, 'sharedMedia'] });
-			setFiles([]);
-			setAccountName('');
-			setCaption('');
-			setPreviews([]);
-			onSuccess?.();
-			onClose();
-		},
-		onError: (error: any) => {
-			alert(error?.response?.data?.message || '업로드에 실패했습니다.');
-		}
-	});
+  const uploadMutation = useMutation({
+    mutationFn: () => uploadSharedMedia(selection.map(({ file }) => file), caption || undefined, accountName || undefined),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [CLIENT_KEY, 'sharedMedia'] });
+      resetForm();
+      onSuccess?.();
+      onClose();
+    },
+    onError: (cause: unknown) => {
+      setError(isAxiosError(cause) ? cause.response?.data?.error?.message ?? '업로드에 실패했습니다.' : '업로드에 실패했습니다.');
+    }
+  });
 
-	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const selectedFiles = Array.from(e.target.files || []);
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    const knownFiles = new Set(selectionRef.current.map(({ file }) => fileKey(file)));
+    const additions: File[] = [];
+    for (const file of selectedFiles) {
+      const key = fileKey(file);
+      if (knownFiles.has(key)) continue;
+      knownFiles.add(key);
+      additions.push(file);
+    }
+    event.target.value = '';
+    if (!additions.length) return;
+    const combined = [...selectionRef.current.map(({ file }) => file), ...additions];
+    if (combined.length > 10 || combined.reduce((total, file) => total + file.size, 0) > 200 * 1024 * 1024) {
+      setError('한 번에 최대 10개, 파일 용량 합계 200MB까지 선택할 수 있습니다.');
+      return;
+    }
+    if (additions.some((file) => file.type.startsWith('image/') && file.size > 30 * 1024 * 1024)) {
+      setError('이미지는 파일당 30MB까지 선택할 수 있습니다.');
+      return;
+    }
+    setError(null);
+    replaceSelection([...selectionRef.current, ...additions.map((file) => ({ file, preview: URL.createObjectURL(file) }))]);
+  };
+  const handleRemoveFile = (index: number) => {
+    URL.revokeObjectURL(selectionRef.current[index].preview);
+    replaceSelection(selectionRef.current.filter((_, i) => i !== index));
+  };
+  const handleClose = () => {
+    if (uploadMutation.isPending) return;
+    resetForm();
+    onClose();
+  };
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (selection.length > 0 && !uploadMutation.isPending) {
+      setError(null);
+      uploadMutation.mutate();
+    }
+  };
 
-		// Revoke old preview URLs before creating new ones
-		previews.forEach((url) => URL.revokeObjectURL(url));
-
-		setFiles(selectedFiles);
-
-		// Create new previews
-		const newPreviews = selectedFiles.map((file) => URL.createObjectURL(file));
-		setPreviews(newPreviews);
-	};
-
-	const handleRemoveFile = (index: number) => {
-		const newFiles = files.filter((_, i) => i !== index);
-		const newPreviews = previews.filter((_, i) => i !== index);
-
-		URL.revokeObjectURL(previews[index]);
-		setFiles(newFiles);
-		setPreviews(newPreviews);
-	};
-
-	const handleClose = () => {
-		if (!uploadMutation.isPending) {
-			previews.forEach((preview) => URL.revokeObjectURL(preview));
-			setFiles([]);
-			setAccountName('');
-			setCaption('');
-			setPreviews([]);
-			onClose();
-		}
-	};
-
-	const handleSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
-		if (files.length > 0) {
-			uploadMutation.mutate();
-		}
-	};
-
-	if (!isOpen) return null;
-
-	return (
-		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-			onClick={handleClose}
-		>
-			<div
-				className="relative w-full max-w-2xl rounded-2xl border border-white/10 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/95"
-				onClick={(e) => e.stopPropagation()}
-			>
-				<div className="mb-4 flex items-center justify-between">
-					<h2 className="text-2xl font-bold text-[#2D3748] dark:text-white">
-						미디어 업로드
-					</h2>
-					<button
-						type="button"
-						onClick={handleClose}
-						disabled={uploadMutation.isPending}
-						className="rounded-full p-1 text-[#7B8794] transition hover:bg-black/5 hover:text-[#2D3748] dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-6 w-6"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M6 18L18 6M6 6l12 12"
-							/>
-						</svg>
-					</button>
-				</div>
-
-				<form onSubmit={handleSubmit} className="space-y-4">
-					<div>
-						<input
-							ref={fileInputRef}
-							type="file"
-							multiple
-							accept="image/*,video/*"
-							onChange={handleFileChange}
-							className="hidden"
-						/>
-
-						{files.length === 0 ? (
-							<FileDropZone onSelect={() => fileInputRef.current?.click()} />
-						) : (
-							<PreviewGrid
-								files={files}
-								previews={previews}
-								onRemove={handleRemoveFile}
-								onAddMore={() => fileInputRef.current?.click()}
-							/>
-						)}
-					</div>
-
-					<div>
-						<label htmlFor="accountName" className="mb-1 block text-sm font-medium text-[#2D3748] dark:text-white">
-							계정명 (선택사항)
-						</label>
-						<input
-							id="accountName"
-							type="text"
-							value={accountName}
-							onChange={(e) => setAccountName(e.target.value)}
-							placeholder="계정명을 입력하세요..."
-							className="w-full rounded-xl border border-white/60 bg-white/80 px-4 py-3 text-sm text-[#2D3748] outline-none transition focus:border-[#7EC8FF] focus:bg-white focus:shadow-[0_0_12px_rgba(126,200,255,0.3)] dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:border-brand-400 dark:focus:bg-white/10 dark:placeholder:text-slate-500"
-						/>
-					</div>
-
-					<CaptionInput value={caption} onChange={setCaption} />
-
-					<div className="flex gap-3">
-						<button
-							type="button"
-							onClick={handleClose}
-							disabled={uploadMutation.isPending}
-							className="flex-1 rounded-xl border border-white/60 bg-white px-4 py-3 text-sm font-semibold text-[#7B8794] transition hover:bg-black/5 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-						>
-							취소
-						</button>
-						<button
-							type="submit"
-							disabled={files.length === 0 || uploadMutation.isPending}
-							className="flex-1 rounded-xl border border-[#7EC8FF] bg-gradient-to-r from-[#7EC8FF] to-[#8CE8D0] px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(126,200,255,0.35)] transition hover:shadow-[0_6px_24px_rgba(126,200,255,0.5)] disabled:opacity-50 disabled:hover:shadow-[0_4px_16px_rgba(126,200,255,0.35)] dark:border-brand-400 dark:from-brand-500 dark:to-brand-400"
-						>
-							{uploadMutation.isPending ? '업로드 중...' : '업로드'}
-						</button>
-					</div>
-				</form>
-
-				{uploadMutation.isPending && (
-					<div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/20 backdrop-blur-sm">
-						<div className="flex flex-col items-center gap-3">
-							<div className="h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-white"></div>
-							<p className="text-sm font-medium text-white">업로드 중...</p>
-						</div>
-					</div>
-				)}
-			</div>
-		</div>
-	);
+  return (
+    <Dialog isOpen={isOpen} onClose={handleClose} labelledBy="upload-dialog-title">
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 p-4 dark:border-slate-700">
+        <h2 id="upload-dialog-title" className="text-xl font-bold text-[#2D3748] dark:text-white">미디어 업로드</h2>
+        <button type="button" onClick={handleClose} disabled={uploadMutation.isPending} aria-label="미디어 업로드 닫기" className="ui-button min-h-11 min-w-11 text-2xl dark:text-white">×</button>
+      </header>
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-col" aria-busy={uploadMutation.isPending}>
+        <div className="min-h-0 overflow-y-auto p-4">
+        <fieldset disabled={uploadMutation.isPending} className="min-w-0 space-y-4">
+          <div>
+            <input ref={fileInputRef} type="file" multiple accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime,video/webm" onChange={handleFileChange} aria-label="업로드할 파일" className="hidden" />
+            {selection.length === 0 ? <FileDropZone onSelect={() => fileInputRef.current?.click()} /> : (
+              <PreviewGrid files={selection.map(({ file }) => file)} previews={selection.map(({ preview }) => preview)} onRemove={handleRemoveFile} onAddMore={() => fileInputRef.current?.click()} />
+            )}
+          </div>
+          <div>
+            <label htmlFor="accountName" className="mb-1 block text-sm font-medium text-[#2D3748] dark:text-white">계정명 (선택사항)</label>
+            <input id="accountName" type="text" value={accountName} onChange={(event) => setAccountName(event.target.value)} placeholder="계정명을 입력하세요..." className="ui-input w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-[#2D3748] dark:border-slate-600 dark:bg-slate-800 dark:text-white" />
+          </div>
+          <CaptionInput value={caption} onChange={setCaption} />
+          {error && <p role="alert" className="ui-error">{error}</p>}
+        </fieldset>
+        </div>
+        <footer className="flex shrink-0 gap-3 border-t border-slate-200 p-4 dark:border-slate-700">
+          <button type="button" onClick={handleClose} disabled={uploadMutation.isPending} className="ui-button flex-1 border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-[#2D3748] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">취소</button>
+          <button type="submit" disabled={selection.length === 0 || uploadMutation.isPending} className="ui-button ui-pastel-action flex-1 px-4 py-3 text-sm font-semibold">{uploadMutation.isPending ? '업로드 중...' : '업로드'}</button>
+        </footer>
+      </form>
+    </Dialog>
+  );
 };
 
 export default UploadModal;
