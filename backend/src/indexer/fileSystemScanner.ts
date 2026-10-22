@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import path from 'path';
 import { lookup } from 'mime-types';
 import { extractHashtags } from '../utils/hashtags.js';
+import { buildPostId, buildStoryGroupId, formatKstDateKey } from './postIdentity.js';
 import {
   AccountSnapshot,
   IndexerSnapshot,
@@ -28,24 +29,6 @@ function parseTimestamp(timestamp: string): Date {
   const [datePart, timePart] = timestamp.split('_');
   const normalizedTime = timePart.replace(/-/g, ':');
   return new Date(`${datePart}T${normalizedTime}Z`);
-}
-
-function formatKstDateKey(date: Date): string {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).formatToParts(date);
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  const year = values.year;
-  const month = values.month;
-  const day = values.day;
-  return `${year}-${month}-${day}`;
-}
-
-function buildStoryGroupId(accountId: string, dateKey: string): string {
-  return `${dateKey}_KST_story_${accountId}`;
 }
 
 function mergeTextContent(current: string | null, next: string | null): string | null {
@@ -135,12 +118,12 @@ function groupStoriesByDay(posts: PostAccumulator[]): PostAccumulator[] {
     });
   }
 
-  for (const { dateKey, stories } of storyGroups.values()) {
+  for (const { stories } of storyGroups.values()) {
     const sortedStories = [...stories].sort(compareStoryAccumulators);
     const [firstStory, ...remainingStories] = sortedStories;
     const group: PostAccumulator = {
       ...firstStory,
-      id: buildStoryGroupId(firstStory.accountId, dateKey),
+      id: buildStoryGroupId(firstStory.accountId, firstStory.postedAt),
       media: [...firstStory.media],
       tags: new Set(firstStory.tags)
     };
@@ -274,7 +257,7 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
     const textMatch = name.match(TEXT_REGEX);
     if (textMatch?.groups) {
       const { timestamp } = textMatch.groups as { timestamp: string };
-      const postId = `${timestamp}_UTC`;
+      const postId = buildPostId(accountId, timestamp);
       let accumulator = postMap.get(postId);
       if (!accumulator) {
         accumulator = {
@@ -315,7 +298,7 @@ async function scanAccount(dataRoot: string, accountId: string): Promise<Account
         continue;
       }
 
-      const postId = `${timestamp}_UTC`;
+      const postId = buildPostId(accountId, timestamp);
       let accumulator = postMap.get(postId);
       if (!accumulator) {
         accumulator = {
