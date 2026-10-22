@@ -1,0 +1,2 @@
+# Keep this review's Markdown reports despite the repository-wide ignore rule.
+!*.md
