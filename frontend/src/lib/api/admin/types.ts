@@ -69,8 +69,11 @@ export interface AdminSharedMedia {
 
 export interface AdminSharedMediaListResponse {
   data: AdminSharedMedia[];
-  hasMore: boolean;
-  nextCursor: string | null;
+  success: true;
+  meta: {
+    hasMore: boolean;
+    nextCursor: string | null;
+  };
 }
 
 export interface AdminSharedMediaPatch {

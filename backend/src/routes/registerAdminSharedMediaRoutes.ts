@@ -7,6 +7,7 @@ import {
   getSharedMediaById
 } from '../services/sharedMediaService.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { isValidDateFilter } from '../utils/dateRange.js';
 
 function getApiBaseUrl(request: { headers: Record<string, string | string[] | undefined>; protocol?: string }): string {
   const publicApiUrl = process.env.PUBLIC_API_BASE_URL;
@@ -38,8 +39,8 @@ function buildUploadedThumbnailUrl(apiBaseUrl: string, yyyyMMdd: string, filenam
 const listQuerySchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().min(1).max(60).optional(),
-  from: z.string().optional(),
-  to: z.string().optional(),
+  from: z.string().refine(isValidDateFilter, 'Use YYYY-MM-DD (Asia/Seoul) or an ISO datetime with timezone').optional(),
+  to: z.string().refine(isValidDateFilter, 'Use YYYY-MM-DD (Asia/Seoul) or an ISO datetime with timezone').optional(),
   includeDeleted: z.coerce.boolean().optional(),
   sort: z.enum(['newest', 'oldest']).optional(),
   page: z.coerce.number().min(1).optional()
@@ -50,8 +51,8 @@ const listQueryJsonSchema = {
   properties: {
     cursor: { type: 'string' },
     limit: { type: 'integer', minimum: 1, maximum: 60 },
-    from: { type: 'string' },
-    to: { type: 'string' },
+    from: { type: 'string', description: 'Inclusive KST date (YYYY-MM-DD), or an ISO datetime with timezone' },
+    to: { type: 'string', description: 'Inclusive KST date (YYYY-MM-DD), or an inclusive ISO datetime with timezone' },
     includeDeleted: { type: 'boolean' },
     sort: { type: 'string', enum: ['newest', 'oldest'] },
     page: { type: 'integer', minimum: 1 }

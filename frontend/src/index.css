@@ -4,6 +4,12 @@
 
 :root {
   color-scheme: light;
+  --ui-ink: #2d3748;
+  --ui-muted: #465264;
+  --ui-focus: #315b9d;
+  --ui-error: #b91c1c;
+  --ui-radius: 0.75rem;
+  --ui-space: 0.75rem;
 }
 
 @layer base {
@@ -23,6 +29,32 @@
 }
 
 @layer components {
+  .ui-button {
+    border-radius: var(--ui-radius);
+    transition: background-color 150ms, box-shadow 150ms;
+  }
+  .ui-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .ui-pastel-action {
+    color: var(--ui-ink);
+    background-image: linear-gradient(to right, #7ec8ff, #8ce8d0, #b8a4f0);
+  }
+  .ui-pastel-action:hover:not(:disabled) {
+    box-shadow: 0 0 0 2px var(--ui-ink);
+  }
+  .ui-input:focus-visible {
+    outline: 3px solid var(--ui-focus);
+    outline-offset: 3px;
+  }
+  .ui-error {
+    border: 1px solid currentColor;
+    border-radius: var(--ui-radius);
+    padding: var(--ui-space);
+    color: var(--ui-error);
+    background: #fff;
+  }
   .archive-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -37,5 +69,15 @@
       justify-content: center;
       padding: 14px 0 22px;
     }
+  }
+}
+
+:is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+}
+@media (prefers-color-scheme: dark) {
+  :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+    outline-color: #7ec8ff;
   }
 }

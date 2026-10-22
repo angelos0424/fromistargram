@@ -126,12 +126,13 @@ const FeedPage = () => {
       page,
       pageSize,
       type: type === 'All' || type === 'Shared' ? undefined : type,
-      sort: sortOrder
+      sort: sortOrder,
+      search: searchTerm.trim() || undefined
     }),
-    [selectedAccountId, dateRange, page, pageSize, type, sortOrder]
+    [selectedAccountId, dateRange, page, pageSize, type, sortOrder, searchTerm]
   );
 
-  const { data: feedResponse, isLoading: feedLoading, error: feedError } = useQuery({
+  const { data: feedResponse, isLoading: feedLoading, error: feedError, refetch: refetchFeed } = useQuery({
     queryFn: () => listPost(query),
     queryKey: [CLIENT_KEY, 'feed', query],
     enabled: type !== 'Shared'
@@ -144,12 +145,13 @@ const FeedPage = () => {
   });
   const modalPost = modalPostResponse?.data ?? null;
 
-  const { data: sharedMediaResponse, isLoading: sharedMediaLoading } = useQuery({
+  const { data: sharedMediaResponse, isLoading: sharedMediaLoading, error: sharedMediaError, refetch: refetchSharedMedia } = useQuery({
     queryFn: () => listSharedMedia({
       from: dateRange.from ?? undefined,
       limit: pageSize,
       page,
       sort: sortOrder,
+      search: searchTerm.trim() || undefined,
       to: dateRange.to ?? undefined
     }),
     queryKey: [CLIENT_KEY, 'sharedMedia', {
@@ -157,6 +159,7 @@ const FeedPage = () => {
       limit: pageSize,
       page,
       sort: sortOrder,
+      search: searchTerm.trim() || undefined,
       to: dateRange.to
     }],
     enabled: type === 'Shared'
@@ -193,61 +196,11 @@ const FeedPage = () => {
     [accounts]
   );
 
-  const searchNeedle = searchTerm.trim().toLowerCase();
-
-  const visibleFeedPosts = useMemo(() => {
-    const filtered = searchNeedle
-      ? feedPosts.filter((post) => {
-          const account = accountById.get(post.accountId);
-          const accountLabel = [
-            account?.displayName,
-            account?.username,
-            post.accountId
-          ].filter(Boolean).join(' ');
-          const haystack = [
-            post.caption,
-            post.textContent,
-            post.tags.join(' '),
-            accountLabel
-          ].filter(Boolean).join(' ').toLowerCase();
-
-          return haystack.includes(searchNeedle);
-        })
-      : feedPosts;
-
-    return filtered;
-  }, [accountById, feedPosts, searchNeedle]);
-
-  const visibleSharedGroups = useMemo(() => {
-    const filtered = searchNeedle
-      ? groupedSharedMedia.filter((group) => {
-          const haystack = group
-            .map((item) =>
-              [
-                item.caption,
-                item.accountName,
-                item.originalName,
-                item.filename
-              ].filter(Boolean).join(' ')
-            )
-            .join(' ')
-            .toLowerCase();
-
-          return haystack.includes(searchNeedle);
-        })
-      : groupedSharedMedia;
-
-    return [...filtered].sort((a, b) => compareSharedGroups(a, b, sortOrder));
-  }, [groupedSharedMedia, searchNeedle, sortOrder]);
-
-  const displayedTotal =
-    type === 'Shared'
-      ? searchNeedle
-        ? visibleSharedGroups.length
-        : totalSharedGroups
-      : searchNeedle
-        ? visibleFeedPosts.length
-        : totalPosts;
+  // Search and total counts come from the same server query before pagination.
+  const visibleFeedPosts = feedPosts;
+  const visibleSharedGroups = groupedSharedMedia;
+  const displayedTotal = type === 'Shared' ? totalSharedGroups : totalPosts;
+  const listError = type === 'Shared' ? sharedMediaError : feedError;
 
   const handleAccountSelect = (accountId: string | null) => {
     setSelectedAccountId(accountId);
@@ -354,13 +307,17 @@ const FeedPage = () => {
 
   return (
     <AppShell
+      filterSummary={`${activeAccount ? `@${activeAccount.username ?? activeAccount.id}` : '전체 계정'} · ${dateRange.from || dateRange.to ? `${dateRange.from ?? '처음'} ~ ${dateRange.to ?? '최근'}` : '전체 기간'}`}
       toolbar={
         <ArchiveToolbar
           gridColumns={gridColumns}
           searchTerm={searchTerm}
           sortOrder={sortOrder}
           onGridColumnsChange={setGridColumns}
-          onSearchTermChange={setSearchTerm}
+          onSearchTermChange={(value) => {
+            setSearchTerm(value);
+            setPage(1);
+          }}
           onSortOrderChange={handleSortOrderChange}
         />
       }
@@ -398,17 +355,20 @@ const FeedPage = () => {
         url={seoUrl}
       />
       <div className="flex flex-col gap-3">
-        {type === 'Shared' ? (
+        {listError ? (
+          <div role="alert" className="mx-4 rounded-[22px] border border-red-200/80 bg-white/95 p-6 text-sm font-semibold text-red-700 shadow-sm sm:mx-0">
+            <p>{type === 'Shared' ? '공유 미디어' : '피드'}를 불러오는 중 문제가 발생했습니다.</p>
+            <button type="button" className="ui-button mt-3 border border-current px-4 py-2" onClick={() => void (type === 'Shared' ? refetchSharedMedia() : refetchFeed())}>
+              다시 시도
+            </button>
+          </div>
+        ) : type === 'Shared' ? (
           <SharedMediaGrid
             columns={gridColumns}
             mediaGroups={visibleSharedGroups}
             isLoading={sharedMediaLoading}
             onGroupClick={setActiveMediaGroup}
           />
-        ) : feedError ? (
-          <div className="mx-4 rounded-[22px] border border-red-200/80 bg-white/74 p-6 text-sm font-semibold text-red-600 shadow-[0_10px_26px_rgba(45,55,72,0.08)] backdrop-blur sm:mx-0">
-            피드를 불러오는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.
-          </div>
         ) : (
           <PostGrid
             columns={gridColumns}
@@ -418,12 +378,12 @@ const FeedPage = () => {
             onOpenPost={handleOpenPost}
           />
         )}
-        <Pagination
+        {!listError && <Pagination
           page={page}
           pageSize={pageSize}
           total={type === 'Shared' ? totalSharedGroups : totalPosts}
           onChange={setPage}
-        />
+        />}
       </div>
       <PostModal
         post={modalPost ?? null}
@@ -439,18 +399,6 @@ const FeedPage = () => {
       />
     </AppShell>
   );
-};
-
-const compareSharedGroups = (
-  a: SharedMedia[],
-  b: SharedMedia[],
-  sortOrder: SortOrder
-) => {
-  if (sortOrder === 'oldest') {
-    return new Date(a[0]?.uploadedAt ?? 0).getTime() - new Date(b[0]?.uploadedAt ?? 0).getTime();
-  }
-
-  return new Date(b[0]?.uploadedAt ?? 0).getTime() - new Date(a[0]?.uploadedAt ?? 0).getTime();
 };
 
 const ArchiveToolbar = ({
@@ -471,6 +419,8 @@ const ArchiveToolbar = ({
   <div className="grid w-full grid-cols-[1fr_auto] items-center gap-2 md:max-w-[720px] md:grid-cols-[1fr_auto_auto]">
     <input
       type="search"
+      aria-label="본문 내용이나 계정명으로 검색"
+      maxLength={200}
       value={searchTerm}
       onChange={(event) => onSearchTermChange(event.target.value)}
       placeholder="본문 내용이나 계정명으로 검색..."
@@ -501,8 +451,9 @@ const ArchiveToolbar = ({
           key={option.value}
           type="button"
           onClick={() => onSortOrderChange(option.value as SortOrder)}
+          aria-pressed={sortOrder === option.value}
           className={`rounded-full px-3 transition ${sortOrder === option.value
-            ? 'bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] text-white shadow-[0_4px_12px_rgba(126,200,255,0.28)]'
+            ? 'ui-pastel-action shadow-[0_4px_12px_rgba(126,200,255,0.28)]'
             : 'text-[#7B8794] hover:text-[#2D3748]'
             }`}
         >
@@ -521,10 +472,10 @@ const ArchiveTabs = ({
   onChange: (type: string) => void;
 }) => {
   const tabs = [
-    { label: '전체보기', type: 'All' },
-    { label: 'Post', type: 'Post' },
-    { label: 'Story', type: 'Story' },
-    { label: 'Other', type: 'Shared' }
+    { label: '전체', type: 'All' },
+    { label: '게시물', type: 'Post' },
+    { label: '스토리', type: 'Story' },
+    { label: '공유 미디어', type: 'Shared' }
   ];
 
   return (
@@ -534,8 +485,9 @@ const ArchiveTabs = ({
           key={tab.label}
           type="button"
           onClick={() => onChange(tab.type)}
+          aria-pressed={activeType === tab.type}
           className={`h-9 rounded-full border px-4 text-sm font-bold transition duration-200 ${activeType === tab.type
-            ? 'border-white/80 bg-gradient-to-r from-[#7EC8FF] to-[#B8A4F0] text-white shadow-[0_8px_20px_rgba(126,200,255,0.3)]'
+            ? 'border-white/80 ui-pastel-action shadow-[0_8px_20px_rgba(126,200,255,0.3)]'
             : 'border-white/70 bg-white/70 text-[#2D3748] shadow-[0_4px_14px_rgba(45,55,72,0.05)] hover:-translate-y-0.5 hover:border-[#7EC8FF]/70 hover:bg-white'
             }`}
         >

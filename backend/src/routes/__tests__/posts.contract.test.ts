@@ -100,6 +100,21 @@ describe('Post routes contract', () => {
     expect(body.meta.total).toBe(1);
   });
 
+  it('passes trimmed server search and date filters through the HTTP contract', async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/posts?search=%20needle%20&from=2026-10-23&to=2026-10-23&page=1' });
+    expect(response.statusCode).toBe(200);
+    expect(listPosts).toHaveBeenLastCalledWith(expect.objectContaining({
+      search: 'needle', postedAtFrom: '2026-10-23', postedAtTo: '2026-10-23', page: 1
+    }));
+  });
+
+  it('rejects impossible dates without invoking the post service', async () => {
+    const before = vi.mocked(listPosts).mock.calls.length;
+    const response = await app.inject({ method: 'GET', url: '/api/posts?from=2026-02-31' });
+    expect(response.statusCode).toBe(400);
+    expect(vi.mocked(listPosts).mock.calls).toHaveLength(before);
+  });
+
   it('returns a single post when found', async () => {
     const response = await app.inject({ method: 'GET', url: `/api/posts/${samplePost.id}` });
     expect(response.statusCode).toBe(200);

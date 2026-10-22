@@ -6,6 +6,7 @@ import { lookup } from 'mime-types';
 import { z } from 'zod';
 import { sendFileWithRange } from '../utils/range.js';
 import { prisma } from '../db/client.js';
+import { getSafeMediaType } from '../utils/fileUpload.js';
 import { resolveSourceRoot } from '../utils/sourceRoot.js';
 
 const paramsSchema = z.object({
@@ -296,7 +297,11 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(404).send({ message: 'Media not found' });
       }
 
-      const mimeType = lookup(filename) || 'application/octet-stream';
+      const safeType = getSafeMediaType(filename);
+      const mimeType = safeType?.mime ?? 'application/octet-stream';
+      reply.header('X-Content-Type-Options', 'nosniff');
+      reply.header('Content-Security-Policy', "default-src 'none'; sandbox");
+      if (!safeType) reply.header('Content-Disposition', 'attachment');
       return sendFileWithRange(reply, {
         filePath,
         rangeHeader: request.headers.range,

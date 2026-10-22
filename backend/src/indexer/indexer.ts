@@ -5,6 +5,7 @@ import { clearCache } from '../utils/cache.js';
 import { resolveSourceRoot } from '../utils/sourceRoot.js';
 import { scanDataRoot } from './fileSystemScanner.js';
 import { IndexedPost, IndexerSnapshot } from './types.js';
+import { parsePostId } from './postIdentity.js';
 
 export type IndexerOptions = {
   dataRoot?: string;
@@ -129,7 +130,6 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
       }
     });
 
-    const snapshotPostIds = new Set(account.posts.map((post) => post.id));
     const existingPosts = await prisma.post.findMany({
       where: { accountId: account.id },
       include: {
@@ -144,6 +144,16 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
     });
 
     const existingPostsById = new Map(existingPosts.map((post) => [post.id, post]));
+    // Keep the original owner's timestamp-only IDs so existing detail links and
+    // child relations survive. Other accounts always use their own scoped IDs.
+    const posts = account.posts.map((post) => {
+      const identity = parsePostId(post.id);
+      const legacy = identity ? existingPostsById.get(identity.legacyId) : undefined;
+      return legacy?.accountId === post.accountId
+        ? { ...post, id: legacy.id }
+        : post;
+    });
+    const snapshotPostIds = new Set(posts.map((post) => post.id));
     const deletedPostIds = existingPosts
       .filter((post) => !snapshotPostIds.has(post.id))
       .map((post) => post.id);
@@ -157,7 +167,7 @@ export async function syncSnapshotToDatabase(snapshot: IndexerSnapshot): Promise
       ]);
     }
 
-    const postsToSync = account.posts.filter((post) => {
+    const postsToSync = posts.filter((post) => {
       const existing = existingPostsById.get(post.id);
       if (!existing) {
         return true;

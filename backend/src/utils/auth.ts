@@ -32,15 +32,18 @@ declare module 'fastify' {
 let jwksCache: jose.JWTVerifyGetKey | null = null;
 let jwksCacheTime = 0;
 let jwksUriCache: string | null = null;
+let jwksIssuerCache: string | null = null;
 const JWKS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 const getIssuerUrl = (): string | null => {
-  return process.env.AUTHENTIK_ISSUER_URL || null;
+  return process.env.AUTHENTIK_ISSUER_URL?.trim() || null;
 };
 
 const getAdminRole = (): string => {
-  return process.env.AUTHENTIK_ADMIN_ROLE || 'admin';
+  return process.env.AUTHENTIK_ADMIN_ROLE?.trim() || 'admin';
 };
+
+const getAudience = (): string | null => process.env.AUTHENTIK_AUDIENCE?.trim() || null;
 
 const resolveIssuer = (): string | null => {
   const issuerUrl = getIssuerUrl();
@@ -71,6 +74,12 @@ async function getJwks(): Promise<jose.JWTVerifyGetKey> {
     throw new Error('AUTHENTIK_ISSUER_URL environment variable is not set');
   }
 
+  if (jwksIssuerCache !== issuerUrl) {
+    jwksCache = null;
+    jwksUriCache = null;
+    jwksIssuerCache = issuerUrl;
+  }
+
   const now = Date.now();
   if (jwksCache && now - jwksCacheTime < JWKS_CACHE_TTL_MS) {
     return jwksCache;
@@ -89,21 +98,20 @@ async function getJwks(): Promise<jose.JWTVerifyGetKey> {
 export async function verifyToken(token: string): Promise<AuthenticatedUser | null> {
   const issuerUrl = resolveIssuer();
 
-  // If no issuer URL is configured, skip verification (for development)
-  if (!issuerUrl) {
-    console.warn('AUTHENTIK_ISSUER_URL not configured - auth verification disabled');
-    return null;
-  }
+  const audience = getAudience();
+  if (!issuerUrl || !audience) return null;
 
   try {
     const jwks = await getJwks();
     const { payload } = await jose.jwtVerify(token, jwks, {
       issuer: issuerUrl,
+      audience,
+      requiredClaims: ['sub', 'exp'],
     });
 
     const jwtPayload = payload as JwtPayload;
 
-    if (!jwtPayload.sub) {
+    if (typeof jwtPayload.sub !== 'string' || !jwtPayload.sub) {
       return null;
     }
 
@@ -129,7 +137,7 @@ export async function verifyToken(token: string): Promise<AuthenticatedUser | nu
     } else if (error instanceof jose.errors.JWTInvalid) {
       console.warn('Invalid JWT token');
     } else {
-      console.error('Token verification failed:', error);
+      console.warn('Token verification failed:', error instanceof Error ? error.message : 'Unknown verification error');
     }
     return null;
   }
@@ -137,12 +145,7 @@ export async function verifyToken(token: string): Promise<AuthenticatedUser | nu
 
 export function hasAdminRole(user: AuthenticatedUser): boolean {
   const adminRole = getAdminRole();
-  return user.roles.some(
-    (role) =>
-      role === adminRole ||
-      role.toLowerCase() === adminRole.toLowerCase() ||
-      role.includes(adminRole)
-  );
+  return user.roles.includes(adminRole);
 }
 
 /**
@@ -155,10 +158,29 @@ export async function requireAdminAuth(
 ): Promise<void> {
   const issuerUrl = getIssuerUrl();
 
-  // If AUTHENTIK_ISSUER_URL is not set, skip auth (for local development)
-  // In production, this should always be set
-  if (!issuerUrl) {
-    request.log.warn('Admin auth skipped - AUTHENTIK_ISSUER_URL not configured');
+  if (!issuerUrl || !getAudience()) {
+    const loopbackHosts = ['127.0.0.1', '::1', 'localhost'];
+    const loopbackPeers = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
+    const isLoopbackUrl = (value: string) => {
+      try { return ['127.0.0.1', '[::1]', 'localhost'].includes(new URL(value).hostname); }
+      catch { return false; }
+    };
+    const forwarded = ['forwarded', 'x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto']
+      .some((name) => request.headers[name] !== undefined);
+    const localBypass = !issuerUrl && process.env.NODE_ENV === 'development'
+      && process.env.ALLOW_INSECURE_LOCAL_ADMIN === 'true'
+      && loopbackHosts.includes(process.env.HOST ?? '')
+      && loopbackPeers.includes(request.raw.socket.remoteAddress ?? '')
+      && !forwarded
+      && isLoopbackUrl(`http://${request.headers.host ?? ''}`)
+      && (!request.headers.origin || isLoopbackUrl(request.headers.origin));
+    if (localBypass) {
+      request.log.warn('Explicit local development admin bypass enabled');
+      request.user = { subject: 'local-development', roles: [getAdminRole()] };
+      return;
+    }
+    request.log.error('Admin authentication requires issuer and audience configuration');
+    reply.code(503).send({ error: 'Admin authentication is not configured' });
     return;
   }
 
@@ -177,6 +199,11 @@ export async function requireAdminAuth(
   const user = await verifyToken(token);
   if (!user) {
     reply.code(401).send({ error: 'Invalid or expired token' });
+    return;
+  }
+
+  if (!hasAdminRole(user)) {
+    reply.code(403).send({ error: 'Administrator role required' });
     return;
   }
 

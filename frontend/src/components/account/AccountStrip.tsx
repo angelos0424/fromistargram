@@ -20,8 +20,9 @@ const AccountChip = ({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={isActive}
       className={`group inline-flex min-h-14 min-w-[160px] shrink-0 items-center gap-3 rounded-full border py-2 pl-2 pr-4 text-left transition duration-200 ${isActive
-        ? 'border-white/80 bg-gradient-to-r from-[#7EC8FF] via-[#8CE8D0] to-[#B8A4F0] text-white shadow-[0_10px_26px_rgba(126,200,255,0.36)]'
+        ? 'border-white/80 ui-pastel-action shadow-[0_10px_26px_rgba(126,200,255,0.36)]'
         : 'border-white/70 bg-white/78 text-[#2D3748] shadow-[0_5px_18px_rgba(45,55,72,0.06)] hover:-translate-y-0.5 hover:border-[#7EC8FF]/70 hover:bg-white hover:shadow-[0_10px_26px_rgba(126,200,255,0.18)]'
         }`}
     >
@@ -47,10 +48,10 @@ const AccountChip = ({
         )}
       </div>
       <span className="flex min-w-0 flex-col">
-        <span className={`max-w-[7rem] truncate text-sm font-extrabold ${isActive ? 'text-white' : 'text-[#2D3748]'}`}>
+        <span className="max-w-[7rem] truncate text-sm font-extrabold text-[#2D3748]">
           {account.displayName ?? account.username ?? account.id}
         </span>
-        <span className={`max-w-[7rem] truncate text-xs font-semibold ${isActive ? 'text-white/78' : 'text-[#7B8794]'}`}>
+        <span className="max-w-[7rem] truncate text-xs font-semibold text-[#2D3748]">
           @{account.username ?? account.id}
         </span>
       </span>
@@ -68,8 +69,9 @@ const AllAccountsButton = ({
   <button
     type="button"
     onClick={onClick}
+      aria-pressed={isActive}
     className={`inline-flex min-h-14 shrink-0 items-center gap-3 rounded-full border py-2 pl-2 pr-4 text-left transition duration-200 ${isActive
-      ? 'border-white/80 bg-gradient-to-r from-[#7EC8FF] via-[#8CE8D0] to-[#B8A4F0] text-white shadow-[0_10px_26px_rgba(126,200,255,0.36)]'
+      ? 'border-white/80 ui-pastel-action shadow-[0_10px_26px_rgba(126,200,255,0.36)]'
       : 'border-white/70 bg-white/78 text-[#2D3748] shadow-[0_5px_18px_rgba(45,55,72,0.06)] hover:-translate-y-0.5 hover:border-[#7EC8FF]/70 hover:bg-white hover:shadow-[0_10px_26px_rgba(126,200,255,0.18)]'
       }`}
   >
@@ -86,11 +88,11 @@ const AllAccountsButton = ({
       <span className="rounded-full bg-[#4f5bd5]" />
     </span>
     <span className="flex flex-col">
-      <span className={`text-sm font-extrabold ${isActive ? 'text-white' : 'text-[#2D3748]'}`}>
+      <span className="text-sm font-extrabold text-[#2D3748]">
         전체 멤버
       </span>
-      <span className={`text-xs font-semibold ${isActive ? 'text-white/78' : 'text-[#7B8794]'}`}>
-        all accounts
+      <span className="text-xs font-semibold text-[#2D3748]">
+        모든 계정
       </span>
     </span>
   </button>

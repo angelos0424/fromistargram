@@ -23,6 +23,7 @@ vi.mock('../services/indexerService.js', () => ({
 }));
 
 import { registerMobileIngestRoutes } from './registerMobileIngestRoutes.js';
+import { scanDataRoot } from '../indexer/fileSystemScanner.js';
 
 const originalCrawlOutputDir = process.env.CRAWL_OUTPUT_DIR;
 const originalMobileIngestToken = process.env.MOBILE_INGEST_TOKEN;
@@ -90,7 +91,7 @@ beforeEach(async () => {
   process.env.MOBILE_INGEST_TOKEN = 'test-mobile-token';
   process.env.NODE_ENV = 'test';
   mocks.findUnique.mockReset();
-  mocks.findUnique.mockResolvedValue({ id: 'test_user' });
+  mocks.findUnique.mockImplementation(async ({ where }) => where.id === 'test_user' ? { id: 'test_user' } : null);
   mocks.scheduleIndexerRun.mockReset();
   mocks.triggerIndexerRun.mockReset().mockResolvedValue(undefined);
 
@@ -162,6 +163,20 @@ describe('POST /api/mobile/profile-photo-ingest', () => {
     });
     expect(responseBody.data).not.toHaveProperty('savedFiles');
     expect(JSON.stringify(responseBody)).not.toContain(sourceRoot!);
+  });
+
+  it('preserves an exact mixed-case account ID before considering lowercase fallback', async () => {
+    mocks.findUnique.mockImplementation(async ({ where }) =>
+      ['MixedCase', 'mixedcase'].includes(where.id) ? { id: where.id } : null);
+    const response = await injectProfilePhoto([
+      { name: 'accountName', value: ' @MixedCase ' }, validFields[1], validFields[2]
+    ]);
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data.accountId).toBe('MixedCase');
+    expect(mocks.findUnique).toHaveBeenCalledTimes(1);
+    expect(await readdir(path.join(sourceRoot!, 'MixedCase'))).toEqual([
+      '2026-08-09_03-34-56_UTC_profile_pic.jpg'
+    ]);
   });
 
   it('is idempotent for identical bytes and rejects conflicting bytes at the same second', async () => {
@@ -355,5 +370,30 @@ describe('POST /api/mobile/profile-photo-ingest', () => {
     expect(unknown.statusCode).toBe(404);
     expect(traversal.statusCode).toBe(400);
     expect(mocks.scheduleIndexerRun).not.toHaveBeenCalled();
+  });
+});
+
+describe('mobile source upload identifiers', () => {
+  it.each([
+    ['STORY', '2026-10-23T14:59:59Z', '2026-10-23_KST_story_test_user'],
+    ['STORY', '2026-10-23T15:00:00Z', '2026-10-24_KST_story_test_user'],
+    ['POST', '2026-10-23T15:00:00Z', '2026-10-23_15-00-00_UTC_post_test_user']
+  ])('returns the scanner ID for %s at %s', async (contentType, uploadedAt, expectedId) => {
+    const payload = multipartPayload([
+      { name: 'accountName', value: '@test_user' },
+      { name: 'uploadedAt', value: uploadedAt },
+      { name: 'contentType', value: contentType },
+      { name: 'files', filename: 'photo.jpg', contentType: 'image/jpeg', data: JPEG_A }
+    ]);
+    const response = await app!.inject({
+      method: 'POST', url: '/api/mobile/instagram-ingest',
+      headers: { 'content-type': payload.contentType, authorization: 'Bearer test-mobile-token' },
+      payload: payload.body
+    });
+    expect(response.statusCode).toBe(200);
+    const snapshot = await scanDataRoot(sourceRoot!);
+    expect(response.json().data.postId).toBe(expectedId);
+    expect(snapshot.accounts[0].posts[0].id).toBe(expectedId);
+    expect(response.json().data.archiveUrl).toContain(`/post/${expectedId}`);
   });
 });

@@ -14,7 +14,7 @@ const PreviewGrid = ({ files, previews, onRemove, onAddMore }: PreviewGridProps)
 						{files[index].type.startsWith('image/') ? (
 							<img
 								src={preview}
-								alt={`Preview ${index + 1}`}
+								alt={files[index].name}
 								className="h-full w-full object-cover"
 							/>
 						) : (
@@ -26,7 +26,8 @@ const PreviewGrid = ({ files, previews, onRemove, onAddMore }: PreviewGridProps)
 						<button
 							type="button"
 							onClick={() => onRemove(index)}
-							className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+							aria-label={`${files[index].name} 삭제`}
+							className="ui-button absolute right-1 top-1 flex h-11 w-11 items-center justify-center rounded-full bg-red-700 text-white shadow"
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"

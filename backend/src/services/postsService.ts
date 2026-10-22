@@ -1,4 +1,6 @@
 import { prisma } from '../db/client.js';
+import { parsePostId } from '../indexer/postIdentity.js';
+import { buildDateRange } from '../utils/dateRange.js';
 import { cacheKey, cacheTtlSeconds, clearCache, withCache } from '../utils/cache.js';
 import { buildImagorUrl } from '../utils/imagor.js';
 import { buildMediaUrl } from '../utils/media.js';
@@ -12,6 +14,7 @@ export type ListPostsInput = {
   page?: number;
   type?: string;
   sort?: 'newest' | 'oldest';
+  search?: string;
 };
 
 export type MediaItem = {
@@ -67,6 +70,7 @@ type PrismaPostWithRelations = {
 export async function listPosts(input: ListPostsInput): Promise<ListPostsResponse> {
   const limit = input.limit ?? DEFAULT_LIMIT;
   const sortDirection = input.sort === 'oldest' ? 'asc' : 'desc';
+  const search = input.search?.trim();
   const cacheId = cacheKey([
     'posts',
     input.accountId ?? 'all',
@@ -76,7 +80,8 @@ export async function listPosts(input: ListPostsInput): Promise<ListPostsRespons
     input.postedAtFrom ?? 'null',
     input.postedAtTo ?? 'null',
     input.type ?? 'all',
-    input.sort ?? 'newest'
+    input.sort ?? 'newest',
+    search ?? ''
   ]);
 
   return withCache(cacheId, async () => {
@@ -91,15 +96,21 @@ export async function listPosts(input: ListPostsInput): Promise<ListPostsRespons
     }
 
     if (input.postedAtFrom || input.postedAtTo) {
-      where.postedAt = {
-        gte: input.postedAtFrom ? new Date(input.postedAtFrom) : undefined,
-        lte: input.postedAtTo ? new Date(input.postedAtTo) : undefined
-      };
+      where.postedAt = buildDateRange(input.postedAtFrom, input.postedAtTo);
+    }
+    if (search) {
+      const contains = { contains: search, mode: 'insensitive' as const };
+      where.OR = [
+        { caption: contains },
+        { accountId: contains },
+        { postText: { is: { content: contains } } },
+        { tags: { some: { tag: { name: contains } } } }
+      ];
     }
 
     const queryArgs: Parameters<typeof prisma.post.findMany>[0] = {
       where,
-      orderBy: { postedAt: sortDirection },
+      orderBy: [{ postedAt: sortDirection }, { id: sortDirection }],
       include: {
         media: { orderBy: { orderIndex: 'asc' } },
         tags: { select: { tag: true } },
@@ -154,7 +165,7 @@ export async function getPostById(id: string): Promise<PostSummary | null> {
   return withCache(
     key,
     async () => {
-      const post = await prisma.post.findUnique({
+      let post = await prisma.post.findUnique({
         where: { id },
         include: {
           media: { orderBy: { orderIndex: 'asc' } },
@@ -164,8 +175,22 @@ export async function getPostById(id: string): Promise<PostSummary | null> {
       }) as PrismaPostWithRelations | null;
 
       if (!post) {
-        return null;
+        const identity = parsePostId(id);
+        if (identity) {
+          const legacy = await prisma.post.findUnique({
+            where: { id: identity.legacyId },
+            include: {
+              media: { orderBy: { orderIndex: 'asc' } },
+              tags: { select: { tag: true } },
+              postText: true
+            }
+          }) as PrismaPostWithRelations | null;
+          // A timestamp-only URL belongs to its original account, never another
+          // account that happened to post in the same second.
+          if (legacy?.accountId === identity.accountId) post = legacy;
+        }
       }
+      if (!post) return null;
 
       return {
         id: post.id,

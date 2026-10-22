@@ -4,6 +4,7 @@ import { mkdir, readFile, readdir, realpath, stat, writeFile } from 'fs/promises
 import path from 'path';
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../db/client.js';
+import { buildPostId, buildStoryGroupId } from '../indexer/postIdentity.js';
 import {
   createSharedMedia
 } from '../services/sharedMediaService.js';
@@ -102,10 +103,17 @@ function normalizeAccountName(value?: string): string | null {
   const normalized = (value ?? '')
     .trim()
     .replace(/^@/, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, '_');
+    .replace(/[^a-zA-Z0-9._-]+/g, '_');
 
   return normalized || null;
+}
+
+async function findIngestAccount(accountName: string) {
+  const exact = await prisma.account.findUnique({ where: { id: accountName }, select: { id: true } });
+  if (exact || accountName === accountName.toLowerCase()) return exact;
+  // Preserve existing mixed-case IDs. Lowercase lookup remains a compatibility
+  // fallback for clients that send display capitalization for lowercase handles.
+  return prisma.account.findUnique({ where: { id: accountName.toLowerCase() }, select: { id: true } });
 }
 
 function normalizeHighlightTitle(value?: string): string | null {
@@ -710,7 +718,9 @@ async function saveToSource(input: {
 
   await writeSourceFileAllowingIdenticalOverwrite(metadataPath, metadataContent);
 
-  const postId = `${input.postedAt.timestampBase}_UTC`;
+  const postId = input.type === 'Story'
+    ? buildStoryGroupId(input.accountId, input.postedAt.date)
+    : buildPostId(input.accountId, input.postedAt.timestampBase);
   const apiBaseUrl = getApiBaseUrl(input.request);
 
   return {
@@ -794,10 +804,7 @@ export async function registerMobileIngestRoutes(app: FastifyInstance): Promise<
         );
       }
 
-      const existingAccount = await prisma.account.findUnique({
-        where: { id: input.accountName },
-        select: { id: true }
-      });
+      const existingAccount = await findIngestAccount(input.accountName);
       if (!existingAccount) {
         return sendError(reply, 'Account not found for profile photo upload', 404, 'NOT_FOUND');
       }
@@ -838,10 +845,7 @@ export async function registerMobileIngestRoutes(app: FastifyInstance): Promise<
       }
 
       const existingAccount = input.accountName
-        ? await prisma.account.findUnique({
-          where: { id: input.accountName },
-          select: { id: true }
-        })
+        ? await findIngestAccount(input.accountName)
         : null;
       const postedAt = parsePostedAt(input.uploadedAt);
 

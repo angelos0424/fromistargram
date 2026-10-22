@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { SITE_URL } from '../../lib/site';
 
 interface SeoHeadProps {
   title?: string;
@@ -10,12 +11,11 @@ interface SeoHeadProps {
 const DEFAULT_TITLE = 'Fromistargram Viewer';
 const DEFAULT_DESCRIPTION = '프로미스나인(fromis_9)의 인스타그램 게시물을 모아보는 팬 사이트입니다. 최신 피드와 스토리 업데이트를 확인하세요.';
 const DEFAULT_IMAGE = '/og-image.svg';
-const SITE_URL = 'https://fromistargram.com';
 
 const SeoHead = ({ title, description, image, url }: SeoHeadProps) => {
   const metaTitle = title ? `${title} | Fromistargram` : DEFAULT_TITLE;
   const metaDescription = description || DEFAULT_DESCRIPTION;
-  const metaImage = image || DEFAULT_IMAGE;
+  const metaImage = image || `${SITE_URL}${DEFAULT_IMAGE}`;
   const metaUrl = url || SITE_URL;
 
   return (

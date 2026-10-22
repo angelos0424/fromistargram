@@ -24,14 +24,14 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100">
       <header className="border-b border-slate-800 bg-slate-950/75 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-4 px-4 py-4 sm:px-6">
           <div>
-            <h1 className="text-lg font-semibold text-brand-300">Fromistargram Admin</h1>
+            <h1 className="text-lg font-semibold text-brand-300">Fromistargram 관리</h1>
             <p className="text-sm text-slate-400">
-              Authentik 연동된 운영자 전용 제어판
+              운영자 전용 관리 화면
             </p>
           </div>
-          <div className="text-right text-sm">
+          <div className="min-w-0 break-words text-sm sm:text-right">
             <p className="font-medium">{idToken?.name ?? idToken?.username ?? '관리자'}</p>
             <p className="text-xs text-slate-400">{idToken?.email ?? 'no-email@fromistargram'}</p>
             <button
@@ -44,9 +44,9 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           </div>
         </div>
       </header>
-      <div className="mx-auto flex max-w-6xl gap-8 px-6 py-6">
-        <nav className="w-56 flex-shrink-0">
-          <ul className="space-y-2">
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 sm:py-6 lg:flex-row lg:gap-8">
+        <nav aria-label="관리 메뉴" className="w-full shrink-0 lg:w-56">
+          <ul className="flex flex-wrap gap-2 lg:flex-col">
             {navItems.map((item) => (
               <li key={item.to}>
                 <NavLink
@@ -67,7 +67,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             ))}
           </ul>
         </nav>
-        <main className="flex-1 space-y-6 pb-12">
+        <main className="min-w-0 flex-1 space-y-6 pb-12">
           {children ?? <Outlet />}
         </main>
       </div>
