@@ -1,6 +1,6 @@
 # 리뷰 후속 작업
 
-리뷰 문서 PR: [#57](https://github.com/angelos0424/fromistargram/pull/57), main 병합 확인(`4f83443`). 기존 리뷰 28개와 추가 Node 보안 점검 1개를 이슈로 등록했습니다. 우선순위별 수정 상태와 검증은 수정 PR에서 이어 기록합니다.
+리뷰 문서 PR: [#57](https://github.com/angelos0424/fromistargram/pull/57), main 병합 확인(`4f83443`). 수정 PR: [#87](https://github.com/angelos0424/fromistargram/pull/87). 기존 리뷰 28개와 추가 Node 보안 점검 1개를 이슈로 등록했습니다. 우선순위별 수정 상태와 검증은 수정 PR에서 이어 기록합니다.
 
 | 우선순위 | 리뷰 ID | 이슈 | 작업 | 상태 |
 |---|---|---|---|---|

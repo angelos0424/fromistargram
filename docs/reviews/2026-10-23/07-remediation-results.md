@@ -1,6 +1,6 @@
 # 리뷰 수정 결과
 
-작업일: 2026-10-23 (Asia/Seoul). 리뷰 문서 PR #57이 병합된 main `4f83443`을 기준으로 `codex/review-fixes-20261023`에서 수정했습니다. [29개 이슈별 목록](05-remediation-tracker.md)의 구현을 완료했으며, 코드 병합·운영 배포는 별도 단계입니다.
+작업일: 2026-10-23 (Asia/Seoul). 수정 PR: [#87](https://github.com/angelos0424/fromistargram/pull/87). 리뷰 문서 PR #57이 병합된 main `4f83443`을 기준으로 `codex/review-fixes-20261023`에서 수정했습니다. [29개 이슈별 목록](05-remediation-tracker.md)의 구현을 완료했으며, 코드 병합·운영 배포는 별도 단계입니다.
 
 ## 우선순위별 변경
 
