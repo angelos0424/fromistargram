@@ -110,6 +110,12 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
           additionalProperties: false
         },
         response: {
+          400: {
+            type: 'object',
+            properties: { message: { type: 'string' } },
+            required: ['message'],
+            additionalProperties: false
+          },
           200: {
             type: 'string',
             format: 'binary'
@@ -171,6 +177,12 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
           additionalProperties: false
         },
         response: {
+          400: {
+            type: 'object',
+            properties: { message: { type: 'string' } },
+            required: ['message'],
+            additionalProperties: false
+          },
           200: {
             type: 'string',
             format: 'binary'
@@ -252,6 +264,12 @@ export async function registerMediaRoutes(app: FastifyInstance): Promise<void> {
           additionalProperties: false
         },
         response: {
+          400: {
+            type: 'object',
+            properties: { message: { type: 'string' } },
+            required: ['message'],
+            additionalProperties: false
+          },
           200: {
             type: 'string',
             format: 'binary'

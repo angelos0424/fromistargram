@@ -1,4 +1,4 @@
-import Fastify, { FastifyInstance, FastifyServerOptions, FastifyRequest } from 'fastify';
+import Fastify, { FastifyBaseLogger, FastifyInstance, FastifyServerOptions, FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import swagger from '@fastify/swagger';
@@ -8,26 +8,47 @@ import { registerApiRoutes } from './routes/index.js';
 import { csrfProtection } from './utils/csrf.js';
 import { getAllowedOrigins, isOriginAllowed } from './utils/origin.js';
 
-export type BuildServerOptions = FastifyServerOptions & {
+export type BuildServerOptions = Omit<FastifyServerOptions, 'logger'> & {
+  logger?: FastifyServerOptions['logger'] | FastifyBaseLogger;
   enablePrettyLogs?: boolean;
 };
 
-export async function buildServer(options: BuildServerOptions = {}): Promise<FastifyInstance> {
-  const logger = options.logger ??
-    pino({
+function isLoggerInstance(logger: BuildServerOptions['logger']): logger is FastifyBaseLogger {
+  return typeof logger === 'object' && logger !== null
+    && ['info', 'error', 'debug', 'fatal', 'warn', 'trace', 'child']
+      .every((method) => typeof (logger as unknown as Record<string, unknown>)[method] === 'function');
+}
+
+function resolveLoggingOptions({ logger, loggerInstance, enablePrettyLogs }: BuildServerOptions):
+  Pick<FastifyServerOptions, 'logger' | 'loggerInstance'> {
+  if (isLoggerInstance(logger)) {
+    if (loggerInstance) throw new TypeError('Specify a logger instance using only one option');
+    return { loggerInstance: logger };
+  }
+  if (loggerInstance) return { logger, loggerInstance };
+  if (logger !== undefined) return { logger };
+
+  return {
+    loggerInstance: pino({
       level: process.env.LOG_LEVEL ?? 'info',
-      transport: options.enablePrettyLogs
+      transport: enablePrettyLogs
         ? {
           target: 'pino-pretty',
           options: { translateTime: 'SYS:standard' }
         }
         : undefined
-    });
+    })
+  };
+}
+
+export async function buildServer(options: BuildServerOptions = {}): Promise<FastifyInstance> {
+  const { logger, loggerInstance, enablePrettyLogs, ...serverOptions } = options;
+  const loggingOptions = resolveLoggingOptions({ logger, loggerInstance, enablePrettyLogs });
 
   const app = Fastify({
-    logger,
     disableRequestLogging: true,
-    ...options
+    ...serverOptions,
+    ...loggingOptions
   });
 
   // CORS configuration
@@ -105,7 +126,7 @@ export async function buildServer(options: BuildServerOptions = {}): Promise<Fas
     const metricsStart = (request as FastifyRequest & { metricsStart?: bigint }).metricsStart;
     const durationMs = metricsStart
       ? Number(process.hrtime.bigint() - metricsStart) / 1_000_000
-      : reply.getResponseTime();
+      : reply.elapsedTime;
 
     const routePath = request.routeOptions.url ?? request.url;
 
