@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM node:20-alpine
+FROM node:24.22.1-alpine
 RUN apk add --no-cache python3 py3-pip
 RUN python3 -m venv /venv \
     && /venv/bin/pip install --upgrade pip \
