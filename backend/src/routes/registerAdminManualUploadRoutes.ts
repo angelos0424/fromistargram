@@ -1,8 +1,10 @@
 import { FastifyInstance } from 'fastify';
-import { MultipartFile } from '@fastify/multipart';
-import { mkdir, writeFile } from 'fs/promises';
+import { constants } from 'node:fs';
+import { copyFile, mkdir, open, readdir, realpath, unlink } from 'node:fs/promises';
 import path from 'path';
-import { getSourcePath, validateFileType } from '../utils/fileUpload.js';
+import { resolveSourceRoot } from '../utils/sourceRoot.js';
+import { prisma } from '../db/client.js';
+import { acquireUploadSlot, stageUpload, StagedUpload, UploadError } from '../utils/stagedUpload.js';
 import { sendError, sendSuccess } from '../utils/response.js';
 
 type ManualUploadType = 'Post' | 'Story';
@@ -23,11 +25,6 @@ function parsePostedAt(value: string): { date: Date; timestampBase: string } | n
 
   const timestampBase = `${yyyy}-${MM}-${dd}_${HH}-${mm}-${ss}`;
   return { date, timestampBase };
-}
-
-function resolveFileExtension(file: MultipartFile): string {
-  const extFromName = path.extname(file.filename ?? '');
-  return extFromName || '';
 }
 
 function resolveType(value?: string): ManualUploadType | null {
@@ -79,119 +76,101 @@ export async function registerAdminManualUploadRoutes(app: FastifyInstance): Pro
       }
     },
     async (request, reply) => {
-      const parts = request.parts();
-      const files: Array<{ file: MultipartFile; buffer: Buffer }> = [];
-      let accountId: string | undefined;
-      let postedAt: string | undefined;
-      let type: ManualUploadType | null = null;
-      let caption: string | undefined;
+      const release = acquireUploadSlot();
+      if (!release) {
+        reply.header('Retry-After', '5');
+        return sendError(reply, 'Too many simultaneous uploads', 429, 'TOO_MANY_REQUESTS');
+      }
+      let staged: StagedUpload | undefined;
+      let lockPath: string | undefined;
+      const createdPaths: string[] = [];
+      let completed = false;
+      const cleanup = async () => {
+        const work: Promise<unknown>[] = [];
+        if (!completed) work.push(...createdPaths.splice(0).map((filepath) => unlink(filepath)));
+        if (lockPath) {
+          work.push(unlink(lockPath));
+          lockPath = undefined;
+        }
+        if (staged) {
+          work.push(staged.cleanup());
+          staged = undefined;
+        }
+        const results = await Promise.allSettled(work);
+        for (const result of results) {
+          if (result.status === 'rejected') request.log.error(result.reason, 'Upload cleanup failed');
+        }
+        release();
+      };
+      try {
+        staged = await stageUpload(request, ['accountId', 'postedAt', 'type', 'caption']);
+        const { accountId, postedAt, caption } = staged.fields;
+        const type = resolveType(staged.fields.type);
+        if (!accountId || !/^[A-Za-z0-9._-]{1,128}$/.test(accountId) || accountId === '.' || accountId.includes('..')) {
+          throw new UploadError('accountId must be a valid account identifier');
+        }
+        const parsedPostedAt = postedAt && parsePostedAt(postedAt);
+        if (!parsedPostedAt) throw new UploadError('postedAt must be a valid ISO 8601 datetime');
+        if (!type) throw new UploadError('type must be Post or Story');
+        const account = await prisma.account.findUnique({ where: { id: accountId }, select: { id: true } });
+        if (!account) throw new UploadError('Account not found', 404, 'NOT_FOUND');
 
-      for await (const part of parts) {
-        if (part.type === 'file') {
-          if (part.fieldname !== 'files') {
-            return sendError(reply, 'Unexpected file field name', 400, 'BAD_REQUEST');
-          }
-          const buffer = await part.toBuffer();
-          files.push({ file: part as MultipartFile, buffer });
-          continue;
+        const sourceRoot = resolveSourceRoot();
+        await mkdir(sourceRoot, { recursive: true });
+        const rootRealPath = await realpath(sourceRoot);
+        const sourceDir = path.join(rootRealPath, accountId);
+        await mkdir(sourceDir, { recursive: true });
+        const sourceRealPath = await realpath(sourceDir);
+        if (!sourceRealPath.startsWith(rootRealPath + path.sep)) {
+          throw new UploadError('Account directory is outside the source root');
+        }
+        const base = `${parsedPostedAt.timestampBase}_UTC`;
+        const candidateLock = path.join(sourceRealPath, `.${base}.upload.lock`);
+        const lock = await open(candidateLock, 'wx', 0o600);
+        lockPath = candidateLock;
+        await lock.close();
+        const existing = await readdir(sourceRealPath);
+        if (existing.some((name) => name === base || name.startsWith(`${base}.`) || name.startsWith(`${base}_`))) {
+          throw new UploadError('Media already exists for this account and timestamp', 409, 'CONFLICT');
         }
 
-        if (part.type === 'field') {
-          const value = (part as { value?: string }).value ?? '';
-          switch (part.fieldname) {
-            case 'accountId':
-              accountId = value;
-              break;
-            case 'postedAt':
-              postedAt = value;
-              break;
-            case 'type':
-              type = resolveType(value);
-              break;
-            case 'caption':
-              caption = value;
-              break;
-            default:
-              break;
-          }
+        const savedFiles: Array<{ filename: string; filepath: string }> = [];
+        for (const [index, file] of staged.files.entries()) {
+          const suffix = staged.files.length === 1 ? '' : `_${index + 1}`;
+          const filename = `${base}${suffix}${file.extension}`;
+          const filepath = path.join(sourceRealPath, filename);
+          await copyFile(file.filepath, filepath, constants.COPYFILE_EXCL);
+          createdPaths.push(filepath);
+          savedFiles.push({ filename, filepath });
         }
-      }
-
-      if (!accountId) {
-        return sendError(reply, 'accountId is required', 400, 'BAD_REQUEST');
-      }
-
-      if (!postedAt) {
-        return sendError(reply, 'postedAt is required', 400, 'BAD_REQUEST');
-      }
-
-      const parsedPostedAt = parsePostedAt(postedAt);
-      if (!parsedPostedAt) {
-        return sendError(reply, 'postedAt must be a valid ISO 8601 datetime', 400, 'BAD_REQUEST');
-      }
-
-      if (!type) {
-        return sendError(reply, 'type must be Post or Story', 400, 'BAD_REQUEST');
-      }
-
-      if (files.length === 0) {
-        return sendError(reply, 'files are required', 400, 'BAD_REQUEST');
-      }
-
-      const sourceDir = getSourcePath(accountId, parsedPostedAt.date);
-      await mkdir(sourceDir, { recursive: true });
-
-      const savedFiles: Array<{ filename: string; filepath: string }> = [];
-      const totalFiles = files.length;
-
-      for (const [index, entry] of files.entries()) {
-        const validation = validateFileType(entry.file.mimetype, entry.buffer.length);
-        if (!validation.valid) {
-          return sendError(reply, validation.error || 'Invalid file', 400, 'BAD_REQUEST');
+        const writeExclusive = async (filepath: string, contents: string) => {
+          const handle = await open(filepath, 'wx', 0o600);
+          createdPaths.push(filepath);
+          try { await handle.writeFile(contents); } finally { await handle.close(); }
+        };
+        let captionFile: string | null = null;
+        if (caption !== undefined) {
+          captionFile = path.join(sourceRealPath, `${base}.txt`);
+          await writeExclusive(captionFile, caption);
         }
-
-        const ext = resolveFileExtension(entry.file);
-        const fileSuffix =
-          totalFiles === 1
-            ? `_UTC${ext}`
-            : `_UTC_${index + 1}${ext}`;
-        const filename = `${parsedPostedAt.timestampBase}${fileSuffix}`;
-        const filepath = path.join(sourceDir, filename);
-        await writeFile(filepath, entry.buffer);
-        savedFiles.push({ filename, filepath });
+        const metadataPath = path.join(sourceRealPath, `${base}.json`);
+        await writeExclusive(metadataPath, JSON.stringify({
+          instaloader: { node_type: type === 'Story' ? 'StoryItem' : 'Post' }
+        }, null, 2));
+        completed = true;
+        await cleanup();
+        return sendSuccess(reply, { accountId, postedAt, type, savedFiles, captionFile, metadataFile: metadataPath });
+      } catch (error) {
+        await cleanup();
+        if (error instanceof UploadError) return sendError(reply, error.message, error.statusCode, error.code);
+        if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+          return sendError(reply, 'Media already exists or an upload is in progress for this timestamp', 409, 'CONFLICT');
+        }
+        request.log.error(error, 'Manual upload failed');
+        return sendError(reply, 'Failed to upload files');
+      } finally {
+        await cleanup();
       }
-
-      let captionFile: string | null = null;
-      if (caption !== undefined) {
-        const filename = `${parsedPostedAt.timestampBase}_UTC.txt`;
-        const filepath = path.join(sourceDir, filename);
-        await writeFile(filepath, caption);
-        captionFile = filepath;
-      }
-
-      const metadataFilename = `${parsedPostedAt.timestampBase}_UTC.json`;
-      const metadataPath = path.join(sourceDir, metadataFilename);
-      await writeFile(
-        metadataPath,
-        JSON.stringify(
-          {
-            instaloader: {
-              node_type: type === 'Story' ? 'StoryItem' : 'Post'
-            }
-          },
-          null,
-          2
-        )
-      );
-
-      return sendSuccess(reply, {
-        accountId,
-        postedAt,
-        type,
-        savedFiles,
-        captionFile,
-        metadataFile: metadataPath
-      });
     }
   );
 }

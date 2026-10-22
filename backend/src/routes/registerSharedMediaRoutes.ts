@@ -1,17 +1,17 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { MultipartFile } from '@fastify/multipart';
+import { constants } from 'node:fs';
+import { copyFile, mkdir, unlink } from 'node:fs/promises';
+import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {
   createSharedMedia,
   listSharedMedia,
   getSharedMediaById
 } from '../services/sharedMediaService.js';
-import {
-  validateFileType,
-  saveUploadedFile,
-  generateUniqueFilename
-} from '../utils/fileUpload.js';
+import { getUploadPath } from '../utils/fileUpload.js';
+import { acquireUploadSlot, stageUpload, StagedUpload, UploadError } from '../utils/stagedUpload.js';
+import { isValidDateFilter } from '../utils/dateRange.js';
 import { formatDateToYYYYMMDD } from '../utils/dateFormat.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 
@@ -45,8 +45,9 @@ function buildUploadedThumbnailUrl(apiBaseUrl: string, yyyyMMdd: string, filenam
 const listQuerySchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().min(1).max(60).optional(),
-  from: z.string().optional(),
-  to: z.string().optional(),
+  from: z.string().refine(isValidDateFilter, 'Use YYYY-MM-DD (Asia/Seoul) or an ISO datetime with timezone').optional(),
+  to: z.string().refine(isValidDateFilter, 'Use YYYY-MM-DD (Asia/Seoul) or an ISO datetime with timezone').optional(),
+  search: z.string().trim().max(200).optional(),
   sort: z.enum(['newest', 'oldest']).optional(),
   page: z.coerce.number().min(1).optional()
 });
@@ -111,84 +112,43 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
       }
     },
     async (request, reply) => {
-      app.log.info('=== Upload request received ===');
-      const parts = request.parts();
-      const files: Array<{ file: MultipartFile; buffer: Buffer }> = [];
-      let caption: string | undefined;
-      let accountName: string | undefined;
-      const uploadBatchId = randomUUID();
-
+      const release = acquireUploadSlot();
+      if (!release) {
+        reply.header('Retry-After', '5');
+        return sendError(reply, 'Too many simultaneous uploads', 429, 'TOO_MANY_REQUESTS');
+      }
+      let staged: StagedUpload | undefined;
       try {
-        app.log.info('Processing multipart form data...');
-        for await (const part of parts) {
-          if (part.type === 'file') {
-            app.log.info(`File part received: ${part.filename}, mimetype: ${part.mimetype}`);
-            const buffer = await part.toBuffer();
-            app.log.info(`File buffer read: ${buffer.length} bytes`);
-            files.push({ file: part as MultipartFile, buffer });
-          } else if (part.type === 'field' && part.fieldname === 'caption') {
-            caption = (part as any).value as string;
-            app.log.info(`Caption field received: ${caption}`);
-          } else if (part.type === 'field' && part.fieldname === 'accountName') {
-            accountName = (part as any).value as string;
-            app.log.info(`Account name field received: ${accountName}`);
-          }
-        }
-
-        app.log.info(`Total files received: ${files.length}`);
-        if (files.length === 0) {
-          app.log.warn('No files provided in request');
-          return sendError(reply, 'No files provided', 400, 'BAD_REQUEST');
-        }
-
-        const uploadedMedia = [];
+        staged = await stageUpload(request, ['caption', 'accountName']);
+        const uploadBatchId = randomUUID();
         const uploadDate = new Date();
+        const uploadDir = getUploadPath(uploadDate);
+        await mkdir(uploadDir, { recursive: true });
+        const uploadedMedia = [];
+        const apiBaseUrl = getApiBaseUrl(request);
+        const yyyyMMdd = formatDateToYYYYMMDD(uploadDate);
 
-        for (const { file, buffer } of files) {
-          app.log.info(`Processing file: ${file.filename}`);
-          app.log.info(`File buffer size: ${buffer.length} bytes`);
-
-          const validation = validateFileType(file.mimetype, buffer.length);
-          app.log.info(`File validation result: ${JSON.stringify(validation)}`);
-
-          if (!validation.valid) {
-            app.log.error(`File validation failed: ${validation.error}`);
-            return sendError(reply, validation.error || 'Invalid file', 400, 'BAD_REQUEST');
+        for (const file of staged.files) {
+          const uniqueFilename = `${randomUUID()}${file.extension}`;
+          const filepath = path.join(uploadDir, uniqueFilename);
+          await copyFile(file.filepath, filepath, constants.COPYFILE_EXCL);
+          let media;
+          try {
+            media = await createSharedMedia({
+              filename: uniqueFilename,
+              originalName: file.originalName,
+              mime: file.mime,
+              size: file.size,
+              accountName: staged.fields.accountName,
+              caption: uploadedMedia.length === 0 ? staged.fields.caption : undefined,
+              uploadBatchId,
+              uploadedAt: uploadDate
+            });
+          } catch (error) {
+            await unlink(filepath);
+            throw error;
           }
-
-          const uniqueFilename = generateUniqueFilename(file.filename);
-          app.log.info(`Generated unique filename: ${uniqueFilename}`);
-
-          app.log.info('Saving file to disk...');
-          const { size } = await saveUploadedFile(
-            {
-              ...file,
-              toBuffer: async () => buffer
-            } as MultipartFile,
-            uniqueFilename,
-            uploadDate
-          );
-          app.log.info(`File saved successfully, size: ${size} bytes`);
-
-          app.log.info('Creating database record...');
-          const media = await createSharedMedia({
-            filename: uniqueFilename,
-            originalName: file.filename,
-            mime: file.mimetype,
-            size,
-            accountName,
-            caption: uploadedMedia.length === 0 ? caption : undefined,
-            uploadBatchId,
-            uploadedAt: uploadDate
-          });
-          app.log.info(`Database record created with ID: ${media.id}`);
-
-          const apiBaseUrl = getApiBaseUrl(request);
-          const yyyyMMdd = formatDateToYYYYMMDD(uploadDate);
           const mediaUrl = buildUploadedMediaUrl(apiBaseUrl, yyyyMMdd, uniqueFilename);
-          const thumbnailUrl = buildUploadedThumbnailUrl(apiBaseUrl, yyyyMMdd, uniqueFilename, mediaUrl);
-          app.log.info(`Media URL: ${mediaUrl}`);
-
           uploadedMedia.push({
             id: media.id,
             filename: media.filename,
@@ -196,23 +156,26 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
             mime: media.mime,
             size: media.size,
             mediaUrl,
-            thumbnailUrl,
+            thumbnailUrl: buildUploadedThumbnailUrl(apiBaseUrl, yyyyMMdd, uniqueFilename, mediaUrl),
             accountName: media.accountName,
             caption: media.caption,
             uploadBatchId: media.uploadBatchId,
             uploadedAt: media.uploadedAt.toISOString()
           });
         }
-
-        app.log.info(`Upload completed successfully. Total files uploaded: ${uploadedMedia.length}`);
+        await staged.cleanup();
+        staged = undefined;
+        release();
         return sendSuccess(reply, uploadedMedia);
       } catch (error) {
+        await staged?.cleanup();
+        staged = undefined;
+        release();
+        if (error instanceof UploadError) return sendError(reply, error.message, error.statusCode, error.code);
         app.log.error(error, 'Failed to upload files');
-        app.log.error(`Error details: ${JSON.stringify({
-          message: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined
-        })}`);
         return sendError(reply, 'Failed to upload files');
+      } finally {
+        try { await staged?.cleanup(); } finally { release(); }
       }
     }
   );
@@ -229,8 +192,9 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
           properties: {
             cursor: { type: 'string' },
             limit: { type: 'integer', minimum: 1, maximum: 60 },
-            from: { type: 'string' },
-            to: { type: 'string' },
+            from: { type: 'string', description: 'YYYY-MM-DD in Asia/Seoul, or ISO datetime with timezone' },
+            to: { type: 'string', description: 'Inclusive date in Asia/Seoul, or ISO datetime with timezone' },
+            search: { type: 'string', maxLength: 200 },
             sort: { type: 'string', enum: ['newest', 'oldest'] },
             page: { type: 'integer', minimum: 1 }
           }
@@ -278,7 +242,9 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
       }
     },
     async (request, reply) => {
-      const params = listQuerySchema.parse(request.query);
+      const parsed = listQuerySchema.safeParse(request.query);
+      if (!parsed.success) return sendError(reply, 'Invalid shared media filters', 400, 'BAD_REQUEST');
+      const params = parsed.data;
       const result = await listSharedMedia(params);
       const apiBaseUrl = getApiBaseUrl(request);
 
