@@ -6,7 +6,7 @@
 
 패치가 필요합니다. 로컬 `node --version`은 **v26.5.0**이며, 저장소 `backend/Dockerfile:2`는 **node:20-alpine**입니다. 실제 운영 컨테이너 버전은 조회하지 않았습니다.
 
-2026-10-21 공식 보안 릴리스는 **26.12.1 / 24.22.1 / 22.23.4**입니다. Brotli 디코더의 메모리 쓰기 오류(CVE-2026-111497), DNS·TLS 검증 관련 높은 위험도 수정 등을 포함합니다. 현재 26.5.0은 패치 이전 버전입니다. [공식 보안 공지](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases)
+2026-10-21 공식 보안 릴리스는 **26.12.1 / 24.22.1 / 22.23.4**입니다. Brotli 디코더의 메모리 쓰기 오류(CVE-2026-111497), DNS·TLS 검증 관련 높은 위험도 수정 등을 포함합니다. 현재 26.5.0과 추가 질문한 22.22.2는 모두 패치 이전 버전입니다. 22 계열을 유지한다면 22.23.4 이상이 필요합니다. [공식 보안 공지](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases)
 
 Node 20은 지원 종료 상태이므로 Docker 태그를 그대로 갱신하는 것으로 이번 지원 버전의 패치를 얻을 수 없습니다. 운영용으로 패치된 LTS 계열을 선택해야 합니다. [Node.js 지원 현황](https://nodejs.org/en/about/previous-releases)
 
