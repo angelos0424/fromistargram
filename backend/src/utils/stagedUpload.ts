@@ -26,15 +26,19 @@ export function getUploadLimits() {
   };
 }
 
-let activeUploads = 0;
+export type UploadPool = 'public' | 'admin';
+const activeUploads: Record<UploadPool, number> = { public: 0, admin: 0 };
 
-// Shared across public and administrator uploads within this API process.
-export function acquireUploadSlot(): (() => void) | null {
-  if (activeUploads >= getUploadLimits().concurrent) return null;
-  activeUploads += 1;
+// Public traffic cannot consume the administrator's one reserved slot. Keep the
+// existing public concurrency setting; total admission is bounded at 2 + 1.
+// The caller must choose a pool, and only an authenticated handler may use admin.
+export function acquireUploadSlot(pool: UploadPool): (() => void) | null {
+  const limit = pool === 'admin' ? 1 : getUploadLimits().concurrent;
+  if (activeUploads[pool] >= limit) return null;
+  activeUploads[pool] += 1;
   let released = false;
   return () => {
-    if (!released) activeUploads -= 1;
+    if (!released) activeUploads[pool] -= 1;
     released = true;
   };
 }
@@ -54,7 +58,7 @@ export type StagedUpload = {
 };
 
 // Keep only the first 4 KiB in memory; all file bodies use stream backpressure.
-// The process-wide admission limit bounds concurrent temporary disk usage too.
+// Admission across both pools bounds staged file data to 3 * 200 MiB by default.
 export async function stageUpload(request: FastifyRequest, allowedFields: string[]): Promise<StagedUpload> {
   const limits = getUploadLimits();
   const directory = await mkdtemp(path.join(os.tmpdir(), 'fromistargram-upload-'));

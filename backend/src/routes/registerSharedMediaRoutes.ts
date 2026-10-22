@@ -112,7 +112,7 @@ export async function registerSharedMediaRoutes(app: FastifyInstance): Promise<v
       }
     },
     async (request, reply) => {
-      const release = acquireUploadSlot();
+      const release = acquireUploadSlot('public');
       if (!release) {
         reply.header('Retry-After', '5');
         return sendError(reply, 'Too many simultaneous uploads', 429, 'TOO_MANY_REQUESTS');

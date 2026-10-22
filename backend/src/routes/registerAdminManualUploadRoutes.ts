@@ -76,7 +76,7 @@ export async function registerAdminManualUploadRoutes(app: FastifyInstance): Pro
       }
     },
     async (request, reply) => {
-      const release = acquireUploadSlot();
+      const release = acquireUploadSlot('admin');
       if (!release) {
         reply.header('Retry-After', '5');
         return sendError(reply, 'Too many simultaneous uploads', 429, 'TOO_MANY_REQUESTS');

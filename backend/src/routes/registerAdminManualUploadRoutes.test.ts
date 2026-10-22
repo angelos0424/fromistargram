@@ -61,9 +61,9 @@ describe('manual source uploads', () => {
     expect(await readFile(path.join(directory, `${base}.jpg`), 'utf8')).toBe('existing original');
   });
 
-  it('allows only one writer for concurrent requests to the same account and second', async () => {
+  it('admits only one simultaneous administrator upload', async () => {
     const responses = await Promise.all([upload(), upload()]);
-    expect(responses.map((response) => response.statusCode).sort()).toEqual([200, 409]);
+    expect(responses.map((response) => response.statusCode).sort()).toEqual([200, 429]);
     expect((await readdir(path.join(source, 'test_user'))).sort()).toEqual([`${base}.json`, `${base}.png`, `${base}.txt`]);
   });
 

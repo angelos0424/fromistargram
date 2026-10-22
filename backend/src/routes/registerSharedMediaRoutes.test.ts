@@ -6,15 +6,16 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { multipartPayload, MultipartTestPart, PNG } from '../testUtils/multipart.js';
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), list: vi.fn() }));
+const mocks = vi.hoisted(() => ({ create: vi.fn(), list: vi.fn(), findAccount: vi.fn() }));
 vi.mock('../services/sharedMediaService.js', () => ({
   createSharedMedia: mocks.create,
   listSharedMedia: mocks.list,
   getSharedMediaById: vi.fn()
 }));
-vi.mock('../db/client.js', () => ({ prisma: {} }));
+vi.mock('../db/client.js', () => ({ prisma: { account: { findUnique: mocks.findAccount } } }));
 import { registerSharedMediaRoutes } from './registerSharedMediaRoutes.js';
 import { registerMediaRoutes } from './registerMediaRoutes.js';
+import { registerAdminManualUploadRoutes } from './registerAdminManualUploadRoutes.js';
 
 let app: FastifyInstance;
 let dataRoot: string;
@@ -23,15 +24,25 @@ const file: MultipartTestPart = { name: 'files', filename: 'image.PNG', contentT
 beforeEach(async () => {
   dataRoot = await mkdtemp(path.join(os.tmpdir(), 'fromistargram-shared-security-'));
   vi.stubEnv('DATA_ROOT', dataRoot);
+  vi.stubEnv('CRAWL_OUTPUT_DIR', path.join(dataRoot, 'source'));
   vi.stubEnv('UPLOAD_MAX_FILES', '10');
   vi.stubEnv('UPLOAD_MAX_TOTAL_BYTES', String(200 * 1024 * 1024));
   vi.stubEnv('UPLOAD_MAX_CONCURRENT', '2');
   mocks.create.mockReset().mockImplementation(async (data) => ({ id: 'shared-id', ...data }));
   mocks.list.mockReset().mockResolvedValue({ data: [], hasMore: false, nextCursor: null, total: 0 });
+  mocks.findAccount.mockReset().mockResolvedValue({ id: 'admin-account' });
   app = Fastify({ logger: false });
   await app.register(multipart);
   await app.register(registerSharedMediaRoutes);
   await app.register(registerMediaRoutes);
+  await app.register(async (adminApp) => {
+    // Keep the production ordering: authenticate before entering the handler.
+    // JWT verification itself has dedicated tests; this fixture tests admission.
+    adminApp.addHook('preHandler', async (request, reply) => {
+      if (request.headers.authorization !== 'Bearer test-admin') return reply.code(401).send();
+    });
+    await adminApp.register(registerAdminManualUploadRoutes);
+  });
 });
 
 afterEach(async () => { await app.close(); await rm(dataRoot, { recursive: true, force: true }); vi.unstubAllEnvs(); });
@@ -39,6 +50,26 @@ afterEach(async () => { await app.close(); await rm(dataRoot, { recursive: true,
 function upload(parts: MultipartTestPart[]) {
   const body = multipartPayload(parts);
   return app.inject({ method: 'POST', url: '/api/shared/upload', headers: { 'content-type': body.contentType }, payload: body.body });
+}
+
+function manualUpload(second = '00', authenticated = true) {
+  const body = multipartPayload([
+    { name: 'accountId', value: 'admin-account' },
+    { name: 'postedAt', value: `2026-10-23T03:00:${second}Z` },
+    { name: 'type', value: 'Post' },
+    file
+  ]);
+  return app.inject({
+    method: 'POST', url: '/api/admin/manual-upload',
+    headers: { 'content-type': body.contentType, ...(authenticated ? { authorization: 'Bearer test-admin' } : {}) },
+    payload: body.body
+  });
+}
+
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => { resolve = done; });
+  return { promise, resolve };
 }
 
 describe('public shared uploads', () => {
@@ -119,6 +150,51 @@ describe('public shared uploads', () => {
     finish();
     expect((await first).statusCode).toBe(200);
     expect((await upload([file])).statusCode).toBe(200);
+  });
+
+  it('reserves admin capacity when public uploads are saturated and releases each pool independently', async () => {
+    const publicStarted = deferred();
+    const publicGate = deferred();
+    const adminStarted = deferred();
+    const adminGate = deferred();
+    let publicCount = 0;
+    mocks.create.mockImplementation(async (data) => {
+      if (++publicCount === 2) publicStarted.resolve();
+      await publicGate.promise;
+      return { id: `public-${publicCount}`, ...data };
+    });
+    mocks.findAccount.mockImplementationOnce(async () => {
+      adminStarted.resolve();
+      await adminGate.promise;
+      return { id: 'admin-account' };
+    });
+    const publicRequests = [upload([file]), upload([file])];
+    let adminRequest: ReturnType<typeof manualUpload> | undefined;
+    try {
+      await publicStarted.promise;
+      expect((await manualUpload('00', false)).statusCode).toBe(401);
+      expect(mocks.findAccount).not.toHaveBeenCalled();
+      adminRequest = manualUpload();
+      await Promise.race([
+        adminStarted.promise,
+        adminRequest.then((response) => { throw new Error(`Admin upload rejected while public pool was full: ${response.statusCode}`); })
+      ]);
+      expect((await upload([file])).statusCode).toBe(429);
+      expect((await manualUpload('01')).statusCode).toBe(429);
+
+      publicGate.resolve();
+      expect((await Promise.all(publicRequests)).map((response) => response.statusCode)).toEqual([200, 200]);
+      expect((await upload([file])).statusCode).toBe(200);
+      expect((await manualUpload('01')).statusCode).toBe(429);
+
+      adminGate.resolve();
+      expect((await adminRequest).statusCode).toBe(200);
+      expect((await manualUpload('01')).statusCode).toBe(200);
+    } finally {
+      publicGate.resolve();
+      adminGate.resolve();
+      await Promise.allSettled([...publicRequests, ...(adminRequest ? [adminRequest] : [])]);
+    }
   });
 
   it('removes an unpublished file after a database failure and releases admission', async () => {
